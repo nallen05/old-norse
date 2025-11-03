@@ -11,6 +11,6 @@
   :author "Nick Allen <nallen05@gmail.com>"
   :version "0.1"
   :components
-  ((:module :lib
+  ((:module :flokkr
             :components ((:file flokkr))
             :serial t)))
