@@ -14,6 +14,8 @@
            :*meadhorn-port*
            :mh))
 
+(in-package :meadhorn)
+
 (defvar *meadhorn-stream* nil)
 (defvar *meadhorn-port* 5555)
 
