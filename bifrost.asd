@@ -7,7 +7,7 @@
 
 (defsystem :bifrost
   :depends-on (:trivial-raw-io)
-  :description "Low-level Common Lisp library for reading/writing ASCII escape sequences to terminal emulators such as Xterm/iTerm2/TTYD/Screen/SSH/etc. Features support for mouse click / touch screen tap events & logic to make regions of the screen clickable."
+  :description "Part of the OLD-NORSE Terminal Toolkit. BIFROST is a Common Lisp library for reading/writing ASCII escape sequences. Includes support for mouse event tracking."
   :author "Nick Allen <nallen05@gmail.com>"
   :version "0.1"
   :components
@@ -15,7 +15,7 @@
     :components ((:file package)
 		             (:file read)     ;; BIFROST-RAW-READ
 		             (:file write)    ;; BIFROST-WRITE
-		             (:file cbox))    ;; BIFROST-READ
+		             (:file cbox))    ;; BIFROST-READ, REGISTER-CBOX!
     :serial t)))
 
 

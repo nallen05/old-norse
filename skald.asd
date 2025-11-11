@@ -7,7 +7,7 @@
 
 (defsystem :skald
   :depends-on (:bifrost)
-  :description "\"Text graphics\" library for terminal emulators such as Xterm/iTerm/TTYD/Screen/SSH/etc. Features tools to work with blocks ASCII text as if they were graphical sprites, optimized screen updates for faster animations with minimal flicker, & some bells & whistles."
+  :description "Part of the OLD-NORSE Terminal Toolkit. High-level terminal UI library built on BIFROST. Optimized for fast screen redrawing with minial flicker."
   :author "Nick Allen <nallen05@gmail.com>"
   :version "0.1"
   :components
