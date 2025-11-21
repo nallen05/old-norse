@@ -1,11 +1,5 @@
 
 
-;; issue inbox
-;; - will RETURN inside a FLOKKR-MAIN clause actually escape?
-;;   or does the SUBFLOKKR closure need to return a second value to indicate status?
-;; - once an :INPUT has been triggered, subsequent :INPUTs should be ignored
-;; - unknown keywords, or keywords in bad places
-
 
 ;; ITU utilities
 
@@ -21,8 +15,32 @@
       (>= now-itu-time itu-time)))
 
 
-;; LOOP-inspired keyword mini-language
 
+;; timer manipulation API
+
+(defmacro flokkr-reschedule (timer seconds-or-nil)
+  "Set timer to fire SECONDS-OR-NIL from now, or disable if NIL"
+  (let ((duration (gensym "flokkr-reschedule-seconds")))
+    `(let ((,duration ,seconds-or-nil))
+       (setf ,timer
+             (if ,duration
+                 (add-itu-seconds ,duration)
+                 nil)))))
+
+(defmacro flokkr-delay (timer delta-seconds-or-nil)
+  "Delay (positive) or accelerate (negative) an active timer. Timers that are already off stay off."
+  (let ((%timer (gensym "flokkr-timer"))
+        (delta (gensym "flokkr-delay-seconds")))
+    `(let ((,%timer ,timer)
+           (,delta ,delta-seconds-or-nil))
+       (when ,%timer
+         (setf ,timer
+               (when ,delta
+                 (add-itu-seconds ,delta ,%timer)))))))
+
+
+
+;; LOOP-inspired keyword mini-language
 
 (defun %get-timer-name (clauses)
   (let (timer-name)
@@ -47,7 +65,7 @@
                        (progn
                          (setf initial-wait (car rest))
                          (cdr rest))
-                       (rfn rest))))))
+                       (cons 1st (rfn rest)))))))
       (values (rfn clauses)
               initial-wait))))
 
@@ -59,123 +77,130 @@
                  (destructuring-bind (1st . rest) _
                    (cond
                      ((eql 1st :reschedule)
+                      (when (cdr rest)
+                        (warn "FLOKKR: anything after :RESCHEDULE SECONDS will be ignored (~a)" (cdr rest)))
                       (setf rescheduler
                             `(flokkr-reschedule ,timer-name ,(car rest)))
                       nil)
                      ((eql (first rest) :reschedule-dynamic)
+                      (when (cdr rest)
+                        (warn "FLOKKR: anything after :RESCHEDULE-DYNAMIC will be ignored (~a)" (cdr rest)))
+
                       (setf rescheduler
                             `(flokkr-reschedule ,timer-name ,1st))
                       nil)
-                     (t (rfn rest)))))))
+                     (t (cons 1st (rfn rest))))))))
       (values (rfn clauses)
               rescheduler))))
 
 (defmacro subflokkr (&rest clauses)
-  (let ((next-wait (gensym "subflokkr-next-wait-"))
-        (activated (gensym "subflokkr-activated-"))
+  (let ((activated (gensym "flokkr-activated-"))
+        (input-matched (gensym "flokkr-input-matched-"))
+        (next-wait (gensym "flokkr-next-wait-"))
         lexical-state
         body-forms)
     (dolist (c clauses)
       (case (first c)
         (:input (push `(when bifrost:*rune*
-                         (setf ,activated t)
-                         (bifrost:rune-case *rune* ,@(rest c)))
+                         (unless ,input-matched
+                           (bifrost:rune-case bifrost:*rune*
+                                             ,@(mapcar (lambda (in-case)
+                                                         `(,@in-case
+                                                           (setf ,activated t
+                                                                 ,input-matched t)))
+                                                       (rest c)))))
                       body-forms))
         (:also (push `(when ,activated
                         ,@(rest c))
                      body-forms))
         (:subflokkr
-         (let ((subflokkr (gensym "subflokkr-"))
-               (subtimer (gensym "subflokkr-timer-")))
+         (let ((subflokkr (gensym "flokkr-"))
+               (subtimer (gensym "flokkr-timer-")))
            (push `(,subflokkr ,(second c))
                  lexical-state)
            (push `(let ((,subtimer (funcall ,subflokkr)))
                     (when ,subtimer
                       (setf ,activated t)
                       (setf ,next-wait
-                            (if (not ,next-wait)
-                                ,subtimer
-                                (min ,subtimer ,next-wait)))))
+                            (if ,next-wait
+                                (min ,subtimer ,next-wait)
+                                ,subtimer))))
                   body-forms)))
         (otherwise
-         (multiple-value-bind (c timer) (%get-timer-name c)
-           (multiple-value-bind (c init) (%get-initial-wait c)
-             (multiple-value-bind (c rescheduler) (%get-rescheduler c timer)
-               (ecase (first c)
+         (format t "~%1~s" c)
+         (multiple-value-bind (%c timer) (%get-timer-name c)
+           (format t "~%2~s" %c)
+           (multiple-value-bind (%c init) (%get-initial-wait %c)
+             (format t "~%3~s" %c)
+             (multiple-value-bind (%c rescheduler) (%get-rescheduler %c timer)
+               (format t "~%4~s" %c)
+               (case (first %c)
                  (:do
                   (push `(,timer ,init)
-                        lexical-state)                 
+                        lexical-state)
                   (push `(if (itu-elapsed-p ,timer)
                              (progn
                                (setf ,activated t)
-                               ,@c
+                               ,@(rest %c)
                                ,rescheduler)
                              (when ,timer
                                (setf ,next-wait
-                                     (if (not ,next-wait)
-                                         ,timer
-                                         (min ,timer ,next-wait)))))
-                   body-forms)))))))))
-    `(let ,lexical-state
+                                     (if ,next-wait
+                                         (min ,timer ,next-wait)
+                                         ,timer))))
+                        body-forms))
+                 (otherwise (error "FLOKKR clause not recognized as :DO, :INPUT, :ALSO, or :SUBFLOKKR form: ~A" c)))))))))
+    `(let ,(reverse lexical-state)
        (lambda ()
-         (let (,next-wait)
-           ,@body-forms)))))
+         (let (,activated
+               ,input-matched
+               ,next-wait)
+           (declare (ignorable ,activated ,input-matched))
+           ,@(reverse body-forms)
+           ,next-wait)))))
 
-
-
-;; timer manipulation API
-
-
-(defmacro flokkr-reschedule (timer seconds-or-nil)
-  "Set timer to fire SECONDS-OR-NIL from now, or disable if NIL"
-  (let ((duration (gensym "flokkr-reschedule-seconds")))
-    `(let ((,duration ,seconds-or-nil))
-       (setf ,timer
-             (if ,duration
-                 `(add-itu-seconds ,duration)
-                 nil)))))
-
-(defmacro flokkr-delay (timer delta-seconds-or-nil)
-  "Delay (positive) or accelerate (negative) an active timer. Timers that are already off stay off."
-  (let ((%timer (gensym "flokkr-timer"))
-        (delta (gensym "flokkr-delay-seconds")))
-    `(let ((,%timer ,timer)
-           (,delta ,delta-seconds-or-nil))
-       (when ,%timer
-         (setf ,timer
-               (when ,delta
-                 (add-itu-seconds ,delta ,%timer)))))))
 
 
 ;; core runtime
 
 (defun flokkr-run (thunk)
   "Main event loop: call thunk, wait for duration or input, repea forevert"
-  (let ((duration 0))
-    (block nil        ;; can escape with RETURN
-      (tagbody
-       start       
-         ;; if there is input, process it immediately
-         ;; keep processing until no more input is available
-         (when (bifrost:rune-read-no-hang *terminal-io*)
-           (setq duration (funcall thunk))
-           (go start))
+  (let ((duration 0)
+        (fd (when (typep *terminal-io* 'sb-sys:fd-stream)
+              (sb-sys:fd-stream-fd *terminal-io*))))
+    (unless fd
+      (warn "FLOKKR: *TERMINAL-IO* is not a SB-SYS:FD-STREAM-FD. This means that FLOKKR is probably being called within SLIME/EMACS. Falling back to polling for user input. FLOKKR is optimized to be run in the terminal"))
+    (tagbody
+     start       
+       ;; if there is input, process it immediately
+       ;; keep processing until no more input is available
+       (when (bifrost:rune-read-no-hang *terminal-io*)
+         (setq duration (funcall thunk))
+         (go start))
 
-         ;; THUNK must always return a duration (number of seconds) or NIL
-         (assert (or (not duration)
-                     (numberp duration)))
+       ;; THUNK must return a duration (number of seconds) or NIL
+       (assert (or (not duration)
+                   (numberp duration)))
          
-         ;; no input available, wait for duration or next input
-         (when (or (not duration)
-                   (plusp duration))
-           (sb-sys:wait-until-fd-usable (sb-sys:fd-stream-fd *terminal-io*)
-                                        :input duration))
+       (if fd
 
-         ;; repeat
-         (go start)))))
+           ;; no input available, wait for duration or next input
+           (when (or (not duration)
+                     (plusp duration))
+             (sb-sys:wait-until-fd-usable fd :input duration))
+
+           ;; we're in polling mode, so just sleep for a short time
+           (unless (and duration
+                        (< duration 0.01))
+             (sleep (min duration 0.01))))
+
+       ;; repeat
+       (go start))))
+
 
 
 ;; main API entrypoint
 
-(defmacro flokkr-main (&rest clauses)
-  `(flokkr-run (subflokkr ,@clauses)))
+(defmacro flokkr (&rest clauses)
+  `(block flokkr
+     (flokkr-run (subflokkr ,@clauses))))
