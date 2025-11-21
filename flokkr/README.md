@@ -20,6 +20,7 @@ All timing logic visible in one place
 ```lisp
 ;; update CPU graph at 10 Hz
 ;; after 1 second, also update status panel at 1 Hz
+;; if either changed, update that section of the screen to reflect
 (flokkr
   (:do (update-cpu-graph) :reschedule 0.1)
   (:after 1 :do (update-status-panel) :reschedule 1)
@@ -135,15 +136,17 @@ Macros for manipulating timers:
 
 `FLOKKER-RESCHEDULE(timer seconds-or-nil)`
 A macro. Used to reschedule a named timer to a new ITU time. Positive numbers set the timer that
-many seconds in the future. Zero (or a negative number) is treated as now, making the timer clause
-eady to fire. If SECONDS-OR-NIL is NIL, it turns the timer off, preventing it from firing again.
+many seconds in the future. 
+ - Zero (or a negative number) is treated as now, making the timer ready to fire.
+ - If SECONDS-OR-NIL is NIL, it turns the timer off, preventing it from firing.
 
 `FLOKKER-DELAY(timer seconds-or-nil)`
 A macro. Used to delay or accelerate an active timer. 
-- Positive numbers delay it by that many seconds. Negative numbers accelerate it back that many 
-seconds. If it is pulled back to the current time or a time in the past, it becomes ready to fire 
-- If SECONDS-OR-NIL is NIL, it turns the timer off, preventing it from firing again.
-- If TIMER was already NIL, then the timer stays off. It won’t be turned back on.
+ - Positive numbers delay it by that many seconds. Negative numbers accelerate it back that many 
+   seconds. If it is pulled back to the current time or a time in the past, it becomes ready to 
+   fire 
+ - If SECONDS-OR-NIL is NIL, it turns the timer off, preventing it from firing again.
+ - If TIMER was already NIL, then the timer stays off. It won’t be turned back on.
 
 
 
