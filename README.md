@@ -60,7 +60,7 @@ Write to the screen
 ```lisp
 (bifrost:with-rune-raw-io  ; low-level setup
   (skald:skald-init)       ; clear the screen
-  (skald:skald-draw ()     ; bundle as set of updates the screen
+  (skald:skald-draw ()     ; bundle set of updates the screen
     (skald:sprite (3 3     ; draw an ASCII sprite
                    :foreground :cyan)
       "╔═══════════════╗"
@@ -70,12 +70,12 @@ Write to the screen
 
 
 Fast animation that follows mouse movement
-```
+```lisp
 (bifrost:with-rune-raw-io                  ; low-level setup
   (skald:skald-init)                       ; clear the screen
   (bifrost:with-mouse-tracking (1003)      ; track mouse hover events
     (bifrost:with-cbox t
-      (flokkr:flokkr-main
+      (flokkr:flokkr
         (:input                            ; listen for mouse events
           (:mouse-click-left (return))     ; on left click, exit
           (:mouse-move                     ; on mouse movement, reposition
@@ -91,7 +91,7 @@ Fast animation that follows mouse movement
 
 Mouse movement tracking + seperate simultaneous animation loop timing
 
-```
+```lisp
 (bifrost:with-rune-raw-io                      ; low-level setup
   (skald:skald-init)                           ; clear the screen
   (bifrost:with-mouse-tracking (1003)          ; track mouse hover events
@@ -112,7 +112,56 @@ Mouse movement tracking + seperate simultaneous animation loop timing
                      (format nil "~a seconds" seconds))))))))
 ```
 
-See [examples/](examples/) for more.
+# ## Design pillars
+
+## (1) grid-based terminal graphics
+
+Treat blocks of text as layerable sprites. 
+ - Support transparant character.
+ - Currently supports ASCII, UNICODE, & EMOJI. In the future, we will also add support for [sixel](https://en.wikipedia.org/wiki/Sixel) 
+   graphics, snapping sixel sprites to the same terminal grid.
+
+## (2) prioritize speed & responsiveness
+
+Design goals (assume standard terminal screen size):
+ * >60fps animation
+ * Screen update within 16ms of user input (not counting network latency)
+
+Based on our observation, this can be achieved by managing the following bottlenecks:
+1. Minimizing the size of terminal screen updates - SKALD does this under the hood via 
+   update/display buffers
+2. Reacy immediately to user input - FLOKKR provides this, while simultaneously managing dynamic 
+   animation and state machine and timings.
+3. Strategic scheduling of GC pauses -  Currently must be managed by the user. But there is a
+   roadmap feature planned to enable FLOKKR to coordinate better/worse times for gc.
+   (Additionally, there are also planned roadmap features to reduce GC pressure created by
+   SKALD/BIFROST itself.)
+4. Slow DB queries - must be managed by the user. 
+
+## (3) Develop in an hour. Deploy anywhere.
+
+Full-featured, mouse-driven terminal UI applications should work remotely via SSH or
+browser-based (TTYD). In the future, we will also add enhanced support for mobile deployment 
+(swiping, etc).
+
+
+## (4) high locality code structure
+
+If not structured correctly, even the simplest Terminal UI application can grow into a complicated
+mess of spaghetti code. The “OLD-NORSE way” is to deal with this by prioritizing locality, putting
+related logic together.
+
+1. SKALD makes it possible to define a single function that draws the ENTIRE screen, and then 
+   liberally call it whenever there is a state update that should be reflected on the screen. 
+   Under the hood, SKALD uses a system of buffers to track the state of the screen & only update
+   regions of the terminal screen that have actually changed since the last rendering. This 
+   pattern tends to DRASTICALLY simplify program structure.
+
+2. FLOKKR makes it possible to view all timing logic in one place, making it easier to reason 
+   about dynamic timing frequencies and interactive behaviors. Modular composability is possible
+   via SUBFLOKKR, but within rigid constraints of chaining via :SUBFLOKKR help to prevent hidden
+   scheduling issues.
+
 
 ## Requirements
 - Terminal with XTERM mouse tracking (iTerm, Xterm, etc.)
