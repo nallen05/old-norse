@@ -1,55 +1,59 @@
 
-# PROBLEM STATEMENT
+# Problem Statement
 
 Terminal UI applications require concurrency: different screen components need to be able to 
 update at different timings (eg: a CPU monitoring graph updatin at 10hz & a status panel updating 
 at 1hz after 1 second initialization period), while simultaneously also providing immediate 
-responsiveness to user input. However, terminal IO itself is single threaded. So, a multitasking
-system is required.
+responsiveness to user input. However, terminal IO itself is single threaded.
 
 # FLOKKR
 
-Part of the OLD-NORSE Terminal Toolkit. FLOKKR is a cooperative multitasking library for 
-Common Lisp (SBCL), purpose-built for building interactive terminal UI applications using BIFROST.
+FLOKKR is a cooperative multitasking library for Common Lisp, purpose-built for building 
+interactive terminal UI applications using BIFROST. It is part of the OLD-NORSE Terminal Toolkit.
 
-# DESIGN PHILOSOPHY
+FLOKKR is implementation-dependent on SBCL.
+
+# Design Philosophy
 
 All timing logic visible in one place
 
-    ;; update CPU graph at 10 Hz
-    ;; after 1 second, also update status panel at 1 Hz
-    (flokkr
-      (:do (update-cpu-graph) :reschedule 0.1)
-      (:after 1 :do (update-status-panel) :reschedule 1)
-      (:also (render-dashboard)))
-
+```lisp
+;; update CPU graph at 10 Hz
+;; after 1 second, also update status panel at 1 Hz
+(flokkr
+  (:do (update-cpu-graph) :reschedule 0.1)
+  (:after 1 :do (update-status-panel) :reschedule 1)
+  (:also (render-dashboard)))
+```
 
 Immediate reaction to user input
 
-    ;; hit +/- key to zoom in/out, or q/esc to exit
-    (flokkr
-      (:do (update-cpu-graph) :reschedule 0.1)
-      (:after 1 :do (update-status-panel) :reschedule 1)
-      (:input
-        (#\+ (user-zoom 1))
-        (#\- (user-zoom -1))
-        ((#\q #\esc) (return-from flokkr)))
-      (:also (render-dashboard)))
+```lisp
+;; hit +/- key to zoom in/out, or q/esc to exit
+(flokkr
+  (:do (update-cpu-graph) :reschedule 0.1)
+  (:after 1 :do (update-status-panel) :reschedule 1)
+  (:input
+    (#\+ (user-zoom 1))
+    (#\- (user-zoom -1))
+    ((#\q #\esc) (return-from flokkr)))
+  (:also (render-dashboard)))
+```
 
 Enable composability (while maintaining traceability)
+```lisp
+(defun move-enemies (gameboard)
+  (subflokkr
+     (:do (move-fast-enemies gameboard) :reschedule 0.05))
+     (:do (move-slow-enemies gameboard) :reschedule 0.2)))
 
-    (defun move-enemies (gameboard)
-      (subflokkr
-         (:do (move-fast-enemies gameboard) :reschedule 0.05))
-         (:do (move-slow-enemies gameboard) :reschedule 0.2)))
-
-    (defun run-game ()
-      (flokkr
-        (let ((b (make-gameboard)))
-          (:subflokkr (move-enemies b))
-          ;; ...other game logic...
-          (:also (render-screen))]]]
-
+(defun run-game ()
+  (flokkr
+    (let ((b (make-gameboard)))
+      (:subflokkr (move-enemies b))
+      ;; ...other game logic...
+      (:also (render-screen)))))
+```
 
 
 # MAIN API
@@ -97,12 +101,12 @@ Examples:
    match anything specific, that *won’t* cause :ALSO to run.
 
 Example:
-
-    (flokkr
-      (:do (update-state-machine-1) :reschedule 0.5)
-      (:do (update-state-machine-2) :reschedule 1)
-      (:also (render-screen))) ;; whenever either of the above happens, render the screen
-
+```lis;
+(flokkr
+  (:do (update-state-machine-1) :reschedule 0.5)
+  (:do (update-state-machine-2) :reschedule 1)
+  (:also (render-screen))) ;; whenever either of the above happens, render the screen
+```
 
 ## Named timers
 
@@ -112,20 +116,21 @@ form.
 
 Example:
 
-    (defparameter *timer* 0)
+```lisp
+(defparameter *timer* 0)
 
-    (flokkr
-      ;; every 1 second, advance the stopwatch
-      (:with-named-timer stopwatch 
-       :after 1 :do (incf *timer*) (render-stopwatch)
-       :reschedule 1)
-      (:input
-        ;; hit spacebar key to pause/unpause the stopwatch
-         (#\space (flokkr-reschedule stopwatch 
-                                             (if stopwatch 
-                                                  NIL
-                                                  1)))))
-
+(flokkr
+  ;; every 1 second, advance the timer & update the screen
+  (:with-named-timer timer
+   :after 1 :do (incf *timer*) (render-stopwatch)
+   :reschedule 1)
+  (:input
+    ;; hit spacebar key to pause/unpause the timer
+     (#\space (flokkr-reschedule timer
+                                 (if stopwatch 
+                                     nil
+                                     1)))))
+```
 Macros for manipulating timers:
 
 `FLOKKER-RESCHEDULE(timer seconds-or-nil)`
@@ -153,23 +158,24 @@ later.
 
 Example: 
 
-    (defun player-notifications-widget (user)
-      (subflokkr
-         (:do (update-player-health-notifications user) :reschedule 0.1))
-         (:do (update-system-message-notifications user) :reschedule 1)))
+```lisp
+(defun player-notifications-widget (user)
+  (subflokkr
+    (:do (update-player-health-notifications user) :reschedule 0.1))
+    (:do (update-system-message-notifications user) :reschedule 1)))
 
-    (flokkr-main
-      (:subflokkr player-notifications-widget user)
-      (:also (render-screen))
+(flokkr-main
+  (:subflokkr player-notifications-widget user)
+  (:also (render-screen))
+
+```
 
 
-
-
-# development roadmap
+# Development roadmap
 
 ## more friendly behavior when called within SLIME/EMACS (BIFROST)
 
-When clic-ktesting flokkr from within SLIME/EMACS, you have to hit enter to force IO. This is 
+When click-testing flokkr from within SLIME/EMACS, you have to hit enter to force IO. This is 
 unintuitive/unfriendly to new users.
 
 Fix it with a well-placed FORCE-OUTPUT. But carefully consider impacts to the BIFROST debugging 
@@ -183,7 +189,7 @@ Enable using FLOKKR to accept hints to signal ideal times for gc pauses to run. 
 
 Ability for an input clause to decide NOT to handle a matched iput.
 
-# development roadmap (icebox)
+# Development roadmap (icebox)
 
 ## debouncing
 
