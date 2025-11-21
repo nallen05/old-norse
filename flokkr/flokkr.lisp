@@ -1,5 +1,18 @@
 
 
+(defpackage :flokkr
+  (:use :cl)
+  (:export ;; main API
+           :flokkr
+
+           ;; timer manipulation API
+           :flokkr-reschedule
+           :flokkr-delay
+
+           ;; creating subflokkrs to be composed seperately
+            :subflokkr))
+
+(in-package :flokkr)
 
 ;; ITU utilities
 
@@ -164,7 +177,7 @@
 ;; core runtime
 
 (defun flokkr-run (thunk)
-  "Main event loop: call thunk, wait for duration or input, repea forevert"
+  "Main event loop: call thunk, wait for duration or input, repeat forever"
   (let ((duration 0)
         (fd (when (typep *terminal-io* 'sb-sys:fd-stream)
               (sb-sys:fd-stream-fd *terminal-io*))))
