@@ -162,6 +162,19 @@ related logic together.
    via SUBFLOKKR, but within rigid constraints of chaining via :SUBFLOKKR help to prevent hidden
    scheduling issues.
 
+## Other recommended conventions
+
+We have found the following prefix naming convention to be useful to use with this library:
+
+```lisp 
+;;   [r]-row        row coordinate on the terminal grid (sometimes called Y)
+;;   [c]-column     column coordinate on the terminal grid (sometimes called X)
+;;   [rc]-cons      a cons of (ROW . COLUMN). Sometimes called a "point"
+;;   [n]-ticks      number of ticks/frames for something to run (eg for an animation)
+;;   [%]-progress   for tracking transition from 0.0 to 1.0 (state machine or animation)
+;;   [d]-duration   duration of seconds (not ITU) to wait
+;;   [t]-time       an ITU time, like the one returned by GET-INTERNAL-REAL-TIME
+```
 
 ## Requirements
 - Terminal with XTERM mouse tracking (iTerm, Xterm, etc.)
