@@ -174,9 +174,15 @@ Example:
 ```
 
 
-# Development roadmap
+## Development roadmap
 
-## more friendly behavior when called within SLIME/EMACS (BIFROST)
+### bug?
+
+in :RESCHEDULE SECONDS, SECONDS is currently evaluated every time the clause is triggered.
+Verify if this is what we want.
+
+
+### more friendly behavior when called within SLIME/EMACS (BIFROST)
 
 When click-testing flokkr from within SLIME/EMACS, you have to hit enter to force IO. This is 
 unintuitive/unfriendly to new users.
@@ -184,17 +190,17 @@ unintuitive/unfriendly to new users.
 Fix it with a well-placed FORCE-OUTPUT. But carefully consider impacts to the BIFROST debugging 
 mode API.
 
-## coordinating GC pauses
+### coordinating GC pauses
 
 Enable using FLOKKR to accept hints to signal ideal times for gc pauses to run. Exact syntax TBD.
 
-## ability for :INPUT clauses to yield
+### ability for :INPUT clauses to yield
 
 Ability for an input clause to decide NOT to handle a matched iput.
 
-# Development roadmap (icebox)
+## Development roadmap (icebox)
 
-## debouncing
+### debouncing
 
 Debouncing function to ensure something doesn't happen too frequently. Exact syntax TBD.
 
