@@ -1,87 +1,44 @@
 
-
-
-
-
-
-# DEVELOPMENT BACKLOG
-- [ ] BIFROST:%BIFROST-READ-ESCAPE-SEQUENCE & %READ-QUERY-CURSOR-POSITION-RESPONSE
-      should be tolerent of newlines (see: SKALD::%QUERY-TERMINAL-DIMENSIONS]
-- [ ] API change to reduce GC pressure
-     - [ ] audit skald codebase
-     - [ ] when RUNE-READ reads a complex rune, it should return just the token name, not a CONS
-           put the row/column in global vars
-     - [ ] RUNE-WRITE should not take a CONS. To deal with commands with different arity, 
-           split into multiple functions
-     - [ ] don't use FORMAT in RUNE-WRITE hotpath (it allocates strings)
-     - [ ] update skald to use new low-GC pressure API
-- [ ] RUNE-READ should "just work" when not wrapped in WITH-CBOX
-- [ ] update the docs to more clearly exlpain how special vars are updated
-      audit RUNE-READ & CBOX as well in the process
------- V1.0 here --------
-- [ ] read buffer should use a ring buffer instead of CONS, to lower GC pressure
-- [ ] add right click support
-- [ ] test click-drag events (1002)
-- [ ] test highlight text events (1001)
-- [ ] cleanup: clear *active-cbox-pressed* on the next event
-- [ ] sixel support, as needed for skald
-
---------------
-
-
 # BIFROST 🌈
 
-A Common Lisp library for reading/writing ASCII escape sequences.
-
-In Norse mythology, Bifrost is the rainbow bridge connecting Midgard (realm of mortals) 
-to Asgard (realm of gods). Similarly, Bifrost connects your Lisp program to terminal 
-emulators like Xterm, iTerm, OS X Terminal, TTYD, etc.
-
+BIFROST is a Common Lisp library for reading from & controlling the terminal. It is part of the 
+OLD-NORSE terminal toolkit.
 
 Key features:
  - Two-way mapping between s-expressions & raw ASCII escape sequences
+ - Low-level logic for XTERM mouse event tracking (this isn't officially part of the official ANSI standard but is widely adopted as defacto standard supported by most modern terminal emulators) & defining clickable regions of the screen.
  - Raw IO handling for faster communication with the terminal.
- - Supports mouse events via XTERM's mouse event tracking standard. This isn't
-   officially part of the official ANSI standard but is widely adopted as defacto standard
-   supported by modern terminal emulators
- - "CBOX" feature makes it easy to create chains of nested windows with clickable buttons
- - Development/debugging mode to troubleshoot terminal applications within SLIME/EMACS REPL
- 
- 
+ - Enter development/debugging mode to troubleshoot terminal applications within SLIME/EMACS REPL
 
+In Norse mythology, Bifrost 🌈 is the rainbow bridge connecting Midgard (realm of mortals) 
+to Asgard (realm of gods). Similarly, Bifrost connects your Lisp program to terminal emulators
+like Xterm, iTerm, OS X Terminal, TTYD, etc.
+ 
 # KEY CONCEPTS
 
 ## ESCAPE SEQUENCES
 
 Terminal emulators use ESCAPE SEQUENCES -- which are special multi-character sequences -- to 
-represent events that can't be represented with a single ASCII character, such as the user pressing
-an arrow key or moving the mouse. They also accept escape sequences from your program, in order to
-trigger low-level commands such as changing the background color or clearing the screen.
+represent events that can't be represented with a single ASCII character. For example, pressing
+an arrow key on the keyboard or moving the mouse. You can also use escape sequences to trigger low-level commands such as changing the background color or clearing the screen.
 
-RUNE-READ/RUNE-WRITE map between these special multi-character sequences & simple s-expressions
-in order to make it easier to interact with the terminal emulator from lisp.
+RUNE-READ/RUNE-WRITE map between escape sequences & simple s-expressions in order to make it easier to interact with the terminal emulator from lisp.
 
 ## RUNES
 
-RUNE-READ/RUNE-WRITE are like READ-CHAR/WRITE-CHAR except that they read/write "runes", which can
-be either of the following:
+RUNE-READ/RUNE-WRITE are like READ-CHAR/WRITE-CHAR except that they read/write "runes", which can be either of the following:
  - "Simple runes" which are characters like `#\a` or `#\Newline`
  - "Complex runes", which are list of the format  `` `(,NAME ,@PAYLOAD) `` that represent an
     escape sequence. Example: `(:MOVE-CURSOR row column)` or `(:UP-ARROW)`
 
 RUNE-CASE is like CASE, except that it makes it simpler to dispatch off of runes
 
-RUNE-READ always sets `*RUNE*` to the last rune read. If it was a complex rune, then `*RUNE-NAME*`
-& `*RUNE-PAYLOAD*` are also set to match. Otherwise they are set to NIL.
+RUNE-READ always sets `*RUNE*` to the last rune read. If it was a complex rune, then `*RUNE-NAME*` & `*RUNE-PAYLOAD*` are also set to match. Otherwise they are set to NIL.
 
    
 ## CBOXES
 
-If you define a click region with `REGISTER-CBOX!`, then raw mouse events such as
-`(:MOUSE-CLICK-LEFT row column)` are transformed into CBOX events such as 
-`(:CBOX-CLICK-LEFT row column)` & `*CBOX*` is set to the matched click region. There is also some
-logic added under the hood so that CBOX processing understands if a button is released or the
-click was aborted by moving off the button before releasing.
+If you define a click region with `REGISTER-CBOX!`, then raw mouse events such as `(:MOUSE-CLICK-LEFT row column)` are transformed into CBOX events such as `(:CBOX-CLICK-LEFT row column)` & `*CBOX*` is set to the matched click region. There is also some logic added under the hood so that CBOX processing understands if a button is released or the click was aborted by moving off the button before releasing.
 
 The CBOX related runes are:
   `(:CBOX-CLICK-LEFT row column)`
@@ -89,27 +46,23 @@ The CBOX related runes are:
   `(:CBOX-RELEASE-LEFT row column)`
     Left click & release. This is the usual thing to trigger buttonw
   `(:CBOX-UNCLICK-LEFT row column)`
-    When the user clicks, then moves off of the button region before releasing
-    in order to abort the click
+    When the user clicks, then moves off of the button region before releasing in order to abort the click
 
 
 ## RAW IO
 
-In order for RUNE-READ to work correctly, in you need to call it within 
-WITH-RUNE-RAW-IO. This is so that it can listen directly to the raw input events
+In order for RUNE-READ to work correctly, in you need to call it within  WITH-RUNE-RAW-IO. This is so that it can listen directly to the raw input events
 
 
 # SUPPORTED MOUSE EVENTS
-
-BIFROST assumes that the terminal supports:
- - XTERM mouse tracking mode 1000
- - SGR mode. This is needed so that mouse tracking works with large screens
 
 BIFROST has been tested with the following XTERM mouse tracking modes:
 - 1000 - basic left click/release actions
 - 1003 - hover-over events
 
-It has not yet been tested with:
+The terminal needs to support SGR mode. This is needed for mouse tracking works with large screens
+
+BIFROST has not yet been tested with:
  - XTERM 1001 mode for selecting blocks of text to implement features like cut/paste
  - XTERM 1002 mode, for click-drag events
  - right click
@@ -118,21 +71,13 @@ There is currently no plan to support the following:
  - mouse wheel scrolling
  - the middle mouse button
 
-
---------------
-
-Bifrost is a rainbow bridge that connects the realm of the gods, Asgard, to Midgard, the realm of mortals
- - Bifrost is made of fire & is said to be the strongest bridge ever built
- - The thunder god Thor was not allowed to use the bridge because he was so strong that he
-   could break it
- - The gods crossed Bifrost daily to meet and make decisions at the Well of Urd
- - Prophecy is that the bridge will be destroyed at the end of the world, Ragnarok, when the giants & the 
-   dead attack Asgard. Plan accordingly!!
-
 ---------------
 
 
 # QUICK START PLAYBOOK EXAMPLES
+
+Normally you would use the higher-level SKALD library. These examples show how the low-level
+BIFROST library works:
 
 
 ```
@@ -239,19 +184,16 @@ Debugging playbook
 
   `RUNE-WRITE (rune-or-char &optional (stream *terminal-io*))`
     - send `RUNE-OR-CHAR` to `STREAM`
-    - runes with no payload can be provided as a keyword or a list, so `:HIDE-CURSOR` &
-      `(:HIDE-CURSOR)` are treated as the same
+    - runes with no payload can be provided as a keyword or a list, so `:HIDE-CURSOR` & `(:HIDE-CURSOR)` are treated as the same 
     - see below for full dictionary of known tokens
 
   `*RUNE-WRITE-DEBUG-MODE*`
     - during normal mode, this should be set to `NIL`
     - set of to one of the following:
       `:ESCAPE-CONTROL`
-        print #\Esc as a readible ASCII. this is useful to inspect the control commands
-        you are sending the terminal & also for unit testing
+        print #\Esc as a readible ASCII. this is useful to inspect the control commands you are sending the terminal & also for unit testing
       `:NO-CONTROL`
-        supress escape sequences. filtering them out makes it easier to debug the rest
-        of your application
+        supress escape sequences. filtering them out makes it easier to debug the rest of your application
 
 
 
@@ -269,95 +211,64 @@ Reading from the terminal
   `RUNE-READ (&optional (stream *terminal-io*))`
     like `READ-CHAR`, except that:
       1. `STREAM` defaults to `*TERMINAL-IO*` instead of `*STANDARD-INPUT*`
-      2. Multi-character escape sequences are converted to s-expressions
-         we call the return value of `RUNE-READ` a "rune". A rune is either:
-         - a "simple rune", which is a character, as would be returned by `READ-CHAR`
-           (eg: `#\a` or `#\Newline`)
-         - a "complex rune", which is list of the format `(NAME . PAYLOAD)` representing an
-           escape sequence (eg: `(:MOVE-CURSOR ROW COLUMN)` or `(:UP-ARROW)`)
+      2. Multi-character escape sequences are converted to s-expressions we call the return value of `RUNE-READ` a "rune". A rune is either:
+         - a "simple rune", which is a character, as would be returned by `READ-CHAR` (eg: `#\a` or `#\Newline`)
+         - a "complex rune", which is list of the format `(NAME . PAYLOAD)` representing an escape sequence (eg: `(:MOVE-CURSOR ROW COLUMN)` or `(:UP-ARROW)`)
       3. `*RUNE*` is set to match the last rune read
-      4. if the last rune was a complex rune, then `*RUNE-NAME*` & `*RUNE-PAYLOAD*` are set
-         to match. if it was a simple rune they are set to NIL
+      4. if the last rune was a complex rune, then `*RUNE-NAME*` & `*RUNE-PAYLOAD*` are set to match. if it was a simple rune they are set to NIL
      - There is another special behavior: if a mouse events like `(:MOUSE-CLICK-LEFT row column)` 
-     activates a CBOX (which is a rectangular click region defined by the user), then a CBOX
-     related event like `(:CBOX-CLICK-LEFT row column)` is sent instead
+     activates a CBOX (which is a rectangular click region defined by the user), then a CBOX related event like `(:CBOX-CLICK-LEFT row column)` is sent instead
        - for more about this, see: `WITH-BIFROST-CBOX` & `REGISTER-CBOX!`
       
   `RUNE-READ-NO-HANG (&optional (stream *terminal-io*))`
-    - like `RUNE-READ` excect that if if there's nothing to read, then it returns `NIL`
-      instead of hanging. This is the `READ-CHAR-NO-HANG` version of `RUNE-READ`
-    - NOTE: `RUNE-READ-NO-HANG` actually does do a very small amount of hanging when
-      processing escape sequences (see `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
+    - like `RUNE-READ` excect that if if there's nothing to read, then it returns `NIL` instead of hanging. This is the `READ-CHAR-NO-HANG` version of `RUNE-READ`
+    - NOTE: `RUNE-READ-NO-HANG` actually does do a very small amount of hanging when processing escape sequences (see `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
       
   `*RUNE*`
   `*RUNE-NAME*`
   `*RUNE-PAYLOAD*`
-    these 3 variables are set by `RUNE-READ` & `RUNE-READ-NO-HANG` to match the last rune
-    that was read
+    these 3 variables are set by `RUNE-READ` & `RUNE-READ-NO-HANG` to match the last rune that was read
 
   `*RUNE-READ-POLL-FREQUENCY*`
     - this is how frequently RUNE-READ should poll the input stream for the next characer
-    - used by RUNE-READ, & also used `RUNE-READ-NO-HANG` while parsing escape sequences
-      (see `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
+    - used by RUNE-READ, & also used `RUNE-READ-NO-HANG` while parsing escape sequences (see `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
 
   `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*`
-    - the only way to tell the difference between an escape sequence & the user hitting ESC
-      is to both (1) see if the characters that come next match a known escape sequence &
-      (2) track the delay between characters (escape sequences should send all the characters
-      at once). This parameter controls how many seconds to wait between characters before
-      deciding that a sequence of valid escape sequence characters was sent too slowly to be an
-      escape sequence
+    - the only way to tell the difference between an escape sequence & the user hitting ESC is to both (1) see if the characters that come next match a known escape sequence & (2) track the delay between characters (escape sequences should send all the characters at once). This parameter controls how many seconds to wait between characters before deciding that a sequence of valid escape sequence characters was sent too slowly to be an escape sequence
     - it is used by both `RUNE-READ` & `RUNE-READ-NO-HANG` to process escape sequences
-    - if you set `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` to NIL, then you can enter escape
-      sequences character-by-character by hand for testing/debugging purposes
+    - if you set `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` to NIL, then you can enter escape sequences character-by-character by hand for testing/debugging purposes
 
 Managing the read buffer:
 
   `FLUSH-RUNE-READ-BUFFER (&key (stream *terminal-io*))`
-   - clears both `*RUNE-READ-BUFFER*` & any input buffered in `STREAM`, so that neither are
-     detected by future calls to `RUNE-READ` or `RUNE-READ-NO-HANG`
+   - clears both `*RUNE-READ-BUFFER*` & any input buffered in `STREAM`, so that neither are detected by future calls to `RUNE-READ` or `RUNE-READ-NO-HANG`
    - returns 2 values:
        1. the number of characters flushed from `*RUNE-READ-BUFFER*`
        2. the number of characters flushed from `STREAM`
-   - make sure to call this when starting a new terminal session so that data from the previous
-     session doesn't leak into the new one
-   - NOTE: the read buffer is not reset when RUNE-READ is called on different streams.
-     practically, this shouldn't be an issue, since the library is intended to be used
-     exclusively with `*TERMINAL-IO*`. However, it could cause a gnarly bug if you try switching
-     between streams without calling `FLUSH-RUNE-READ-BUFFER`.
-     So call `FLUSH-RUNE-READ-BUFFER`. That's the workaround for now
+   - make sure to call this when starting a new terminal session so that data from the previous session doesn't leak into the new one
+   - NOTE: the read buffer is not reset when RUNE-READ is called on different streams. practically, this shouldn't be an issue, since the library is intended to be used exclusively with `*TERMINAL-IO*`. However, it could cause a gnarly bug if you try switching between streams without calling `FLUSH-RUNE-READ-BUFFER`. So call `FLUSH-RUNE-READ-BUFFER`. That's the workaround for now
 
   `*RUNE-READ-BUFFER*`
-   - a read buffer that stores characterss read from stream but not yet processed by 
-     `RUNE-READ`. This is needed to allow backtracking from multi-char sequences that might be
-     by but aren't an understood escape sequence
-   - Note: if the read buffer contains an escape sequence, you many see the literal characters
-     (starting with `#\esc`) when inspecting `*RUNE-READ-BUFFER*` even though the next call to
-     `RUNE-READ` or `RUNE-READ-NO-HANG` would return a rune instead (consuming those chars)
+   - a read buffer that stores characterss read from stream but not yet processed by `RUNE-READ`. This is needed to allow backtracking from multi-char sequences that might be by but aren't an understood escape sequence
+   - Note: if the read buffer contains an escape sequence, you many see the literal characters (starting with `#\esc`) when inspecting `*RUNE-READ-BUFFER*` even though the next call to `RUNE-READ` or `RUNE-READ-NO-HANG` would return a rune instead (consuming those chars)
 
 
 Setup: tracking mouse events
 
   `WITH-MOUSE-TRACKING ((&optional (mode 1000) (stream *terminal-io*)) &body body)`
-    - instruct the terminal to capture & send mouse tracking events, via XTERM mouse tracking
-      standard, then turn it off when done executing `BODY`
+    - instruct the terminal to capture & send mouse tracking events, via XTERM mouse tracking standard, then turn it off when done executing `BODY`
     - currently, the only support mode is 1000 (currently 1001, 1002, 1003, are unsupported)
 
   `*BIFROST-MOUSE-TRACKING-MODE*`
-    - if within `WITH-BIFROST-MODE-MOUSE-TRACKING-MODE` this will be the mode, otherwise it will
-      be `NIL`. Currently mode 1000 is the only supported mode.
+    - if within `WITH-BIFROST-MODE-MOUSE-TRACKING-MODE` this will be the mode, otherwise it will be `NIL`. Currently mode 1000 is the only supported mode.
 
 
 Defining & managing CBOX click regions
 
   `WITH-BIFROST-CBOX (reset-p &body body)`
-    - setup so that `REGISTER-CBOX!`, `LOOKUP-CBOX`, `CBOX-READ` & `CBOX-READ-NO-HANG` can be
-      called within `BODY`
-    - if `RESET-P` is non-null, then a brand new context stack is created, forgetting about
-      any CBOXES defined outside of the scope of this form. Run this when initializing a new
-      screen or popup that takes over the entire screen
-    - if `RESET-P` is null, then the current context binding is inherited & will be matched.
-      Use this when a subscreen or popup builds upon a main screen.
+    - setup so that `REGISTER-CBOX!`, `LOOKUP-CBOX`, `CBOX-READ` & `CBOX-READ-NO-HANG` can be called within `BODY`
+    - if `RESET-P` is non-null, then a brand new context stack is created, forgetting about any CBOXES defined outside of the scope of this form. Run this when initializing a new screen or popup that takes over the entire screen
+    - if `RESET-P` is null, then the current context binding is inherited & will be matched. Use this when a subscreen or popup builds upon a main screen.
     - once `WITH-BIFROST-CBOX` returns, CBOXES registed by `REGISTER-CBOX!` within `BODY` will be
       forgotten
 
@@ -371,8 +282,7 @@ Defining & managing CBOX click regions
   `*CBOX-MAX-ROW*`
   `*CBOX-MAX-COLUMN*`
     - these are the default rectangular coordinates used by `REGISTER-CBOX!`
-    - they are intended to be set by code drawing to the screen (such as `SKALD:SPRITE` before calling
-      `REGISTER-CBOX!` to make it easier for CBOX regions to match what is drawn on the screen
+    - they are intended to be set by code drawing to the screen (such as `SKALD:SPRITE` before calling `REGISTER-CBOX!` to make it easier for CBOX regions to match what is drawn on the screen
 
 
 Reading mouse/touch events from the terminal
@@ -406,8 +316,7 @@ Debugging in the REPL:
 
   `*RUNE-READ-DEBUG-MODE*`
     - during normal mode, this should be set to NIL
-    - set it to `T` to enter a special debugging mode that enables you to read
-      characters entered into the SLIME/EMACS REPL. In this mode:
+    - set it to `T` to enter a special debugging mode that enables you to read characters entered into the SLIME/EMACS REPL. In this mode:
          1. raw IO is turned off, so `WITH-RUNE-RAW-IO` just acts like `PROGN`
          2. it uses call to `READ-LINE` to bypass the SLIME REPL line buffer
             this means that calls to `RUNE-READ-NO-HANG` are blocking, & that a newline is
@@ -416,9 +325,7 @@ Debugging in the REPL:
 
   `*RUNE-READ-DEBUG-LITERAL-CHAR*`
     - defaults to `#\~`
-    - when in debug mode, this character instructs RUNE-READ to read a literal value
-      using `COMMON-LISP:READ`. This allows you to send rune literals to `RUNE-READ` when
-      debugging/troubleshooting in the REPL
+    - when in debug mode, this character instructs RUNE-READ to read a literal value using `COMMON-LISP:READ`. This allows you to send rune literals to `RUNE-READ` when debugging/troubleshooting in the REPL
 
 
 
@@ -442,14 +349,11 @@ Debugging in the REPL:
 ## Advanced features
 
   `RUNE-WRITE-RAW (&optional (stream *terminal-io*))`
-    just like `RUNE-READ` except that responses from sending queries such as
-    `:QUERY-TERMINAL-SIZE` are not read or parsed.
+    just like `RUNE-READ` except that responses from sending queries such as `:QUERY-TERMINAL-SIZE` are not read or parsed.
     
   `RUNE-READ-RAW (&optional (stream *terminal-io*))`
   `RUNE-READ-RAW-NO-HANG (&optional (stream *terminal-io*))`
-    these two functions are just like `RUNE-READ` / `RUNE-READ-NO-HANG` except that mouse
-    events (like `:MOUSE-CLICK-LEFT`) are NOT converted to CBOX events (like `:CBOX-CLICK-LEFT`)
-    when a CBOX is matched
+    these two functions are just like `RUNE-READ` / `RUNE-READ-NO-HANG` except that mouse events (like `:MOUSE-CLICK-LEFT`) are NOT converted to CBOX events (like `:CBOX-CLICK-LEFT`) when a CBOX is matched
 
 
 ---------------
@@ -458,8 +362,7 @@ Debugging in the REPL:
 
 ## A NOTE ABOUT SYNTAX
 
-RUNE-WRITE treats keywords as one-element lists as equivalent. So, for example, :QUERY-DIMENSIONS
-and (:QUERY-DIMENSIONS) are treated the same.
+RUNE-WRITE treats keywords as one-element lists as equivalent. So, for example, :QUERY-DIMENSIONS and (:QUERY-DIMENSIONS) are treated the same.
 
 
 ## COLORS
@@ -501,10 +404,8 @@ These are the understood colors:
                                 ESC [ column D
 
 Notes:
- - with not payload, :MOVE-CURSOR moves the cursor to the home position (upper left hand corner);
-   with payload, it moves the cursor to an abslution position
- - :NUDGE-CURSOR moves it relative to the current position. Under the hood, it sends multiple
-    escape sequences
+ - with not payload, :MOVE-CURSOR moves the cursor to the home position (upper left hand corner); with payload, it moves the cursor to an abslution position
+ - :NUDGE-CURSOR moves it relative to the current position. Under the hood, it sends multiple escape sequences
  - RUNE-READ does not currently support the return sequence for :QUERY-CURSOR-POSITION
 
 
@@ -521,11 +422,9 @@ Notes:
 
 ## MOUSE TRACKING
 
-Turn on/off mouse tracking modes. MODE should be 1000, 1002, or 1003. Currently, only mode 1000
-is fully supported by RUNE-READ
+Turn on/off mouse tracking modes. MODE should be 1000, 1002, or 1003. Currently, only mode 1000 is fully supported by RUNE-READ
 
-SGR mode is needed to support large screen sizes. WITH-MOUSE-TRACKING enables it
-by default
+SGR mode is needed to support large screen sizes. WITH-MOUSE-TRACKING enables it by default
 
   RUNE-TOKEN                       ESCAPE SEQ              NOTES
   ----------------------------------------------------------------------------------------
@@ -594,8 +493,7 @@ by default
 
 ## MOUSE EVENTS
 
-by default, WITH-MOUSE-TRACKING enables SGR mode. In SGR mode, integers are encoded in
-multi-character sequences (like the kind you would pass to PARSE-INTEGER):
+by default, WITH-MOUSE-TRACKING enables SGR mode. In SGR mode, integers are encoded in multi-character sequences (like the kind you would pass to PARSE-INTEGER):
 
   ESCAPE SEQ                     RUNE
   ---------------------------------------------
@@ -617,16 +515,13 @@ multi-character sequences (like the kind you would pass to PARSE-INTEGER):
   ESC [ < 35 ; column ; row m    (:MOUSE-MOVE         row column)
 
       
-NOTE:there are multiple ways to trigger events that indicate that the mouse was released. BIFROST 
-coerces them all to the same :MOUSE-RELEASE event for portability, to abstract away 
+NOTE:there are multiple ways to trigger events that indicate that the mouse was released. BIFROST coerces them all to the same :MOUSE-RELEASE event for portability, to abstract away 
 inconsistencies between different terminals.
 
 
 # LEGACY MOUSE EVENTS MODE (FOR REFERENCE ONLY)
 
-If SGR mode was disabled, then button/row/column values would be encoded in a single ASCII char,
-creating the limitation of only being able to go up to a certain row/column value. Support for 
-this mode has been turned OFF, but FWIW here is how the mapping would work for reference:
+If SGR mode was disabled, then button/row/column values would be encoded in a single ASCII char, creating the limitation of only being able to go up to a certain row/column value. Support for this mode has been turned OFF, but FWIW here is how the mapping would work for reference:
 
   ESCAPE SEQ                  RUNE
   --------------------------------------
@@ -641,8 +536,7 @@ this mode has been turned OFF, but FWIW here is how the mapping would work for r
 
 ## CBOX EVENTS
 
-If a CBOX is matched (see `WITH-BIFROST-CBOX` & `REGISTER-CBOX`) then a CBOX event will be
-returned instead:
+If a CBOX is matched (see `WITH-BIFROST-CBOX` & `REGISTER-CBOX`) then a CBOX event will be returned instead:
 
   (:CBOX-CLICK-LEFT   row column)
   (:CBOX-RELEASE-LEFT row column)
@@ -653,8 +547,7 @@ These are something made by BIFROST. They aren't part of the ANSI standard.
 
 ## MISC EVENTS
 
-These are the responses to querying terminal dimensions ("ESC[18t") & querying cursor position
-("ESC(6n"):
+These are the responses to querying terminal dimensions ("ESC[18t") & querying cursor position ("ESC(6n"):
 
   ESCAPE SEQ                         RUNE
   ------------------------------------------------------------------------------
@@ -666,9 +559,7 @@ These are the responses to querying terminal dimensions ("ESC[18t") & querying c
 
 # MORE ABOUT XTERM MOUSE EVENT TRACKING
 
-mouse event tracking is defined as part of the xterm control sequences, which are widely
-adopted as a defacto standard by modern terminal emulators, but not part of the official
-ANSI standard
+mouse event tracking is defined as part of the xterm control sequences, which are widely adopted as a defacto standard by modern terminal emulators, but not part of the official ANSI standard
 
 here is some documentation, mostly taken or paraphrased from:
 
@@ -709,26 +600,16 @@ here is how to parse the button state:
       4=Shift
       8=Meta
       16=Control
-    - Note however that the shift and control bits are normally unavailable because xterm
-      uses the control modifier with mouse for popup menus, and the shift modifier is used
-      in the default translations for button events.
-    - The Meta modifier recognized by xterm is the mod1 mask, and is not necessarily the
-      "Meta" key (see xmodmap).
+    - Note however that the shift and control bits are normally unavailable because xterm uses the control modifier with mouse for popup menus, and the shift modifier is used in the default translations for button events.
+    - The Meta modifier recognized by xterm is the mod1 mask, and is not necessarily the "Meta" key (see xmodmap).
       Bits
     Bits 6-7: drag state
 
-Note: Wheel mice may return buttons 4 and 5. Those buttons are represented by the same event1
-codes as buttons 1 and 2 respectively, except that 64 is added to the event code. Release
-events for the wheel buttons are not reported.
+Note: Wheel mice may return buttons 4 and 5. Those buttons are represented by the same event codes as buttons 1 and 2 respectively, except that 64 is added to the event code. Release events for the wheel buttons are not reported.
 
 Motion events are reported only if the mouse pointer has moved to a different character cell.
   * On button press or release, xterm sends the same codes used by normal tracking mode.
-  * On button-motion events, xterm adds 32 to the event code (the third character, C b )
-    The other bits of the event code specify button and modifier keys as in normal mode.
-    For example, motion into cell x,y with button 1 down is reported as ESC M @ {x} {y}
-    where @ = 32 + 0 (button 1) + 32 (motion indicator)
-    Similarly, motion with button 3 down is reported as ESC M {b} {x} {y}
-    where B = 32 + 2 (button 3) + 32 (motion indicator)
+  * On button-motion events, xterm adds 32 to the event code (the third character, C b ). The other bits of the event code specify button and modifier keys as in normal mode. For example, motion into cell x,y with button 1 down is reported as ESC M @ {x} {y} where @ = 32 + 0 (button 1) + 32 (motion indicator) Similarly, motion with button 3 down is reported as ESC M {b} {x} {y} where B = 32 + 2 (button 3) + 32 (motion indicator)
 
 Example Click Events:
 
@@ -743,14 +624,21 @@ Example Click Events:
      - <button> = 35 (3 + 32 for button release)
 
 To differentiate a click from a drag, you can track the sequence of events:
-  1. a click consists of a button press (<button> = 32/33/34) followed immediately by a
-     button release (<button> = 35/36/37) without any intervening drag events.
-  2. A drag involves button press followed by one or more drag events
-     (<button> values including the drag bit) before the release
+  1. a click consists of a button press (<button> = 32/33/34) followed immediately by a button release (<button> = 35/36/37) without any intervening drag events.
+  2. A drag involves button press followed by one or more drag events (<button> values including the drag bit) before the release
 
 
-UPDATE: I'm also seeing terminals return sequences ending in "m" to indicate mouse button
-instead of using button event 3. Eg:
+UPDATE: I'm also seeing terminals return sequences ending in "m" to indicate mouse button instead of using button event 3. Eg:
 
   ESC [ < 0  ; column ; row M    (:MOUSE-CLICK-LEFT   row column)
   ESC [ < 0  ; column ; row m    (:MOUSE-RELEASE      row column)
+
+
+-----------
+
+
+Bifrost is a rainbow bridge that connects the realm of the gods, Asgard, to Midgard, the realm of mortals
+ - It is made of fire & is said to be the strongest bridge ever built
+ - The thunder god Thor was not allowed to use the bridge because he was so strong that he could break it
+ - The gods crossed it daily to meet and make decisions at the Well of Urd
+ - Prophecy is that the bridge will be destroyed at the end of the world, Ragnarok, when the giants & the  dead attack Asgard. So plan accordingly!!
