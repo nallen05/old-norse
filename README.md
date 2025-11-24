@@ -19,7 +19,7 @@ You can build:
 
 ## Libraries
 
-### [Bifrost](bifrost/) 🌈 - [README](bifrost/README.md)
+### [Bifrost](bifrost/) 🌈
 Low-level terminal I/O and escape sequence handling
 - Lisp API for reading from & controlling the terminal
 - Low-level support for mouse event tracking
@@ -27,14 +27,14 @@ Low-level terminal I/O and escape sequence handling
   within SLIME/EMACS or other REPL)
 
 
-### [Skald](skald/) - [README](skald/README.md)
+### [Skald](skald/)
 High-level terminal UI and animation framework
 - Treat blocks of ASCII and unicode text as sprites
 - Supports features like grid-based positioning/layout, colors, transparancy, emojis, etc
 - Optimizes screen updates to minimizes flicker when redrawing
 
 
-### [Flokkr](flokkr/) - [README](flokkr/README.md)
+### [Flokkr](flokkr/)
 Cooperative multitasking library, purpose built for BIFROST applications
 - Manage complex timing loops
 - Respond instantly to user input
