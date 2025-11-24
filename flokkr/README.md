@@ -1,15 +1,11 @@
 
 # Problem Statement
 
-Terminal UI applications require concurrency: different screen components need to be able to 
-update at different timings (eg: a CPU monitoring graph updatin at 10hz & a status panel updating 
-at 1hz after 1 second initialization period), while simultaneously also providing immediate 
-responsiveness to user input. However, terminal IO itself is single threaded.
+Terminal UI applications require concurrency: different screen components need to be able to update at different timings (eg: a CPU monitoring graph updating at 10hz & a status panel updating at 1hz after 1 second initialization period), while simultaneously also providing immediate responsiveness to user input. However, terminal IO itself is single threaded.
 
 # FLOKKR
 
-FLOKKR is a cooperative multitasking library for Common Lisp, purpose-built for building 
-interactive terminal UI applications using BIFROST. It is part of the OLD-NORSE Terminal Toolkit.
+FLOKKR is a cooperative multitasking library for Common Lisp, purpose-built for building interactive terminal UI applications using BIFROST. It is part of the OLD-NORSE Terminal Toolkit.
 
 FLOKKR is implementation-dependent on SBCL.
 
@@ -70,10 +66,8 @@ Clauses are defined using a keyword mini-language (inspired by the LOOP macro):
 
  - :AFTER INIT - Initial delay (optional, default 0)
  - :DO FORMS - Body forms (implicit PROGN, multiple forms can follow)
- - :RESCHEDULE SECONDS - SECONDS is evaluated once. Repeat at that interval. If SECONDS is NIL,
-   then don’t repeat.
- - :RESCHEDULE-DYNAMIC - the last form of FORMS should return seconds (to reschedule),
-   or NIL to stop
+ - :RESCHEDULE SECONDS - SECONDS is evaluated once. Repeat at that interval. If SECONDS is NIL, then don’t repeat.
+ - :RESCHEDULE-DYNAMIC - the last form of FORMS should return seconds (to reschedule), or NIL to stop
 
 Examples:
 
@@ -98,8 +92,7 @@ Examples:
 
 :ALSO runs FORMS if a flokkr clause *above* it was triggered in the same tick.
  - :ALSO is unaware of what happens below it.
- - :INPUT clauses only trigger :ALSO when a case actually matches. So if :INPUT runs but doesn’t
-   match anything specific, that *won’t* cause :ALSO to run.
+ - :INPUT clauses only trigger :ALSO when a case actually matches. So if :INPUT runs but doesn’t match anything specific, that *won’t* cause :ALSO to run.
 
 Example:
 ```lis;
@@ -111,9 +104,7 @@ Example:
 
 ## Named timers
 
-The :WITH-NAMED-TIMER keyword allows you to expose the name of a timer, so that it can be 
-delayed/accelerated/cancelled/rescheduled by other clauses within the same FLOKKR/SUBFLOKKR 
-form.
+The :WITH-NAMED-TIMER keyword allows you to expose the name of a timer, so that it can be delayed/accelerated/cancelled/rescheduled by other clauses within the same FLOKKR/SUBFLOKKR form.
 
 Example:
 
@@ -135,16 +126,13 @@ Example:
 Macros for manipulating timers:
 
 `FLOKKER-RESCHEDULE(timer seconds-or-nil)`
-A macro. Used to reschedule a named timer to a new ITU time. Positive numbers set the timer that
-many seconds in the future. 
+A macro. Used to reschedule a named timer to a new ITU time. Positive numbers set the timer that many seconds in the future. 
  - Zero (or a negative number) is treated as now, making the timer ready to fire.
  - If SECONDS-OR-NIL is NIL, it turns the timer off, preventing it from firing.
 
 `FLOKKER-DELAY(timer seconds-or-nil)`
 A macro. Used to delay or accelerate an active timer. 
- - Positive numbers delay it by that many seconds. Negative numbers accelerate it back that many 
-   seconds. If it is pulled back to the current time or a time in the past, it becomes ready to 
-   fire 
+ - Positive numbers delay it by that many seconds. Negative numbers accelerate it back that many seconds. If it is pulled back to the current time or a time in the past, it becomes ready to fire 
  - If SECONDS-OR-NIL is NIL, it turns the timer off, preventing it from firing again.
  - If TIMER was already NIL, then the timer stays off. It won’t be turned back on.
 
@@ -153,11 +141,9 @@ A macro. Used to delay or accelerate an active timer.
 # Composing subflokkrs
 
 `SUBFLOKKR (&rest clauses)`
-A macro. Used to define subflokkrs that can be run by FLOKKR-MAIN (or by other subflokkrs) via the
-:SUBFLOKKR keyword.
+A macro. Used to define subflokkrs that can be run by FLOKKR-MAIN (or by other subflokkrs) via the :SUBFLOKKR keyword.
 
-Useful for defining the behavior of widgets or state machines separately, then composing them 
-later.
+Useful for defining the behavior of widgets or state machines separately, then composing them later.
 
 Example: 
 
@@ -170,38 +156,4 @@ Example:
 (flokkr-main
   (:subflokkr player-notifications-widget user)
   (:also (render-screen))
-
 ```
-
-
-## Development roadmap
-
-### bug?
-
-in :RESCHEDULE SECONDS, SECONDS is currently evaluated every time the clause is triggered.
-Verify if this is what we want.
-
-
-### more friendly behavior when called within SLIME/EMACS (BIFROST)
-
-When click-testing flokkr from within SLIME/EMACS, you have to hit enter to force IO. This is 
-unintuitive/unfriendly to new users.
-
-Fix it with a well-placed FORCE-OUTPUT. But carefully consider impacts to the BIFROST debugging 
-mode API.
-
-### coordinating GC pauses
-
-Enable using FLOKKR to accept hints to signal ideal times for gc pauses to run. Exact syntax TBD.
-
-### ability for :INPUT clauses to yield
-
-Ability for an input clause to decide NOT to handle a matched iput.
-
-## Development roadmap (icebox)
-
-### debouncing
-
-Debouncing function to ensure something doesn't happen too frequently. Exact syntax TBD.
-
-I'm not sure we need additional logic for this.
