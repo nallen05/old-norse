@@ -2,7 +2,7 @@
 
 
 
-# OLD-NORSE Terminal Toolkit
+# Old Norse: Terminal Toolkit
 
 OLD-NORSE is collection of Common Lisp libraries for building interactive terminal UI applications
 that:
@@ -19,7 +19,7 @@ You can build:
 
 ## Libraries
 
-### [Bifrost](bifrost/README.md) 🌈
+### [Bifrost](bifrost/) 🌈 - [README](bifrost/README.md)
 Low-level terminal I/O and escape sequence handling
 - Lisp API for reading from & controlling the terminal
 - Low-level support for mouse event tracking
@@ -27,17 +27,17 @@ Low-level terminal I/O and escape sequence handling
   within SLIME/EMACS or other REPL)
 
 
-### [Skald](skald/README.md)
+### [Skald](skald/) - [README](skald/README.md)
 High-level terminal UI and animation framework
 - Treat blocks of ASCII and unicode text as sprites
 - Supports features like grid-based positioning/layout, colors, transparancy, emojis, etc
 - Optimizes screen updates to minimizes flicker when redrawing
 
 
-### [Flokkr](flokkr/README.md)
+### [Flokkr](flokkr/) - [README](flokkr/README.md)
 Cooperative multitasking library, purpose built for BIFROST applications
 - Manage complex timing loops
-- Respond instantlt to user input
+- Respond instantly to user input
 - Define widget & state-machine behaviors seperately then compose via subflockkrs
 
 
@@ -48,8 +48,9 @@ Very simple debugging utility.
 - Read the output with [netcat](https://en.wikipedia.org/wiki/Netcat) to debug without disrupting the terminal UI
 
 
-### OLD-NORSE
-You can load all of the OLD-NORSE libraries via `(require :old-norse)
+### Old Norse
+You can load all of these libraries via `(require :old-norse)
+
 
 ## Quick Start
 
@@ -162,7 +163,7 @@ related logic together.
    via SUBFLOKKR, but within rigid constraints of chaining via :SUBFLOKKR help to prevent hidden
    scheduling issues.
 
-## Other recommended conventions
+## Recommended conventions
 
 We have found the following prefix naming convention to be useful to use with this library:
 
@@ -184,6 +185,10 @@ We have found the following prefix naming convention to be useful to use with th
 ## Status
 
 v0.0 - Core API subject to change
+
+## Alternatives
+
+[cl-tuition](https://github.com/atgreen/cl-tuition)
 
 ## License
 
