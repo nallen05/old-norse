@@ -6,10 +6,8 @@
 
 (in-package :skald-test)
 
-(setf swordbreaker::*muffle-test-errors-p* nil)
+;; (setf shieldwall::*shieldwall-suppress-errors-p* nil)
 
-(shieldwall:shieldwall :try fooo
-                       :expect foo)
 
 ;;;; clickaround test for CBOX integration
 #+nil
@@ -45,9 +43,9 @@
 
 
 
-(swordbreaker:with-test-group "SPAN, SPRITE, WINDOW, GRID"
+(shieldwall:with-shield-group "SPAN, SPRITE, WINDOW, GRID"
 
-  (swordbreaker:with-test-group "SPAN/:SPAN"
+  (shieldwall:with-shield-group "SPAN/:SPAN"
         
         ;;;; clickaround tests
         ;; do the colors look good?
@@ -67,9 +65,10 @@
 	               (:with-foreground  :cyan
 	                 "buzz")))))
 
-
+    
          ;;;; unit tests
-        (swordbreaker:test "\\x1B[6;7Hfoobarbaz"
+    (shieldwall:shield "span as strings"
+                       "\\x1B[6;7Hfoobarbaz"
                            (skald:with-skald-test (:override-terminal-size '(24 80)
                                                    :debug-mode :escape-control
                                                    :output nil)
@@ -77,20 +76,20 @@
 		                           (skald:span (6 7)
 		                             "foo"
 		                             "bar"
-		                             "baz")))
-		                       :test #'equal)
+		                             "baz"))))
 
-        (swordbreaker:test "\\x1B[6;7Honetwothree"
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :escape-control
-                                                   :output nil)
-		                         (skald:skald-draw (:force-overlay)
-		                           (skald:span (6 7)
-		                             (format nil "~%one~%two~%three~%"))))
-		                       :test #'equal)
+    (shieldwall:shield "span as newlines"
+                       "\\x1B[6;7Honetwothree"
+                       (skald:with-skald-test (:override-terminal-size '(24 80)
+                                               :debug-mode :escape-control
+                                               :output nil)
+		                     (skald:skald-draw (:force-overlay)
+		                       (skald:span (6 7)
+		                         (format nil "~%one~%two~%three~%")))))
 
-        (swordbreaker:test "\\x1B[43m\\x1B[6;7Hfoo\\x1B[31m bar\\x1B[37m baz\\x1B[34m buzz\\x1B[40m\\x1B[37m boof"
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
+    (shieldwall:shield "span with colors"
+                       "\\x1B[43m\\x1B[6;7Hfoo\\x1B[31m bar\\x1B[37m baz\\x1B[34m buzz\\x1B[40m\\x1B[37m boof"
+                       (skald:with-skald-test (:override-terminal-size '(24 80)
                                                    :debug-mode :escape-control
                                                    :output nil)
 		                         (skald:skald-draw (:force-overlay)
@@ -103,8 +102,7 @@
 			                               " baz")
 			                             (:with-foreground  :blue
 			                               " buzz"))
-		                            " boof")))
-		                      :test #'equal)
+		                            " boof"))))
 
     ;; confirm the alignment creates a straight vertical lign
     #+nil
@@ -130,7 +128,8 @@
         (skald:span (7 8) "|")))
 
 
-    (swordbreaker:test "\\x1B[3;9H|\\x1B[4;9H|VEN_NUM\\x1B[5;5HEVEN|NUM\\x1B[6;6HEVE|_NUM\\x1B[7;2HEVEN_NU|\\x1B[8;9H|"
+    (shieldwall:shield "span alignment (even width)"
+                       "\\x1B[3;9H|\\x1B[4;9H|VEN_NUM\\x1B[5;5HEVEN|NUM\\x1B[6;6HEVE|_NUM\\x1B[7;2HEVEN_NU|\\x1B[8;9H|"
                        (skald:with-skald-test (:override-terminal-size '(24 80)
                                                :debug-mode :escape-control
                                                :output nil)
@@ -140,39 +139,38 @@
 		                       (skald:span (5 9 :align :center-left) "EVEN|NUM")
 		                       (skald:span (6 9 :align :center-right) "EVE|_NUM")
 		                       (skald:span (7 9 :align :right) "EVEN_NU|")
-		                       (skald:span (8 9) "|")))
-		                   :test #'equal)
+		                       (skald:span (8 9) "|"))))
 
-      (swordbreaker:test "\\x1B[3;9H|\\x1B[4;9H|DD_NUM\\x1B[5;5HODD_|UM\\x1B[6;5HODD_|UM\\x1B[7;3HODD_NU|\\x1B[8;9H|"
+    (shieldwall:shield "span alignment (odd width)"
+                       "\\x1B[3;9H|\\x1B[4;9H|DD_NUM\\x1B[5;5HODD_|UM\\x1B[6;5HODD_|UM\\x1B[7;3HODD_NU|\\x1B[8;9H|"
+                       (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :escape-control
+                                               :output nil)
+		                     (skald:skald-draw (:force-overlay)
+		                       (skald:span (3 9) "|")
+		                       (skald:span (4 9 :align :left) "|DD_NUM")
+		                       (skald:span (5 9 :align :center-left) "ODD_|UM")
+		                       (skald:span (6 9 :align :center-right) "ODD_|UM")
+		                       (skald:span (7 9 :align :right) "ODD_NU|")
+		                       (skald:span (8 9) "|"))))
+
+    (shieldwall:shield "INVESTIGATE THIS TEST"
+                       '(2 4 3 13)
+                       (progn
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
                                                  :output nil)
-		                       (skald:skald-draw (:force-overlay)
-		                         (skald:span (3 9) "|")
-		                         (skald:span (4 9 :align :left) "|DD_NUM")
-		                         (skald:span (5 9 :align :center-left) "ODD_|UM")
-		                         (skald:span (6 9 :align :center-right) "ODD_|UM")
-		                         (skald:span (7 9 :align :right) "ODD_NU|")
-		                         (skald:span (8 9) "|")))
-		                     :test #'equal)
-
-      (swordbreaker:test '(2 4 3 13)
-                         (progn
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :escape-control
-                                                   :output nil)
-                             (skald:skald-draw (:force-overlay)
-                               (skald:span (2 4)
-                                 "123456"
-                                 "789")))
-                           (list bifrost:*cbox-min-row*
-                                 bifrost:*cbox-min-column*
-                                 bifrost:*cbox-max-row*
-                                 bifrost:*cbox-max-column*))
-                         :test #'equal)
+                           (skald:skald-draw (:force-overlay)
+                             (skald:span (2 4)
+                               "123456"
+                               "789")))
+                         (list bifrost:*cbox-min-row*
+                               bifrost:*cbox-min-column*
+                               bifrost:*cbox-max-row*
+                               bifrost:*cbox-max-column*)))
     )
 
-  (swordbreaker:with-test-group "SPRITE/:SPRITE tests"
+  (shieldwall:with-shield-group "SPRITE/:SPRITE tests"
       
       ;;;; clickaround tests
       #+nil
@@ -201,30 +199,28 @@
 
 
         ;;;; unit tests   
-      (swordbreaker:test "\\x1B[6;7Hfoo\\x1B[7;7Hbar\\x1B[8;7Hbaz"
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
+    (shieldwall:shield "sprite as strings"
+                       "\\x1B[6;7Hfoo\\x1B[7;7Hbar\\x1B[8;7Hbaz"
+                       (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
-                                                 :output nil)
+                                               :output nil)
 		                       (skald:skald-draw (:force-overlay)
 		                         (skald:sprite (6 7)
 		                           "foo"
 		                           "bar"
-		                           "baz")))
-		                     :test #'equal)
+		                           "baz"))))
 
-      (equal "\\x1B[7;7Hone\\x1B[8;7Htwo\\x1B[9;7Hthree"
-             "\\x1B[7;7Hone\\x1B[8;7Htwo\\x1B[9;7Hthree")
-      
-      (swordbreaker:test "\\x1B[7;7Hone\\x1B[8;7Htwo\\x1B[9;7Hthree"
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control
-                                                 :output nil)
-		                       (skald:skald-draw (:force-overlay)
-		                         (skald:sprite (6 7)
-		                           (format nil "~%one~%two~%three~%"))))
-		                     :test #'equal)
+    (shieldwall:shield "sprite as newlines"
+     "\\x1B[7;7Hone\\x1B[8;7Htwo\\x1B[9;7Hthree"
+                       (skald:with-skald-test (:override-terminal-size '(24 80)
+                                               :debug-mode :escape-control
+                                               :output nil)
+		                     (skald:skald-draw (:force-overlay)
+		                       (skald:sprite (6 7)
+		                         (format nil "~%one~%two~%three~%")))))
     
-    (swordbreaker:test "\\x1B[9;8Hfoo\\x1B[31m\\x1B[10;8Hbar\\x1B[32mbaz\\x1B[37mbiz\\x1B[42m\\x1B[13;8Hbuz\\x1B[15;8Hzzzzz\\x1B[40m\\x1B[16;8Hnot green"
+    (shieldwall:shield "sprite with colors"
+                       "\\x1B[9;8Hfoo\\x1B[31m\\x1B[10;8Hbar\\x1B[32mbaz\\x1B[37mbiz\\x1B[42m\\x1B[13;8Hbuz\\x1B[15;8Hzzzzz\\x1B[40m\\x1B[16;8Hnot green"
                        (skald:with-skald-test (:override-terminal-size '(24 80)
                                                :debug-mode :escape-control
                                                :output nil)
@@ -237,10 +233,10 @@
 				                        "biz")
 			                       `(:with-background :green
 				                        ,(format nil "~%~%buz~%~%zzzzz"))
-			                       "not green")))
-		                   :test #'equal)
+			                       "not green"))))
 
-    (swordbreaker:test '(2 4 3 13)
+    (shieldwall:shield "INVESTIGATE THIS TEST"
+                       '(2 4 3 13)
                        (progn
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
@@ -251,10 +247,10 @@
                          (list bifrost:*cbox-min-row*
                                bifrost:*cbox-min-column*
                                bifrost:*cbox-max-row*
-                               bifrost:*cbox-max-column*))
-                       :test #'equal)
+                               bifrost:*cbox-max-column*)))
 
-    (swordbreaker:test '(2 4 5 11)
+    (shieldwall:shield "INVESTIGATE THIS TEST"
+                       '(2 4 5 11)
                        (progn
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
@@ -267,13 +263,12 @@
                          (list bifrost:*cbox-min-row*
                                bifrost:*cbox-min-column*
                                bifrost:*cbox-max-row*
-                               bifrost:*cbox-max-column*))
-                       :test #'equal)
-      )
+                               bifrost:*cbox-max-column*)))
+    )
   
-  (swordbreaker:with-test-group "WINDOW tests"
+  (shieldwall:with-shield-group "WINDOW tests"
    
-    (swordbreaker:with-test-group "WINDOW left alignment"
+    (shieldwall:with-shield-group "WINDOW left alignment"
 
 
       ;;;; clickaround tests
@@ -300,7 +295,8 @@
 
 
         ;;;; unit tests / sprite
-      (swordbreaker:test "+----------+
+      (shieldwall:shield "window :NO-CONTROL"
+                         "+----------+
 |foo       |
 |bar       |
 |baz       |
@@ -327,10 +323,10 @@
 			                              "baz")
 			                            (:with-foreground  :blue
 			                              "buzz"))
-			                         "boof")))
-		                     :test #'equal)
+			                         "boof"))))
 
-      (swordbreaker:test "\\x1B[4;4H+----------+\\x1B[5;4H|foo       |\\x1B[6;4H|\\x1B[43m\\x1B[31mbar       \\x1B[40m\\x1B[37m|\\x1B[7;4H|\\x1B[43mbaz       \\x1B[40m|\\x1B[8;4H|\\x1B[43m\\x1B[34mbuzz      \\x1B[40m\\x1B[37m|\\x1B[9;4H|boof      |\\x1B[10;4H|          |\\x1B[11;4H|          |\\x1B[12;4H|          |\\x1B[13;4H|          |\\x1B[14;4H|          |\\x1B[15;4H+----------+"
+      (shieldwall:shield "window :ESCAPE-CONTROL"
+                         "\\x1B[4;4H+----------+\\x1B[5;4H|foo       |\\x1B[6;4H|\\x1B[43m\\x1B[31mbar       \\x1B[40m\\x1B[37m|\\x1B[7;4H|\\x1B[43mbaz       \\x1B[40m|\\x1B[8;4H|\\x1B[43m\\x1B[34mbuzz      \\x1B[40m\\x1B[37m|\\x1B[9;4H|boof      |\\x1B[10;4H|          |\\x1B[11;4H|          |\\x1B[12;4H|          |\\x1B[13;4H|          |\\x1B[14;4H|          |\\x1B[15;4H+----------+"
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
                                                  :output nil)
@@ -345,13 +341,12 @@
 			                              "baz")
 			                            (:with-foreground  :blue
 			                              "buzz"))
-			                         "boof")))
-		                     :test #'equal)
-      )
+			                         "boof"))))
 
-    (swordbreaker:with-test-group "WINDOW :FILL-CHAR"
+    (shieldwall:with-shield-group "WINDOW :FILL-CHAR"
 
-            (swordbreaker:test "+----------+
+      (shieldwall:shield ":FILL-CHAR window left alignment"
+                         "+----------+
 |foo~~~~~~~|
 |bar~~~~~~~|
 |baz~~~~~~~|
@@ -364,25 +359,25 @@
 |~~~~~~~~~~|
 +----------+
 "
-                               (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                       :debug-mode :no-control
-                                                       :output nil)
-                                 (skald:skald-draw (:force-overlay)
-			                             (skald:window (4 4 :width 10
-					                                            :height 10
-					                                            :fill-char #\~)
-			                               "foo"
-			                               `(:with-background :yellow
-				                                (:with-foreground  :red
-				                                  "bar")
-				                                (:with-foreground  :white
-				                                  "baz")
-				                                (:with-foreground  :blue
-				                                  "buzz"))
-			                               "boof")))
-			                         :test #'equal)
+                         (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :no-control
+                                                 :output nil)
+                           (skald:skald-draw (:force-overlay)
+			                       (skald:window (4 4 :width 10
+					                                      :height 10
+					                                      :fill-char #\~)
+			                         "foo"
+			                         `(:with-background :yellow
+				                          (:with-foreground  :red
+				                            "bar")
+				                          (:with-foreground  :white
+				                            "baz")
+				                          (:with-foreground  :blue
+				                            "buzz"))
+			                         "boof"))))
       
-                  (swordbreaker:test "+----------+
+      (shieldwall:shield ":FILL-CHAR window right alignment"
+                         "+----------+
 |~~~~~~foo~|
 |~~~~~~bar~|
 |~~~~~~baz~|
@@ -395,27 +390,27 @@
 |~~~~~~~~~~|
 +----------+
 "
-                                     (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                             :debug-mode :no-control
-                                                             :output nil)
-                                       (skald:skald-draw (:force-overlay)
-				                                 (skald:window (4 4 :width 10
-						                                                :height 10
-						                                                :fill-char #\~
-						                                                :align :right)
-				                                   "foo"
-				                                   `(:with-background :yellow
-				                                      (:with-foreground  :red
-					                                      "bar")
-				                                      (:with-foreground  :white
-					                                      "baz")
-				                                      (:with-foreground  :blue
-					                                      "buzz"))
-				                                   "boof")))
-				                               :test #'equal)
+                         (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :no-control
+                                                 :output nil)
+                           (skald:skald-draw (:force-overlay)
+				                     (skald:window (4 4 :width 10
+						                                    :height 10
+						                                    :fill-char #\~
+						                                    :align :right)
+				                       "foo"
+				                       `(:with-background :yellow
+				                          (:with-foreground  :red
+					                          "bar")
+				                          (:with-foreground  :white
+					                          "baz")
+				                          (:with-foreground  :blue
+					                          "buzz"))
+				                       "boof"))))
 
 
-      (swordbreaker:test "\\x1B[4;4H+----------+\\x1B[5;4H|foo~~~~~~~|\\x1B[6;4H|\\x1B[43m\\x1B[31mbar~~~~~~~\\x1B[40m\\x1B[37m|\\x1B[7;4H|\\x1B[43mbaz~~~~~~~\\x1B[40m|\\x1B[8;4H|\\x1B[43m\\x1B[34mbuzz~~~~~~\\x1B[40m\\x1B[37m|\\x1B[9;4H|boof~~~~~~|\\x1B[10;4H|~~~~~~~~~~|\\x1B[11;4H|~~~~~~~~~~|\\x1B[12;4H|~~~~~~~~~~|\\x1B[13;4H|~~~~~~~~~~|\\x1B[14;4H|~~~~~~~~~~|\\x1B[15;4H+----------+"
+      (shieldwall:shield ":FILL-CHAR window :ESCAPE-CONTROL"
+                         "\\x1B[4;4H+----------+\\x1B[5;4H|foo~~~~~~~|\\x1B[6;4H|\\x1B[43m\\x1B[31mbar~~~~~~~\\x1B[40m\\x1B[37m|\\x1B[7;4H|\\x1B[43mbaz~~~~~~~\\x1B[40m|\\x1B[8;4H|\\x1B[43m\\x1B[34mbuzz~~~~~~\\x1B[40m\\x1B[37m|\\x1B[9;4H|boof~~~~~~|\\x1B[10;4H|~~~~~~~~~~|\\x1B[11;4H|~~~~~~~~~~|\\x1B[12;4H|~~~~~~~~~~|\\x1B[13;4H|~~~~~~~~~~|\\x1B[14;4H|~~~~~~~~~~|\\x1B[15;4H+----------+"
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
                                                  :output nil)
@@ -431,11 +426,10 @@
 			                              "baz")
 			                            (:with-foreground  :blue
 			                              "buzz"))
-			                         "boof")))
-		                       :test #'equal)
+			                         "boof"))))
       )
 
-    (swordbreaker:with-test-group "WINDOW right alignment"
+    (shieldwall:with-shield-group "WINDOW right alignment"
  	  
           ;;;; clickaround tests
 	        #+nil
@@ -461,7 +455,8 @@
 		              "7: there's a border"))
 	            (sleep 0.5)))
 
-	    (swordbreaker:test "+----------+
+	    (shieldwall:shield "window right alignment 1"
+                         "+----------+
 |     foo  |
 |     baar |
 |     baaaz|
@@ -477,12 +472,12 @@
 					                                    )
 			                         "foo"
 			                         "baar"
-			                         "baaaz")))
-			                   :test #'equal)
+			                         "baaaz"))))
           
 	  
 
-	  (swordbreaker:test "+------------------------+
+	    (shieldwall:shield "widow right alignment 2"
+                         "+------------------------+
 |   THERE ARE 7 ROWS     |
 |   red green in row 2???|
 |   row 3                |
@@ -492,28 +487,28 @@
 |   7: there's a border  |
 +------------------------+
 "
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                               :debug-mode :no-control
-                                               :output nil)
-                         (skald:skald-draw (:force-overlay)
-			                     (skald:window (4 4 :width 24
-					                                    :height 7
-					                                    :border t
-					                                    :align :right)
-			                       "THERE ARE 7 ROWS"
-			                       "red green in row 2???"
-			                       "row 3"
-			                       `(:span
-				                          (:with-foreground :red "red")
-			                          " "
-			                          (:with-foreground :green "green")
-			                          " "
-			                          "in row 4")
-			                       (format nil "row 5~%row 6")
-			                       "7: there's a border")))
-			                 :test #'equal)
+                         (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :no-control
+                                                 :output nil)
+                           (skald:skald-draw (:force-overlay)
+			                       (skald:window (4 4 :width 24
+					                                      :height 7
+					                                      :border t
+					                                      :align :right)
+			                         "THERE ARE 7 ROWS"
+			                         "red green in row 2???"
+			                         "row 3"
+			                         `(:span
+				                            (:with-foreground :red "red")
+			                            " "
+			                            (:with-foreground :green "green")
+			                            " "
+			                            "in row 4")
+			                         (format nil "row 5~%row 6")
+			                         "7: there's a border"))))
 
-	    (swordbreaker:test "\\x1B[4;4H+------------------------+\\x1B[5;4H|   THERE ARE 7 ROWS     |\\x1B[6;4H|   red green in row 2???|\\x1B[7;4H|   row 3                |\\x1B[8;4H|   \\x1B[31mred\\x1B[37m \\x1B[32mgreen\\x1B[37m in row 4   |\\x1B[9;4H|   row 5                |\\x1B[10;4H|   row 6                |\\x1B[11;4H|   7: there's a border  |\\x1B[12;4H+------------------------+"
+	    (shieldwall:shield "widow right alignment :ESCAPE-CONTROL"
+                         "\\x1B[4;4H+------------------------+\\x1B[5;4H|   THERE ARE 7 ROWS     |\\x1B[6;4H|   red green in row 2???|\\x1B[7;4H|   row 3                |\\x1B[8;4H|   \\x1B[31mred\\x1B[37m \\x1B[32mgreen\\x1B[37m in row 4   |\\x1B[9;4H|   row 5                |\\x1B[10;4H|   row 6                |\\x1B[11;4H|   7: there's a border  |\\x1B[12;4H+------------------------+"
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
                                                  :output nil)
@@ -532,12 +527,11 @@
 			                            " "
 			                            "in row 4")
 			                         (format nil "row 5~%row 6")
-			                         "7: there's a border")))
-			                 :test #'equal)
-
+			                         "7: there's a border"))))
+      
       )
       
-    (swordbreaker:with-test-group "WINDOW center alignments"
+    (shieldwall:with-shield-group "WINDOW center alignments"
 
           ;;;; clickaround tests
 	        #+nil
@@ -563,7 +557,8 @@
 	            (sleep 0.5)))
 
 
-	  (swordbreaker:test "+------------------------------+
+	    (shieldwall:shield "window center aligment 1"
+                         "+------------------------------+
 |    THERE ARE 7 ROWS          |
 |    red green in row 2???     |
 |    row 3                     |
@@ -573,28 +568,28 @@
 |    7: there's a border       |
 +------------------------------+
 "
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                               :debug-mode :no-control
-                                               :output nil)
-                         (skald:skald-draw (:force-overlay)
-			                     (skald:window (4 4 :width 30
-					                                    :height 7
-					                                    :border t
-					                                    :align :center-left)
-			                       "THERE ARE 7 ROWS"
-			                       "red green in row 2???"
-			                       "row 3"
-			                       `(:span
-				                          (:with-foreground :red "red")
-			                          " "
-			                          (:with-foreground :green "green")
-			                          " "
-			                          "in row 4")
-			                       (format nil "row 5~%row 6")
-			                       "7: there's a border")))
-			                 :test #'equal)
+                         (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :no-control
+                                                 :output nil)
+                           (skald:skald-draw (:force-overlay)
+			                       (skald:window (4 4 :width 30
+					                                      :height 7
+					                                      :border t
+					                                      :align :center-left)
+			                         "THERE ARE 7 ROWS"
+			                         "red green in row 2???"
+			                         "row 3"
+			                         `(:span
+				                            (:with-foreground :red "red")
+			                            " "
+			                            (:with-foreground :green "green")
+			                            " "
+			                            "in row 4")
+			                         (format nil "row 5~%row 6")
+			                         "7: there's a border"))))
 
-	  (swordbreaker:test "+------------+
+	    (shieldwall:shield "window center alignment 2"
+                         "+------------+
 | ARE 7 ROWS |
 |reen in row |
 |            |
@@ -604,31 +599,30 @@
 |ere's a bord|
 +------------+
 "
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                               :debug-mode :no-control
-                                               :output nil)
-                         (skald:skald-draw (:force-overlay)
-			                     (skald:window (4 4 :width 12
-					                                    :height 7
-					                                    :border t
-					                                    :align :center-left)
-			                       "THERE ARE 7 ROWS"
-			                       "red green in row 2???"
-			                       "row 3"
-			                       `(:span
-				                          (:with-foreground :red "red")
-			                          " "
-			                          (:with-foreground :green "green")
-			                          " "
-			                          "in row 4")
-			                       (format nil "row 5~%row 6")
-			                       "7: there's a border")))
-			                 :test #'equal)
+                         (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :no-control
+                                                 :output nil)
+                           (skald:skald-draw (:force-overlay)
+			                       (skald:window (4 4 :width 12
+					                                      :height 7
+					                                      :border t
+					                                      :align :center-left)
+			                         "THERE ARE 7 ROWS"
+			                         "red green in row 2???"
+			                         "row 3"
+			                         `(:span
+				                            (:with-foreground :red "red")
+			                            " "
+			                            (:with-foreground :green "green")
+			                            " "
+			                            "in row 4")
+			                         (format nil "row 5~%row 6")
+			                         "7: there's a border"))))
+      
+	    )
 
-	  )
 
-
-    (swordbreaker:with-test-group "WINDOW foreground/background and border"
+      (shieldwall:with-shield-group "WINDOW foreground/background and border"
 
 
       ;;;; clickaround tests
@@ -648,7 +642,8 @@
 
 
       ;;;; unit test
-      (swordbreaker:test "\\x1B[44m\\x1B[31m\\x1B[4;4H+------+\\x1B[5;4H|\\x1B[46m\\x1B[33m      \\x1B[44m\\x1B[31m|\\x1B[6;4H|\\x1B[46m\\x1B[33mone   \\x1B[44m\\x1B[31m|\\x1B[7;4H|\\x1B[46m\\x1B[33mtwo   \\x1B[44m\\x1B[31m|\\x1B[8;4H|\\x1B[46m\\x1B[33mthree \\x1B[44m\\x1B[31m|\\x1B[9;4H|\\x1B[46m\\x1B[33m      \\x1B[44m\\x1B[31m|\\x1B[10;4H+------+\\x1B[37m\\x1B[40m"
+        (shieldwall:shield "window colors 1"
+                           "\\x1B[44m\\x1B[31m\\x1B[4;4H+------+\\x1B[5;4H|\\x1B[46m\\x1B[33m      \\x1B[44m\\x1B[31m|\\x1B[6;4H|\\x1B[46m\\x1B[33mone   \\x1B[44m\\x1B[31m|\\x1B[7;4H|\\x1B[46m\\x1B[33mtwo   \\x1B[44m\\x1B[31m|\\x1B[8;4H|\\x1B[46m\\x1B[33mthree \\x1B[44m\\x1B[31m|\\x1B[9;4H|\\x1B[46m\\x1B[33m      \\x1B[44m\\x1B[31m|\\x1B[10;4H+------+\\x1B[37m\\x1B[40m"
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
                                                  :output nil)
@@ -661,60 +656,59 @@
 				                                      :border t
 				                                      :border-foreground :red
 				                                      :border-background :blue)
-			                         (format nil "~%one~%two~%three~%"))))
-		                     :test #'equal)
-      )
+			                         (format nil "~%one~%two~%three~%")))))
+        )
 
 
-    (swordbreaker:test '(2 4 7 9)
-                       (progn
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:window (2 4
-				                                      :width 5
-				                                      :height 5
-				                                      :border nil)
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789")))
-                         (list bifrost:*cbox-min-row*
-                               bifrost:*cbox-min-column*
-                               bifrost:*cbox-max-row*
-                               bifrost:*cbox-max-column*))
-                       :test #'equal)
+      (shieldwall:shield "INVESTIGATE THIS TEST"
+                         '(2 4 7 9)
+                         (progn
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :escape-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:window (2 4
+				                                        :width 5
+				                                        :height 5
+				                                        :border nil)
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789")))
+                           (list bifrost:*cbox-min-row*
+                                 bifrost:*cbox-min-column*
+                                 bifrost:*cbox-max-row*
+                                 bifrost:*cbox-max-column*)))
 
-    (swordbreaker:test '(2 4 9 11)
-                       (progn
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:window (2 4
-				                                      :width 5
-				                                      :height 5
-				                                      :border t)
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789"
-                               "123456789123456789123456789")))
-                         (list bifrost:*cbox-min-row*
-                               bifrost:*cbox-min-column*
-                               bifrost:*cbox-max-row*
-                               bifrost:*cbox-max-column*))
-                       :test #'equal)
+      (shieldwall:shield "INVESTIGATE THIS TEST"
+                         '(2 4 9 11)
+                         (progn
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :escape-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:window (2 4
+				                                        :width 5
+				                                        :height 5
+				                                        :border t)
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789"
+                                 "123456789123456789123456789")))
+                           (list bifrost:*cbox-min-row*
+                                 bifrost:*cbox-min-column*
+                                 bifrost:*cbox-max-row*
+                                 bifrost:*cbox-max-column*)))
     )
 
 
-  (swordbreaker:with-test-group "GRID/COLUMN/GWINDOW"
+    (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW"
 
     ;;;; clickaround tests
     #+nil
@@ -763,11 +757,12 @@
 
 
 
-    (swordbreaker:with-test-group "GRID/COLUMN/GWINDOW tests"
+      (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW tests"
     
-      (swordbreaker:with-test-group "simple GRID/COLUMN/GWINDOW"
+        (shieldwall:with-shield-group "simple GRID/COLUMN/GWINDOW"
 
-        (swordbreaker:test "+----+
+          (shieldwall:shield "grid: 1x3"
+                             "+----+
 |1   |
 |    |
 |    |
@@ -781,39 +776,39 @@
 |    |
 +----+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :no-control
-                                                   :output nil)
-                             (skald:skald-draw (:force-overlay)
-		                           (skald:grid (3 3 :width 4
-				                                        :height 3)
-			                           (skald:column ()
-			                             (skald:gwindow () "1")
- 			                             (skald:gwindow () "2")
-			                             (skald:gwindow () "3")))))
-		                       :test #'equal)
+                             (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                     :debug-mode :no-control
+                                                     :output nil)
+                               (skald:skald-draw (:force-overlay)
+		                             (skald:grid (3 3 :width 4
+				                                          :height 3)
+			                             (skald:column ()
+			                               (skald:gwindow () "1")
+ 			                               (skald:gwindow () "2")
+			                               (skald:gwindow () "3"))))))
 
       
-        (swordbreaker:test "+----+----+----+
+          (shieldwall:shield "grid: 3x1"
+                             "+----+----+----+
 |1   |2   |3   |
 |    |    |    |
 |    |    |    |
 +----+----+----+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :no-control
-                                                   :output nil)
-                             (skald:skald-draw (:force-overlay)
-		                           (skald:grid (3 3 :width 4 :height 3)
-			                           (skald:column ()
-			                             (skald:gwindow () "1"))
-			                           (skald:column ()
- 			                             (skald:gwindow () "2"))
-			                           (skald:column ()
-			                             (skald:gwindow () "3")))))
-		                       :test #'equal)
+                             (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                     :debug-mode :no-control
+                                                     :output nil)
+                               (skald:skald-draw (:force-overlay)
+		                             (skald:grid (3 3 :width 4 :height 3)
+			                             (skald:column ()
+			                               (skald:gwindow () "1"))
+			                             (skald:column ()
+ 			                               (skald:gwindow () "2"))
+			                             (skald:column ()
+			                               (skald:gwindow () "3"))))))
 
-        (swordbreaker:test "+----+----+----+
+          (shieldwall:shield "grid: 3x3"
+                             "+----+----+----+
 |1   |4   |7   |
 |    |    |    |
 |    |    |    |
@@ -827,29 +822,29 @@
 |    |    |    |
 +----+----+----+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :no-control
-                                                   :output nil)
-                             (skald:skald-draw (:force-overlay)
-		                           (skald:grid (5 5 :width 4 :height 3)
-			                           (skald:column ()
-			                             (skald:gwindow () "1")
- 			                             (skald:gwindow () "2")
-			                             (skald:gwindow () "3"))
-			                           (skald:column ()
-			                             (skald:gwindow () "4")
- 			                             (skald:gwindow () "5")
-			                             (skald:gwindow () "6"))
-			                           (skald:column ()
-			                             (skald:gwindow () "7")
- 			                             (skald:gwindow () "8")
-			                             (skald:gwindow () "9")))))
-		                       :test #'equal)
+                             (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                     :debug-mode :no-control
+                                                     :output nil)
+                               (skald:skald-draw (:force-overlay)
+		                             (skald:grid (5 5 :width 4 :height 3)
+			                             (skald:column ()
+			                               (skald:gwindow () "1")
+ 			                               (skald:gwindow () "2")
+			                               (skald:gwindow () "3"))
+			                             (skald:column ()
+			                               (skald:gwindow () "4")
+ 			                               (skald:gwindow () "5")
+			                               (skald:gwindow () "6"))
+			                             (skald:column ()
+			                               (skald:gwindow () "7")
+ 			                               (skald:gwindow () "8")
+			                               (skald:gwindow () "9"))))))
         )
 
-      (swordbreaker:with-test-group "GRID/COLUMN/GWINDOW with transparant border"
+        (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW with transparant border (not the same as no border)"
 
-        (swordbreaker:test "1    4    7   
+          (shieldwall:shield "grid: 3x3 transparant border (not the same as no border)"
+                             "1    4    7   
               
               
 2    5    8   
@@ -859,32 +854,32 @@
               
               
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :no-control
-                                                   :output nil)
-                             (skald:skald-draw (:force-overlay)
-		                           (skald:grid (5 5 :width 4
-				                                        :height 3
-				                                        :border t
-				                                        :border-chars nil)
-			                           (skald:column ()
-			                             (skald:gwindow () "1")
- 			                             (skald:gwindow () "2")
-			                             (skald:gwindow () "3"))
-			                           (skald:column ()
-			                             (skald:gwindow () "4")
- 			                             (skald:gwindow () "5")
-			                             (skald:gwindow () "6"))
-			                           (skald:column ()
-			                             (skald:gwindow () "7")
- 			                             (skald:gwindow () "8")
-			                             (skald:gwindow () "9")))))
-		                       :test #'equal)
-        )
+                             (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                     :debug-mode :no-control
+                                                     :output nil)
+                               (skald:skald-draw (:force-overlay)
+		                             (skald:grid (5 5 :width 4
+				                                          :height 3
+				                                          :border t
+				                                          :border-chars nil)
+			                             (skald:column ()
+			                               (skald:gwindow () "1")
+ 			                               (skald:gwindow () "2")
+			                               (skald:gwindow () "3"))
+			                             (skald:column ()
+			                               (skald:gwindow () "4")
+ 			                               (skald:gwindow () "5")
+			                               (skald:gwindow () "6"))
+			                             (skald:column ()
+			                               (skald:gwindow () "7")
+ 			                               (skald:gwindow () "8")
+			                               (skald:gwindow () "9"))))))
+          )
 
-    (swordbreaker:with-test-group "GRID/COLUMN/GWINDOW without ASCII border"
+        (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW without ASCII border"
 
-      (swordbreaker:test "1   4   7   
+          (shieldwall:shield "grid: 3x3 no border"
+                             "1   4   7   
             
             
 2   5   8   
@@ -894,118 +889,115 @@
             
             
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:grid (5 5 :width 4
-				                                      :height 3
-				                                      :border nil)
-			                         (skald:column ()
-			                           (skald:gwindow () "1")
- 			                           (skald:gwindow () "2")
-			                           (skald:gwindow () "3"))
-			                         (skald:column ()
-			                           (skald:gwindow () "4")
- 			                           (skald:gwindow () "5")
-			                           (skald:gwindow () "6"))
-			                         (skald:column ()
-			                           (skald:gwindow () "7")
- 			                           (skald:gwindow () "8")
-			                           (skald:gwindow () "9")))))
-		                     :test #'equal)
-      )
-      )
-
-
-        (swordbreaker:with-test-group ":NODISPLAY"
-
-          ;;;; unit tests / span
-          (swordbreaker:test ""
                              (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :escape-control
+                                                     :debug-mode :no-control
                                                      :output nil)
-		                           (skald:skald-draw (:force-overlay)
-		                             (skald:span (3 4)
-				                           :nodisplay)))
-		                         :test #'equal)
-
-          
-          (swordbreaker:test ""
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :escape-control
-                                                     :output nil)
-		                           (skald:skald-draw (:force-overlay)
-		                             (skald:span (3 4)
-				                           '(:nodisplay "foo"))))
-		                         :test #'equal)
-
-          (swordbreaker:test "\\x1B[4;5Hfoobuz"
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :escape-control
-                                                     :output nil)
-		                           (skald:skald-draw (:force-overlay)
-		                             (skald:span (4 5)
-			                             "foo"
-			                             '(:nodisplay "bar" (:span "baz"))
-			                             '(:span "buz" (:nodisplay "booze")))))
-		                         :test #'equal)
+                               (skald:skald-draw (:force-overlay)
+		                             (skald:grid (5 5 :width 4
+				                                          :height 3
+				                                          :border nil)
+			                             (skald:column ()
+			                               (skald:gwindow () "1")
+ 			                               (skald:gwindow () "2")
+			                               (skald:gwindow () "3"))
+			                             (skald:column ()
+			                               (skald:gwindow () "4")
+ 			                               (skald:gwindow () "5")
+			                               (skald:gwindow () "6"))
+			                             (skald:column ()
+			                               (skald:gwindow () "7")
+ 			                               (skald:gwindow () "8")
+			                               (skald:gwindow () "9"))))))
+          )
+        )
 
 
-       ;;;; unit tests / sprite
-          (swordbreaker:test ""
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :escape-control
-                                                     :output nil)
-		                           (skald:skald-draw (:force-overlay)
-		                             (skald:sprite (3 4)
-				                           :nodisplay)))
-		                         :test #'equal)
-          
-          (swordbreaker:test ""
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :escape-control
-                                                     :output nil)
-		                           (skald:skald-draw (:force-overlay)
-		                             (skald:sprite (3 4)
-				                           '(:nodisplay "foo"))))
-		                         :test #'equal)
+      (shieldwall:with-shield-group ":NODISPLAY"
 
-          (swordbreaker:test "\\x1B[4;5Hfoobuz"
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :escape-control
-                                                     :output nil)
-		                           (skald:skald-draw (:force-overlay)
-		                             (skald:span (4 5)
-			                             "foo"
-			                             '(:nodisplay "bar" (:span "baz"))
-			                             '(:span "buz" (:nodisplay "booze")))))
-		                         :test #'equal)
-      )
-
-    (swordbreaker:with-test-group ":CALL-WITH-POINT"
-
-
-      (swordbreaker:test '(6 . 6)
-		                     (let (point)
+        (shieldwall:shield "span :NODISPLAY"
+                           ""
                            (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :no-control
+                                                   :debug-mode :escape-control
                                                    :output nil)
-                             (skald:skald-draw (:force-overlay)
-			                         (skald:window (3 3
-					                                      :width 10
-					                                      :height 10)
+		                         (skald:skald-draw (:force-overlay)
+		                           (skald:span (3 4)
+				                         :nodisplay))))
+
+          
+        (shieldwall:shield "span :NODISPLAY with args 1"
+                           ""
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                     :debug-mode :escape-control
+                                                   :output nil)
+		                           (skald:skald-draw (:force-overlay)
+		                             (skald:span (3 4)
+				                           '(:nodisplay "foo")))))
+
+        (shieldwall:shield "span :NODISPLAY with args 2)"
+                           "\\x1B[4;5Hfoobuz"
+                             (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                     :debug-mode :escape-control
+                                                     :output nil)
+		                           (skald:skald-draw (:force-overlay)
+		                             (skald:span (4 5)
+			                             "foo"
+			                             '(:nodisplay "bar" (:span "baz"))
+			                             '(:span "buz" (:nodisplay "booze"))))))
+
+        (shieldwall:shield "sprite :NODISPLAY"
+                           ""
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :escape-control
+                                                   :output nil)
+		                         (skald:skald-draw (:force-overlay)
+		                           (skald:sprite (3 4)
+				                         :nodisplay))))
+          
+        (shieldwall:shield "sprite :NODISPLAY with args 1"
+                           ""
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :escape-control
+                                                   :output nil)
+		                         (skald:skald-draw (:force-overlay)
+		                           (skald:sprite (3 4)
+				                         '(:nodisplay "foo")))))
+
+        (shieldwall:shield ":NODISPLAY mixe"
+                           "\\x1B[4;5Hfoobuz"
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :escape-control
+                                                   :output nil)
+		                         (skald:skald-draw (:force-overlay)
+		                           (skald:span (4 5)
 			                           "foo"
-			                           "bar"
-			                           `(:span "ba"
-			                              (:call-with-point ,(lambda (x y)
-						                                             (setf point (cons x y))
-						                                             :nodisplay))
-			                              "z"))))
-		                       point)
-		                     :test #'equalp)
+			                           '(:nodisplay "bar" (:span "baz"))
+			                           '(:span "buz" (:nodisplay "booze"))))))
+      )
+
+      (shieldwall:with-shield-group ":CALL-WITH-POINT"
+
+
+        (shieldwall:shield ":CALL-WITH-POINT in span"
+                           '(6 . 6)
+		                       (let (point)
+                             (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                     :debug-mode :no-control
+                                                     :output nil)
+                               (skald:skald-draw (:force-overlay)
+			                           (skald:window (3 3
+					                                        :width 10
+					                                        :height 10)
+			                             "foo"
+			                             "bar"
+			                             `(:span "ba"
+			                                (:call-with-point ,(lambda (x y)
+						                                               (setf point (cons x y))
+						                                               :nodisplay))
+			                                "z"))))
+		                         point))
       
-      (swordbreaker:test '((2 . 2) (2 . 4) (2 . 6) (9 . 2) (9 . 4) (9 . 6) (16 . 2) (16 . 4) (16 . 6))
+        (shieldwall:shield ":CALL-WITH-POINT in grid"
+                           '((2 . 2) (2 . 4) (2 . 6) (9 . 2) (9 . 4) (9 . 6) (16 . 2) (16 . 4) (16 . 6))
 		                     (let (accum)
 		                       (flet ((fn (y x)
 			                              (push (cons y x) accum)))
@@ -1030,16 +1022,16 @@
 			                               (skald:gwindow () `(:call-with-point ,#'fn))
 			                               (skald:gwindow () `(:call-with-point ,#'fn))
 			                               (skald:gwindow () `(:call-with-point ,#'fn))))))
-		                         (nreverse accum)))
-			                   :test #'equal)
+		                         (nreverse accum))))
      
-      )
+        )
     
 
 
-    (swordbreaker:with-test-group "GRID/COLUMN/GWINDOW :ALIGN"
+      (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW :ALIGN"
 
-      (swordbreaker:test "window=15 sprite=7
+        (shieldwall:shield "grid align (odd width content)"
+                           "window=15 sprite=7
 +-------------+
 |      |      |
 +-------------+
@@ -1054,52 +1046,22 @@
 |      |      |
 +-------------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:span (1 1) "window=15 sprite=7")
-		                         (skald:grid (2 1 :width 13 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)          "      |")
-			                           (skald:gwindow (:align :left)          "ODD_NU|")   
-			                           (skald:gwindow (:align :center-left)      "ODD|NUM")
-			                           (skald:gwindow (:align :center-right)     "ODD|NUM")
-			                           (skald:gwindow (:align :right)               "|DD_NUM") 
-			                           (skald:gwindow (:align :right)               "|      ")))))
-		                     :test #'equal)
-      
-      (swordbreaker:test "window=15 sprite=7
-+-------------+
-|      |      |
-+-------------+
-|ODD_NU|      |
-+-------------+
-|   ODD|NUM   |
-+-------------+
-|   ODD|NUM   |
-+-------------+
-|      |DD_NUM|
-+-------------+
-|      |      |
-+-------------+
-"
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:span (1 1) "window=15 sprite=7")
-		                         (skald:grid (2 1 :width 13 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)          "      |")
-			                           (skald:gwindow (:align :left)          "ODD_NU|")   
-			                           (skald:gwindow (:align :center-left)      "ODD|NUM")
-			                           (skald:gwindow (:align :center-right)     "ODD|NUM")
-			                           (skald:gwindow (:align :right)               "|DD_NUM") 
-			                           (skald:gwindow (:align :right)               "|      ")))))
-		                     :test #'equal)
-                         
-      (swordbreaker:test "window=7 sprite=7
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :no-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:span (1 1) "window=15 sprite=7")
+		                           (skald:grid (2 1 :width 13 :height 1)
+			                           (skald:column ()
+			                             (skald:gwindow (:align :left)          "      |")
+			                             (skald:gwindow (:align :left)          "ODD_NU|")   
+			                             (skald:gwindow (:align :center-left)      "ODD|NUM")
+			                             (skald:gwindow (:align :center-right)     "ODD|NUM")
+			                             (skald:gwindow (:align :right)               "|DD_NUM") 
+			                             (skald:gwindow (:align :right)               "|      "))))))
+                          
+        (shieldwall:shield "grid align (odd width content, odd width window, squished)"
+                           "window=7 sprite=7
 +-------+
 |   |   |
 +-------+
@@ -1114,22 +1076,22 @@
 |   |   |
 +-------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:span (1 1) "window=7 sprite=7")
-		                         (skald:grid (2 1 :width 7 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)          "   |   ")
-			                           (skald:gwindow (:align :left)          "ODD|NUM")   
-			                           (skald:gwindow (:align :center-left)      "ODD|NUM")
-			                           (skald:gwindow (:align :center-right)     "ODD|NUM")
-			                           (skald:gwindow (:align :right)               "ODD|NUM") 
-			                           (skald:gwindow (:align :right)               "   |   ")))))
-		                     :test #'equal)
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :no-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:span (1 1) "window=7 sprite=7")
+		                           (skald:grid (2 1 :width 7 :height 1)
+			                           (skald:column ()
+			                             (skald:gwindow (:align :left)          "   |   ")
+			                             (skald:gwindow (:align :left)          "ODD|NUM")   
+			                             (skald:gwindow (:align :center-left)      "ODD|NUM")
+			                             (skald:gwindow (:align :center-right)     "ODD|NUM")
+			                             (skald:gwindow (:align :right)               "ODD|NUM") 
+			                             (skald:gwindow (:align :right)               "   |   "))))))
 
-      (swordbreaker:test "window=5 sprite=7
+        (shieldwall:shield "grid align (odd width content, odd width window, more squished)"
+                           "window=5 sprite=7
 +-----+
 |  |  |
 +-----+
@@ -1144,23 +1106,23 @@
 |  |  |
 +-----+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:span (1 1) "window=5 sprite=7")
-		                         (skald:grid (2 1 :width 5 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)          "  |    ")
-			                           (skald:gwindow (:align :left)          "OD|_NUM")   
-			                           (skald:gwindow (:align :center-left)      "ODD|NUM")
-			                           (skald:gwindow (:align :center-right)     "ODD|NUM")
-			                           (skald:gwindow (:align :right)               "ODD_|UM") 
-			                           (skald:gwindow (:align :right)               "    |  ")))))
-		                       :test #'equal)
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :no-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:span (1 1) "window=5 sprite=7")
+		                           (skald:grid (2 1 :width 5 :height 1)
+			                           (skald:column ()
+			                             (skald:gwindow (:align :left)          "  |    ")
+			                             (skald:gwindow (:align :left)          "OD|_NUM")   
+			                             (skald:gwindow (:align :center-left)      "ODD|NUM")
+			                             (skald:gwindow (:align :center-right)     "ODD|NUM")
+			                             (skald:gwindow (:align :right)               "ODD_|UM") 
+			                             (skald:gwindow (:align :right)               "    |  "))))))
 
     
-      (swordbreaker:test "window=14 sprite=7
+        (shieldwall:shield "grid align (odd width content, even width window)"
+                           "window=14 sprite=7
 +--------------+
 |      |       |
 +--------------+
@@ -1177,23 +1139,23 @@
 |       |      |
 +--------------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:span (1 1) "window=14 sprite=7")
-		                         (skald:grid (2 1 :width 14 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)          "      |")
-			                           (skald:gwindow (:align :left)          "ODD_NU|")
-			                           (skald:gwindow (:align :center-left)      "ODD|NUM")
-			                           (skald:gwindow (:align :left)          "      \\")
-			                           (skald:gwindow (:align :center-right)     "ODD|NUM")
-			                           (skald:gwindow (:align :right)               "|DD_NUM") 
-			                           (skald:gwindow (:align :right)               "|      ")))))
-		                     :test #'equal)
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :no-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:span (1 1) "window=14 sprite=7")
+		                           (skald:grid (2 1 :width 14 :height 1)
+			                           (skald:column ()
+			                             (skald:gwindow (:align :left)          "      |")
+			                             (skald:gwindow (:align :left)          "ODD_NU|")
+			                             (skald:gwindow (:align :center-left)      "ODD|NUM")
+			                             (skald:gwindow (:align :left)          "      \\")
+			                             (skald:gwindow (:align :center-right)     "ODD|NUM")
+			                             (skald:gwindow (:align :right)               "|DD_NUM") 
+			                             (skald:gwindow (:align :right)               "|      "))))))
 
-      (swordbreaker:test "window=4 sprite=7
+        (shieldwall:shield "grid align (odd width content, even width window, squished)"
+                           "window=4 sprite=7
 +----+
 | |  |
 +----+
@@ -1210,25 +1172,23 @@
 |  | |
 +----+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:span (1 1) "window=4 sprite=7")
-		                         (skald:grid (2 1 :width 4 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)            " |     ")
-			                           (skald:gwindow (:align :left)            "O|D_NUM")
-			                           (skald:gwindow (:align :center-left)   "ODD|NUM")
-			                           (skald:gwindow (:align :left)            " \\     ")
-			                           (skald:gwindow (:align :center-right)  "ODD|NUM")
-			                           (skald:gwindow (:align :right)       "ODD_N|M") 
-			                           (skald:gwindow (:align :right)        "    | ")))))
-		                     :test #'equal)
-
-
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :no-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:span (1 1) "window=4 sprite=7")
+		                           (skald:grid (2 1 :width 4 :height 1)
+			                           (skald:column ()
+			                             (skald:gwindow (:align :left)            " |     ")
+			                             (skald:gwindow (:align :left)            "O|D_NUM")
+			                             (skald:gwindow (:align :center-left)   "ODD|NUM")
+			                             (skald:gwindow (:align :left)            " \\     ")
+			                             (skald:gwindow (:align :center-right)  "ODD|NUM")
+			                             (skald:gwindow (:align :right)       "ODD_N|M") 
+			                             (skald:gwindow (:align :right)        "    | "))))))
    
-      (swordbreaker:test "window=16 sprite=8
+        (shieldwall:shield "grid align (even width content, even width window)"
+         "window=16 sprite=8
 +----------------+
 |       |        |
 +----------------+
@@ -1258,10 +1218,10 @@
 			                           (skald:gwindow (:align :left)         "       \\")
 			                           (skald:gwindow (:align :center-right)      "EVEN|NUM")
 			                           (skald:gwindow (:align :right)               "|VEN_NUM")
-			                           (skald:gwindow (:align :right)               "|       ")))))
-		                     :test #'equal)
+			                           (skald:gwindow (:align :right)               "|       "))))))
       
-      (swordbreaker:test "window=8 sprite=8
+        (shieldwall:shield "grid align (even width content, even width window, squished)"
+                           "window=8 sprite=8
 +--------+
 |   |    |
 +--------+
@@ -1276,22 +1236,22 @@
 |   |    |
 +--------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:span (1 1) "window=8 sprite=8")
-		                         (skald:grid (2 1 :width 8 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)         "   |    ")
-			                           (skald:gwindow (:align :left)         "EVE|_NUM")
-			                           (skald:gwindow (:align :center-left)  "EVE|_NUM")
-			                           (skald:gwindow (:align :center-right) "EVE|_NUM")
-			                           (skald:gwindow (:align :right)        "EVE|_NUM")
-			                           (skald:gwindow (:align :right)        "   |    ")))))
-		                     :test #'equal)
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :no-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:span (1 1) "window=8 sprite=8")
+		                           (skald:grid (2 1 :width 8 :height 1)
+			                           (skald:column ()
+			                             (skald:gwindow (:align :left)         "   |    ")
+			                             (skald:gwindow (:align :left)         "EVE|_NUM")
+			                             (skald:gwindow (:align :center-left)  "EVE|_NUM")
+			                             (skald:gwindow (:align :center-right) "EVE|_NUM")
+			                             (skald:gwindow (:align :right)        "EVE|_NUM")
+			                             (skald:gwindow (:align :right)        "   |    "))))))
       
-      (swordbreaker:test "window=4 sprite=8
+        (shieldwall:shield "grid align (even width content, even width window, more squished)"
+                           "window=4 sprite=8
 +----+
 | |  |
 +----+
@@ -1308,23 +1268,23 @@
 |  | |
 +----+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:span (1 1) "window=4 sprite=8")
-		                         (skald:grid (2 1 :width 4 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)              " |      ")
-			                           (skald:gwindow (:align :left)              "E|EN_NUM")
-			                           (skald:gwindow (:align :center-left)     "EVE|_NUM")
-			                           (skald:gwindow (:align :left)              " \\     ")
-			                           (skald:gwindow (:align :center-right)   "EVEN|NUM")
-			                           (skald:gwindow (:align :right)        "EVEN_N|M")
-			                           (skald:gwindow (:align :right)        "      | ")))))
-		                     :test #'equal)
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :no-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:span (1 1) "window=4 sprite=8")
+		                           (skald:grid (2 1 :width 4 :height 1)
+			                           (skald:column ()
+			                             (skald:gwindow (:align :left)              " |      ")
+			                             (skald:gwindow (:align :left)              "E|EN_NUM")
+			                             (skald:gwindow (:align :center-left)     "EVE|_NUM")
+			                             (skald:gwindow (:align :left)              " \\     ")
+			                             (skald:gwindow (:align :center-right)   "EVEN|NUM")
+			                             (skald:gwindow (:align :right)        "EVEN_N|M")
+			                             (skald:gwindow (:align :right)        "      | "))))))
 		    
-      (swordbreaker:test "+-----------------+
+        (shieldwall:shield "grid align (even width content, odd width window"
+                          "+-----------------+
 |       |         |
 +-----------------+
 |EVEN_NU|         |
@@ -1342,23 +1302,23 @@
 |         |       |
 +-----------------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:grid (2 1 :width 17 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)         "       |")
-			                           (skald:gwindow (:align :left)         "EVEN_NU|")
-			                           (skald:gwindow (:align :center-left)     "EVE|_NUM")
-			                           (skald:gwindow (:align :left)         "       \\")
-			                           (skald:gwindow (:align :right)        "\\       ")
-			                           (skald:gwindow (:align :center-right)      "EVEN|NUM")
-			                           (skald:gwindow (:align :right)               "|VEN_NUM")
-			                           (skald:gwindow (:align :right)               "|       ")))))
-		                     :test #'equal)
+                          (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                  :debug-mode :no-control
+                                                  :output nil)
+                            (skald:skald-draw (:force-overlay)
+		                          (skald:grid (2 1 :width 17 :height 1)
+			                          (skald:column ()
+			                            (skald:gwindow (:align :left)         "       |")
+			                            (skald:gwindow (:align :left)         "EVEN_NU|")
+			                            (skald:gwindow (:align :center-left)     "EVE|_NUM")
+			                            (skald:gwindow (:align :left)         "       \\")
+			                            (skald:gwindow (:align :right)        "\\       ")
+			                            (skald:gwindow (:align :center-right)      "EVEN|NUM")
+			                            (skald:gwindow (:align :right)               "|VEN_NUM")
+			                            (skald:gwindow (:align :right)               "|       "))))))
       
-      (swordbreaker:test "window=5 sprite=8
+        (shieldwall:shield "grid align (even width content, odd width window, squished)"
+                           "window=5 sprite=8
 +-----+
 |  |  |
 +-----+
@@ -1373,31 +1333,24 @@
 |  |  |
 +-----+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:span (1 1) "window=5 sprite=8")
-		                         (skald:grid (2 1 :width 5 :height 1)
-			                         (skald:column ()
-			                           (skald:gwindow (:align :left)         "  |     ")
-			                           (skald:gwindow (:align :left)         "EV|N_NUM")
-			                           (skald:gwindow (:align :center-left)     "EVEN|NUM")
-			                           (skald:gwindow (:align :center-right)      "EVE|_NUM")
-			                           (skald:gwindow (:align :right)               "EVEN_|UM")
-			                           (skald:gwindow (:align :right)               "     |  ")))))
-		                     :test #'equal)
-
-
-    
-      )
-
-    
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :no-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:span (1 1) "window=5 sprite=8")
+		                           (skald:grid (2 1 :width 5 :height 1)
+			                           (skald:column ()
+			                             (skald:gwindow (:align :left)         "  |     ")
+			                             (skald:gwindow (:align :left)         "EV|N_NUM")
+			                             (skald:gwindow (:align :center-left)     "EVEN|NUM")
+			                             (skald:gwindow (:align :center-right)      "EVE|_NUM")
+			                             (skald:gwindow (:align :right)               "EVEN_|UM")
+			                             (skald:gwindow (:align :right)               "     |  "))))))
+        )
     )
 
-
   
-    (swordbreaker:with-test-group ":TRANSPARANT-CHAR"
+    (shieldwall:with-shield-group ":TRANSPARANT-CHAR"
 
     ;;;; clickaround tests
       #+nil
@@ -1459,62 +1412,62 @@
 	          (sleep 2))))
 	    
     ;;;; unit tests
-    (swordbreaker:test "\\x1B[44m\\x1B[31m\\x1B[5;5H+----------------+\\x1B[6;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[7;5H|\\x1B[46m\\x1B[33m~~~~\\x1B[7;11Hnt\\x1B[7;14Hrtain~~~\\x1B[44m\\x1B[31m|\\x1B[8;5H|\\x1B[46m\\x1B[33m~~~~thr\\x1B[8;15H~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[9;5H|\\x1B[46m\\x1B[33m~~~~\\x1B[9;11Hducat\\x1B[9;17Hd~~~~\\x1B[44m\\x1B[31m|\\x1B[10;5H|\\x1B[46m\\x1B[33m~~~~\\x1B[10;11Hl\\x1B[10;13Hphants~~~\\x1B[44m\\x1B[31m|\\x1B[11;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[12;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[13;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[14;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[15;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[16;5H+----------------+\\x1B[37m\\x1B[40m"
-		                   (let ((transparant-char #\e))
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:window (5 5
-				                                      :width 16
-				                                      :height 10
-				                                      :fill-char #\~
-				                                      :transparant-char transparant-char
-				                                      :foreground :yellow
-				                                      :background :cyan
-				                                      :border t
-				                                      :border-foreground :red
-				                                      :border-background :blue
-				                                      :align :center-left)
-			                         (format nil "~%entertain~%three~%educated~%elephants~%")))))
-		                   :test #'equal)
+      (shieldwall:shield "WINDOW :TRANSPARANT-CHAR 1"
+                         "\\x1B[44m\\x1B[31m\\x1B[5;5H+----------------+\\x1B[6;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[7;5H|\\x1B[46m\\x1B[33m~~~~\\x1B[7;11Hnt\\x1B[7;14Hrtain~~~\\x1B[44m\\x1B[31m|\\x1B[8;5H|\\x1B[46m\\x1B[33m~~~~thr\\x1B[8;15H~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[9;5H|\\x1B[46m\\x1B[33m~~~~\\x1B[9;11Hducat\\x1B[9;17Hd~~~~\\x1B[44m\\x1B[31m|\\x1B[10;5H|\\x1B[46m\\x1B[33m~~~~\\x1B[10;11Hl\\x1B[10;13Hphants~~~\\x1B[44m\\x1B[31m|\\x1B[11;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[12;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[13;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[14;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[15;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[16;5H+----------------+\\x1B[37m\\x1B[40m"
+		                     (let ((transparant-char #\e))
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :escape-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:window (5 5
+				                                        :width 16
+				                                        :height 10
+				                                        :fill-char #\~
+				                                        :transparant-char transparant-char
+				                                        :foreground :yellow
+				                                        :background :cyan
+				                                        :border t
+				                                        :border-foreground :red
+				                                        :border-background :blue
+				                                        :align :center-left)
+			                           (format nil "~%entertain~%three~%educated~%elephants~%"))))))
       
-    (swordbreaker:test "\\x1B[44m\\x1B[31m\\x1B[5;5H+----------------+\\x1B[6;5H|\\x1B[6;22H|\\x1B[7;5H|\\x1B[46m\\x1B[33m\\x1B[7;9Hentertain\\x1B[44m\\x1B[31m\\x1B[7;22H|\\x1B[8;5H|\\x1B[46m\\x1B[33m\\x1B[8;9Hthree\\x1B[44m\\x1B[31m\\x1B[8;22H|\\x1B[9;5H|\\x1B[46m\\x1B[33m\\x1B[9;9Heducated\\x1B[44m\\x1B[31m\\x1B[9;22H|\\x1B[10;5H|\\x1B[46m\\x1B[33m\\x1B[10;9Helephants\\x1B[44m\\x1B[31m\\x1B[10;22H|\\x1B[11;5H|\\x1B[11;22H|\\x1B[12;5H|\\x1B[12;22H|\\x1B[13;5H|\\x1B[13;22H|\\x1B[14;5H|\\x1B[14;22H|\\x1B[15;5H|\\x1B[15;22H|\\x1B[16;5H+----------------+\\x1B[37m\\x1B[40m"
-		                   (let ((transparant-char #\~))
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control
-                                                 :output nil)
-                           (skald:skald-draw (:force-overlay)
-		                         (skald:window (5 5
-				                                      :width 16
-				                                      :height 10
-				                                      :fill-char #\~
-				                                      :transparant-char transparant-char
-				                                      :foreground :yellow
-				                                      :background :cyan
-				                                      :border t
-				                                      :border-foreground :red
-				                                      :border-background :blue
-				                                      :align :center-left)
-			                         (format nil "~%entertain~%three~%educated~%elephants~%")))))
-		                   :test #'equal)
+      (shieldwall:shield "WINDOW :TRANSPARANT-CHAR 2"
+                         "\\x1B[44m\\x1B[31m\\x1B[5;5H+----------------+\\x1B[6;5H|\\x1B[6;22H|\\x1B[7;5H|\\x1B[46m\\x1B[33m\\x1B[7;9Hentertain\\x1B[44m\\x1B[31m\\x1B[7;22H|\\x1B[8;5H|\\x1B[46m\\x1B[33m\\x1B[8;9Hthree\\x1B[44m\\x1B[31m\\x1B[8;22H|\\x1B[9;5H|\\x1B[46m\\x1B[33m\\x1B[9;9Heducated\\x1B[44m\\x1B[31m\\x1B[9;22H|\\x1B[10;5H|\\x1B[46m\\x1B[33m\\x1B[10;9Helephants\\x1B[44m\\x1B[31m\\x1B[10;22H|\\x1B[11;5H|\\x1B[11;22H|\\x1B[12;5H|\\x1B[12;22H|\\x1B[13;5H|\\x1B[13;22H|\\x1B[14;5H|\\x1B[14;22H|\\x1B[15;5H|\\x1B[15;22H|\\x1B[16;5H+----------------+\\x1B[37m\\x1B[40m"
+		                     (let ((transparant-char #\~))
+                           (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                   :debug-mode :escape-control
+                                                   :output nil)
+                             (skald:skald-draw (:force-overlay)
+		                           (skald:window (5 5
+				                                        :width 16
+				                                        :height 10
+				                                        :fill-char #\~
+				                                        :transparant-char transparant-char
+				                                        :foreground :yellow
+				                                        :background :cyan
+				                                        :border t
+				                                        :border-foreground :red
+				                                        :border-background :blue
+				                                        :align :center-left)
+			                           (format nil "~%entertain~%three~%educated~%elephants~%"))))))
       )
 
 
-  (swordbreaker:with-test-group "FIXED-STEP-LINE"
+  (shieldwall:with-shield-group "FIXED-STEP-LINE"
 
-    (swordbreaker:test '((1 . 1) (1 . 2) (2 . 4) (3 . 6) (4 . 8) (5 . 10))
+    (shieldwall:shield "fixed-step-line"
+                       '((1 . 1) (1 . 2) (2 . 4) (3 . 6) (4 . 8) (5 . 10))
 		                   (skald:fixed-step-line :start-row 1
 					                                    :start-column 1
 					                                    :steps-inclusive 5
 					                                    :end-row 5
-					                                    :end-column 10)
-		                   :test #'equal)
+					                                    :end-column 10))
     )
 				
 
 
-  (swordbreaker:with-test-group ":MASK"
+    (shieldwall:with-shield-group ":MASK"
 
     ;;;; clickaround tests
     #+ nil
@@ -1577,15 +1530,15 @@
 
     
     ;; unit tests
-    (swordbreaker:test "xxx
+      (shieldwall:shield ":MASK"
+                         "xxx
 "
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                               :debug-mode :no-control
-                                               :output nil)
-                         (skald:skald-draw (:force-overlay)
-			                     (skald:span (1 1 :mask t :fill-char #\x)
-			                       "foo")))
-		                   :test #'equal)
-    
+                         (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :no-control
+                                                 :output nil)
+                           (skald:skald-draw (:force-overlay)
+			                       (skald:span (1 1 :mask t :fill-char #\x)
+			                         "foo"))))
+      )
     )
-  )
+)

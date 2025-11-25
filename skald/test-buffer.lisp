@@ -10,11 +10,11 @@
 
 (in-package :skald-test)
 
-(setf swordbreaker::*muffle-test-errors-p* nil)
+;; (setf shieldwall::*shieldwall-suppress-errors-p* nil)
 
-(swordbreaker:with-test-group "SKALD-DRAW, SPAN, & SPRITE"
+(shieldwall:with-shield-group "SKALD-DRAW, SPAN, & SPRITE"
   
-  (swordbreaker:with-test-group "SKALD-DRAW tests"
+  (shieldwall:with-shield-group "SKALD-DRAW tests"
     
     ;;;; clickaround tests
     ;; run this to verify that it wrote to the screen & background color looks ok
@@ -50,94 +50,91 @@
 	        `(:with-background :red
 	           "RED_SPAN"))))
 
-    (swordbreaker:with-test-group "SKALD-DRAW :FORCE-OVERLAY"
-        (swordbreaker:test "\\x1B[2;2Htest1 aaa"
-		                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :escape-control
-                                                   :output nil)
-                             (skald:skald-draw (:force-overlay)
-			                         (skald:span (2 2) "test1 aaa"))
-                             )
-		                       :test #'equal)
+    (shieldwall:with-shield-group ":FORCE-OVERLAY"
+      (shieldwall:shield ":FORCE-OVERLAY in :ESCAPE-CONTROL mode"
+                         "\\x1B[2;2Htest1 aaa"
+		                     (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :escape-control
+                                                 :output nil)
+                           (skald:skald-draw (:force-overlay)
+			                       (skald:span (2 2) "test1 aaa"))))
 
-        (swordbreaker:test "test1 aaa
+      (shieldwall:shield ":FORCE-OVERLAY in :NO-CONTROL mode"
+                         "test1 aaa
 "
-		                       (skald:with-skald-test (:override-terminal-size '(24 80)
+		                     (skald:with-skald-test (:override-terminal-size '(24 80)
                                                    :debug-mode :no-control
-                                                   :output nil)
-                             (skald:skald-draw (:force-overlay)
-			                         (skald:span (2 2) "test1 aaa"))
-                             )
-		                       :test #'equal)
+                                                 :output nil)
+                           (skald:skald-draw (:force-overlay)
+			                       (skald:span (2 2) "test1 aaa"))))
 
       
       
-        (swordbreaker:test '("\\x1B[2;2Htest2 aaa"
-                             "\\x1B[2;2Htest2 bbb"
-                             "\\x1B[2;2Htest2 ccc")
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :escape-control)
-                             
-		                         (list
-                              (skald:with-skald-test (:output nil)
-                                (skald:skald-draw (:force-overlay)
-		                              (skald:span (2 2) "test2 aaa")))
-                              (skald:with-skald-test (:output nil)
-                                (skald:skald-draw (:force-overlay)
-		                              (skald:span (2 2) "test2 bbb")))
-                              (skald:with-skald-test (:output nil)
-                                (skald:skald-draw (:force-overlay)
-		                              (skald:span (2 2) "test2 ccc")))))
-		                       :test #'equal)
+      (shieldwall:shield "slightly more complex :FORCE-OVERLAY in :ESCAPE-CONTROL mode"
+                         '("\\x1B[2;2Htest2 aaa"
+                           "\\x1B[2;2Htest2 bbb"
+                           "\\x1B[2;2Htest2 ccc")
+                         (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :escape-control)
+                           
+		                       (list
+                            (skald:with-skald-test (:output nil)
+                              (skald:skald-draw (:force-overlay)
+		                            (skald:span (2 2) "test2 aaa")))
+                            (skald:with-skald-test (:output nil)
+                              (skald:skald-draw (:force-overlay)
+		                            (skald:span (2 2) "test2 bbb")))
+                            (skald:with-skald-test (:output nil)
+                              (skald:skald-draw (:force-overlay)
+		                            (skald:span (2 2) "test2 ccc"))))))
 
-        (swordbreaker:test  '(
-                              "test2 aaa
+      (shieldwall:shield "slightly more complex :FORCE-OVERLAY in :NO-CONTROL mode"
+                         '(
+                           "test2 aaa
 "
-                              "test2 bbb
+                           "test2 bbb
 "
-                              "test2 ccc
+                           "test2 ccc
 ")
 
-                            (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                    :debug-mode :no-control)
-
-		                          (list
-                               (skald:with-skald-test (:output nil)
-                                 (skald:skald-draw (:force-overlay)
-		                               (skald:span (2 2) "test2 aaa")))
-                               (skald:with-skald-test (:output nil)
-                                 (skald:skald-draw (:force-overlay)
-		                               (skald:span (2 2) "test2 bbb")))
-                               (skald:with-skald-test (:output nil)
-                                 (skald:skald-draw (:force-overlay)
-		                               (skald:span (2 2) "test2 ccc")))))
-		                        :test #'equalp)
-      )
+                         (skald:with-skald-test (:override-terminal-size '(24 80)
+                                                 :debug-mode :no-control)
+                           
+		                       (list
+                            (skald:with-skald-test (:output nil)
+                              (skald:skald-draw (:force-overlay)
+		                            (skald:span (2 2) "test2 aaa")))
+                            (skald:with-skald-test (:output nil)
+                              (skald:skald-draw (:force-overlay)
+		                            (skald:span (2 2) "test2 bbb")))
+                            (skald:with-skald-test (:output nil)
+                              (skald:skald-draw (:force-overlay)
+		                            (skald:span (2 2) "test2 ccc"))))))
 
 
-    (swordbreaker:with-test-group "SKALD-INIT"
-      (swordbreaker:test "\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l\\x1B[3;3Htest2 aaa"
+    (shieldwall:with-shield-group ":FORCE-OVERLAY SKALD-INIT"
+      (shieldwall:shield "SKALD-INIT in :ESCAPE-CONTROL mode"
+                         "\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l\\x1B[3;3Htest2 aaa"
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
                                                  :output nil)
                            (skald:skald-init)
 		                       (skald:skald-draw (:force-overlay)
-		                         (skald:span (3 3) "test2 aaa")))
-		                     :test #'equal)
-      )
+		                         (skald:span (3 3) "test2 aaa"))))))
 
-
-    (swordbreaker:with-test-group ":OVERLAY"
-      (swordbreaker:test "\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l\\x1B[3;3Htest2 aaa"
+      
+    (shieldwall:with-shield-group ":OVERLAY"
+      (shieldwall:shield ":OVERLAY in :ESCAPE-CONTROL mode"
+                         "\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l\\x1B[3;3Htest2 aaa"
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :escape-control
                                                  :output nil)
                            (skald:skald-init)
 		                       (skald:skald-draw (:overlay)
-		                         (skald:span (3 3) "test2 aaa")))
-		                     :test #'equal)
+		                         (skald:span (3 3) "test2 aaa"))))
 
-      (swordbreaker:test '("\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l"
+      (shieldwall:shield "slightly more complex :OVERLAY in :ESCAPE-CONTROL mode"
+                         '("\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l"
                            "\\x1B[3;3Htest2 aaa"
                            ""
                            "\\x1B[3;9Hbbb")
@@ -153,10 +150,10 @@
 		                                 (skald:span (3 3) "test2 aaa")))
                                  (skald:with-skald-test (:output nil)
                                    (skald:skald-draw (:overlay)
-		                                 (skald:span (3 3) "test2 bbb")))))
-		                     :test #'equalp)
+		                                 (skald:span (3 3) "test2 bbb"))))))
       
-      (swordbreaker:test '(
+      (shieldwall:shield ":OVERLAY in :NO-CONTROL mode"
+                         '(
                            ""
                            "test2 aaa
 "
@@ -176,10 +173,8 @@
 		                                 (skald:span (3 3) "test2 aaa")))                               
                                  (skald:with-skald-test (:output nil)
                                    (skald:skald-draw (:overlay)
-		                                 (skald:span (3 3) "test2 bbb")))))
-		                     :test #'equal)
+		                                 (skald:span (3 3) "test2 bbb"))))))
       )
-
     #+nil
     (skald:with-skald-test (:override-terminal-size '(24 80))
       (skald:skald-clear)
@@ -212,8 +207,9 @@
 	        `(:with-background :red
 	           "RED_SPAN"))))
 
-    (swordbreaker:with-test-group ":DRAW"
-      (swordbreaker:test '("\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l"
+    (shieldwall:with-shield-group ":DRAW"
+      (shieldwall:shield ":DRAW in :ESCAPE-CONTROL mode"
+                         '("\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l"
                            "\\x1B[2;2Htest 4 aaa"
                            "\\x1B[2;9Hbbb"
                            "\\x1B[2;2H    \\x1B[2;7H \\x1B[2;9H   \\x1B[3;3Htest 4 ccc")
@@ -232,16 +228,16 @@
                                  (skald:with-skald-test (:output nil)
                                    (skald:skald-draw ()
                                      (skald:span (3 3)
-                                       "test 4 ccc")))))
-		                     :test #'equal)
+                                       "test 4 ccc"))))))
   
-      (swordbreaker:test '(
-""
-"test 4 aaa
+      (shieldwall:shield ":DRAW in :NO-CONTROL mode"
+                         '(
+                           ""
+                           "test 4 aaa
 "
- "bbb
+                           "bbb
 "
-"          
+                           "          
 test 4 ccc
 ")
                          (skald:with-skald-test (:override-terminal-size '(24 80)
@@ -259,18 +255,16 @@ test 4 ccc
                                  (skald:with-skald-test (:output nil)
                                    (skald:skald-draw ()
                                      (skald:span (3 3)
-                                       "test 4 ccc")))))
-		                     :test #'equal)
+                                       "test 4 ccc"))))))
       )
 
-    (swordbreaker:with-test-group "WRITE-TO-CHANGE-BUFFER tests"
+    (shieldwall:with-shield-group "WRITE-TO-CHANGE-BUFFER tests"
       ;; read the WRITE-TO-CHANGE-BUFFER source code to understand these tests better
 
-   
-      (swordbreaker:with-test-group "respect bounding boxes"
+      (shieldwall:with-shield-group "respect bounding boxes"
 
-        ;; boring single width char insert
-        (swordbreaker:test '(#\a #\x #\c #\d #\newline)                       
+        (shieldwall:shield ("boring single width char insert" :test #'equal)
+                           '(#\a #\x #\c #\d #\newline)                       
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
@@ -282,11 +276,10 @@ test 4 ccc
                                        (skald:skald-draw ()
                                          (skald:span (1 2)
                                            #\x))))
-                                   'list)
-                           :test #'equal)
+                                   'list))
 
-        ;; don't write outside the bounds of the buffer
-        (swordbreaker:test '(#\b #\Newline #\c #\newline)
+        (shieldwall:shield "don't write outside the bounds of the buffer"
+                           '(#\b #\Newline #\c #\newline)
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80)
                                                            :output nil
                                                            :debug-mode :no-control)
@@ -296,11 +289,10 @@ test 4 ccc
                                        (skald:span (2 1)  #\b)
                                        (skald:span (3 79) #\c)
                                        (skald:span (4 80) #\d)))
-                                   'list)
-                           :test #'equal)
+                                   'list))
         
-        ;; don't write outside the bounds of a window bounding box
-        (swordbreaker:test '((#\Newline)
+        (shieldwall:shield "don't write outside the bounds of a window bounding box"
+                           '((#\Newline)
                              (#\b #\c #\d #\Newline)
                              (#\a #\b #\c #\d #\Newline)
                              (#\a #\b #\Newline)
@@ -308,7 +300,6 @@ test 4 ccc
                              (#\a #\b #\Newline)
                              (#\Newline)
                              (#\Newline))
-
                            (mapcar (lambda (point)
                                      (destructuring-bind (row col)
                                          point
@@ -328,18 +319,16 @@ test 4 ccc
                                      (6 2)
                                      (6 5)
                                      (7 2)
-                                     (7 7)))
-                           :test #'equal)
-        
+                                     (7 7))))
         )
 
-      (swordbreaker:with-test-group "double width chars / emoji"
+      (shieldwall:with-shield-group "double width chars / emoji"
         (assert (eql (code-char #x1F600) #\grinning_face))
         (assert (eql (code-char #x1F610) #\neutral_face))
 
       
-        ;; boring double width char insert
-        (swordbreaker:test '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+        (shieldwall:shield "boring double width char insert"
+                           '(#\a #\grinning_face #\zero_width_space #\d #\newline)
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
@@ -351,12 +340,11 @@ test 4 ccc
                                        (skald:skald-draw ()
                                          (skald:span (1 2)
                                            #\grinning_face))))
-                                   'list)
-                           :test #'equal)
+                                   'list))
 
-
-        (swordbreaker:with-test-group "inserting a single width char on top of a double width char"
-          (swordbreaker:test `(,*unrenderable-char-fill-char* #\x #\c #\d #\newline)
+        (shieldwall:with-shield-group "inserting a single width char on top of a double width char"
+          (shieldwall:shield "double width split test 1"
+                             `(,*unrenderable-char-fill-char* #\x #\c #\d #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -369,9 +357,10 @@ test 4 ccc
                                          (skald:skald-draw ()
                                            (skald:span (1 2)
                                              #\x))))
-                                     'list)
-                             :test #'equal)
-          (swordbreaker:test `(#\a #\x ,*unrenderable-char-fill-char* #\d #\newline)
+                                     'list))
+          
+          (shieldwall:shield "double width split test 2"
+                             `(#\a #\x ,*unrenderable-char-fill-char* #\d #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -385,9 +374,10 @@ test 4 ccc
                                          (skald:skald-draw ()
                                            (skald:span (1 2)
                                              #\x))))
-                                     'list)
-                             :test #'equal)
-          (swordbreaker:test '(#\a #\x #\grinning_face #\zero_width_space #\newline)
+                                     'list))
+
+          (shieldwall:shield "double width split test 3"
+                             '(#\a #\x #\grinning_face #\zero_width_space #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -400,15 +390,19 @@ test 4 ccc
                                          (skald:skald-draw ()
                                            (skald:span (1 2)
                                              #\x))))
-                                     'list)
-                             :test #'equal)
+                                     'list))
           )
         
 
-        (swordbreaker:with-test-group "writing single width chars in conflict with both bounding box boundaries & double width char in buffer"
+        (shieldwall:with-shield-group "writing single width chars in conflict with both bounding box boundaries & double width char in buffer"
 
-          ;; A+{z  c  d}   >   ? x c d
-          (swordbreaker:test `(,*unrenderable-char-fill-char* #\x #\c #\d #\newline)
+          ;; how to read the syntax of these comments:
+          ;;  { }  = bounding box
+          ;;  A+z = "double width character A". Z is the trailing extra cell.
+          ;;  ?   = unrenderable character, created by A+z being split by bounding box or single width char
+          
+          (shieldwall:shield "A+{z  c  d} => ? x c d"
+                             `(,*unrenderable-char-fill-char* #\x #\c #\d #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -423,11 +417,10 @@ test 4 ccc
                                            (skald::with-window-bounding-box 1 3 2 3
                                              (skald::with-point-and-cbox-dimensions 1 2
                                                (skald::%render-span #\x))))))
-                                     'list)
-                             :test #'equal)
+                                     'list))
 
-          ;;  a {B++z  d}   >   a x ? d
-          (swordbreaker:test `(#\a #\x ,*unrenderable-char-fill-char* #\d #\newline)
+          (shieldwall:shield "a {B++z  d}   =>   a x ? d"
+                             `(#\a #\x ,*unrenderable-char-fill-char* #\d #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -442,10 +435,10 @@ test 4 ccc
                                            (skald::with-window-bounding-box 1 3 2 3
                                              (skald::with-point-and-cbox-dimensions 1 2
                                                (skald::%render-span #\x))))))
-                                     'list)
-                             :test #'equal)
-          ;; a  B+{z  d}  > no op
-          (swordbreaker:test '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+                                     'list))
+
+          (shieldwall:shield "a  B+{z  d}  > no op"
+                             '(#\a #\grinning_face #\zero_width_space #\d #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -460,12 +453,10 @@ test 4 ccc
                                            (skald::with-window-bounding-box 1 3 3 2
                                              (skald::with-point-and-cbox-dimensions 1 2
                                                (skald::%render-span #\x))))))
-                                     'list)
-                             :test #'equal)
+                                     'list))
 
-
-          ;;  a  B++z {d}  > no op
-          (swordbreaker:test '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+          (shieldwall:shield "a  B++z {d}  -> no op"
+                             '(#\a #\grinning_face #\zero_width_space #\d #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -480,11 +471,10 @@ test 4 ccc
                                            (skald::with-window-bounding-box 1 3 4 1
                                              (skald::with-point-and-cbox-dimensions 1 2
                                                (skald::%render-span #\x))))))
-                                     'list)
-                             :test #'equal)
+                                     'list))
 
-          ;;  a {B++z} d    >   a x ? d
-          (swordbreaker:test `(#\a #\x ,*unrenderable-char-fill-char* #\d #\newline)
+          (shieldwall:shield "a {B++z} d    =>   a x ? d"
+                             `(#\a #\x ,*unrenderable-char-fill-char* #\d #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -499,11 +489,10 @@ test 4 ccc
                                            (skald::with-window-bounding-box 1 3 2 2
                                              (skald::with-point-and-cbox-dimensions 1 2
                                                (skald::%render-span #\x))))))
-                                     'list)
-                             :test #'equal)
+                                     'list))
           
-          ;; {a  B}+z  d    >   a x ? d
-          (swordbreaker:test `(#\a #\x ,*unrenderable-char-fill-char* #\d #\newline)
+          (shieldwall:shield "{a  B}+z  d    >   a x ? d"
+                             `(#\a #\x ,*unrenderable-char-fill-char* #\d #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -518,11 +507,10 @@ test 4 ccc
                                            (skald::with-window-bounding-box 1 3 1 2
                                              (skald::with-point-and-cbox-dimensions 1 2
                                                (skald::%render-span #\x))))))
-                                     'list)
-                             :test #'equal)
+                                     'list))
           
-          ;; {A++z} c  d    >   ? x c d
-          (swordbreaker:test `(,*unrenderable-char-fill-char* #\x #\c #\d #\newline)
+          (shieldwall:shield "{A++z} c  d    >   ? x c d"
+                             `(,*unrenderable-char-fill-char* #\x #\c #\d #\newline)
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
@@ -537,13 +525,13 @@ test 4 ccc
                                            (skald::with-window-bounding-box 1 3 1 2
                                              (skald::with-point-and-cbox-dimensions 1 2
                                                (skald::%render-span #\x))))))
-                                     'list)
-                             :test #'equal)
+                                     'list))
           )
         )
 
-      (swordbreaker:with-test-group "writing double width chars in conflict with bounding box boundaries"
-        (swordbreaker:test `((#\a #\grinning_face #\zero_width_space #\d #\newline)
+      (shieldwall:with-shield-group "writing double width chars in conflict with bounding box boundaries"
+        (shieldwall:shield "simple box double width char insert test"
+                           `((#\a #\grinning_face #\zero_width_space #\d #\newline)
                              (#\a #\grinning_face #\zero_width_space #\d #\newline)
                              (#\a #\b #\c #\d #\newline)
                              (#\a #\b #\c #\d #\newline)
@@ -570,14 +558,12 @@ test 4 ccc
                                      (3 2)
                                      (4 1)
                                      (2 2)
-                                     (1 2)))
-                           :test #'equal)     
-        )
+                                     (1 2))))
 
-      (swordbreaker:with-test-group "writing double width chars in conflict with both bounding box boundaries & double width char in buffer"
+      (shieldwall:with-shield-group "writing double width chars in conflict with both bounding box boundaries & double width char in buffer"
 
-        ;; A+{z  c  d}   >   ? X+z d
-        (swordbreaker:test `(,*unrenderable-char-fill-char* #\grinning_face #\zero_width_space #\d #\newline)
+        (shieldwall:shield "A+{z  c  d}  =>   ? X+z d"
+                           `(,*unrenderable-char-fill-char* #\grinning_face #\zero_width_space #\d #\newline)
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
@@ -592,11 +578,10 @@ test 4 ccc
                                          (skald::with-window-bounding-box 1 3 2 3
                                            (skald::with-point-and-cbox-dimensions 1 2
                                              (skald::%render-span #\grinning_face))))))
-                                   'list)
-                           :test #'equal)
+                                   'list))
         
-        ;; a {B++z  d}   >   a X+z d
-        (swordbreaker:test '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+        (shieldwall:shield "a {B++z  d}   =>   a X+z d"
+         '(#\a #\grinning_face #\zero_width_space #\d #\newline)
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
@@ -611,10 +596,10 @@ test 4 ccc
                                          (skald::with-window-bounding-box 1 3 2 3
                                            (skald::with-point-and-cbox-dimensions 1 2
                                              (skald::%render-span #\grinning_face))))))
-                                   'list)
-                           :test #'equal)
-        ;; a B+{z  d}  > no op
-        (swordbreaker:test '(#\a #\neutral_face #\zero_width_space #\d #\newline)
+                                   'list))
+
+        (shieldwall:shield "a B+{z  d}  => no op"
+                           '(#\a #\neutral_face #\zero_width_space #\d #\newline)
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
@@ -629,12 +614,11 @@ test 4 ccc
                                          (skald::with-window-bounding-box 1 3 3 2
                                            (skald::with-point-and-cbox-dimensions 1 2
                                              (skald::%render-span #\grinning_face))))))
-                                   'list)
-                           :test #'equal)
+                                   'list))
 
 
-        ;; a B++z {d}  > no op
-        (swordbreaker:test '(#\a #\neutral_face #\zero_width_space #\d #\newline)
+        (shieldwall:shield "a B++z {d}  > no op"
+         '(#\a #\neutral_face #\zero_width_space #\d #\newline)
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
@@ -649,12 +633,10 @@ test 4 ccc
                                          (skald::with-window-bounding-box 1 3 4 1
                                            (skald::with-point-and-cbox-dimensions 1 2
                                              (skald::%render-span #\grinning_face))))))
-                                   'list)
-                           :test #'equal)
+                                   'list))
 
-
-        ;; a {B++z} d  >    a X++z d
-        (swordbreaker:test '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+        (shieldwall:shield "a {B++z} d  >    a X++z d"
+                           '(#\a #\grinning_face #\zero_width_space #\d #\newline)
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
@@ -669,11 +651,10 @@ test 4 ccc
                                          (skald::with-window-bounding-box 1 3 2 2
                                            (skald::with-point-and-cbox-dimensions 1 2
                                              (skald::%render-span #\grinning_face))))))
-                                   'list)
-                           :test #'equal)
+                                   'list))
 
-        ;; {a  b}+c  d    >   a ? ? d
-        (swordbreaker:test `(#\a
+        (shieldwall:shield "{a  b}+c  d    >   a ? ? d"
+                           `(#\a
                              ,*unrenderable-char-fill-char*
                              ,*unrenderable-char-fill-char*
                              #\d
@@ -692,11 +673,10 @@ test 4 ccc
                                          (skald::with-window-bounding-box 1 3 1 2
                                            (skald::with-point-and-cbox-dimensions 1 2
                                              (skald::%render-span #\grinning_face))))))
-                                   'list)
-                           :test #'equal)
+                                   'list))
 
-        ;; {a++b} c  d    >   ? x c d
-        (swordbreaker:test `(,*unrenderable-char-fill-char*
+        (shieldwall:shield "{a++b} c  d    >   ? x c d"
+                           `(,*unrenderable-char-fill-char*
                              ,*unrenderable-char-fill-char*
                              #\c
                              #\d
@@ -715,11 +695,9 @@ test 4 ccc
                                          (skald::with-window-bounding-box 1 3 1 2
                                            (skald::with-point-and-cbox-dimensions 1 2
                                              (skald::%render-span #\grinning_face))))))
-                                   'list)
-                           :test #'equal)
+                                   'list))
+        )
         )
       )
-  
-
-
-    ))
+    )
+  )
