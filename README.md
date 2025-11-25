@@ -8,7 +8,7 @@ Old Norse is collection of Common Lisp libraries for building fast, responsive T
 
 Old Norse was originally created for prototyping games. But it's just as useful for developing quick internal tools (eg: system monitoring, log viewers, build status, etc) or interactive data visualizations (charts, tables, real-time data feeds, etc). 
 
-Together, the Old Norse libraries form a grid-based terminal graphics engine, with focus on UI speed/responsiveness & rapid development/deployment.
+Together, the Old Norse libraries form a grid-based terminal graphics engine, with focus on UI speed/responsiveness & rapid development.
 
 
 ## Libraries 
@@ -16,8 +16,8 @@ Together, the Old Norse libraries form a grid-based terminal graphics engine, wi
 ### Bifrost 🌈
 [Bifrost](bifrost/) is a low-level utility for reading from & controlling the terminal
 - Two-way mapping between ASCII escape sequences & s-expressions
-- Raw I/O to bypass terminal read buffer (use debug mode to troubleshoot TUI within SLIME/EMACS)
 - Low-level logic for mouse events and layerable click regions
+- Raw I/O to bypass terminal read buffer (plus debug mode to troubleshoot TUI within SLIME/EMACS)
 
 ### Flokkr
 [Flokkr](flokkr/) is a cooperative multitasking library purpose built for building interactive Terminal UI applications
@@ -28,13 +28,12 @@ Together, the Old Norse libraries form a grid-based terminal graphics engine, wi
 ### Skald
 [Skald](skald/) is a high-level terminal UI and animation framework
 - Treat blocks of ASCII/unicode text as sprites (transparant char enables composite layering)
-- Optimized to minimize flicker when redrawing the screen
-- Features like grid-based positioning/layout, cropping, fill, colors, emojis, etc
+- DSL-based approach to providing features like grid-based positioning/layout/alignment, foreground/background colors, cropping/fill, emojis, etc
+- Optimization to minimize flicker when redrawing the screen
 
 ### Meadhorn
 [Meadhorn](meadhorn/) is a simple debugging utility. 
-- Print statements are a simple, powerful debugging tool. But when developing terminal   applications, they mess up the display.
-- MEADHORN:MD is just like FORMAT except that it broadcasts output to a Unix socket. Read with [netcat](https://en.wikipedia.org/wiki/Netcat) to debug without disrupting the terminal UI.
+- Print statements are a simple, powerful debugging tool. But when developing terminal applications, they mess up the display. MEADHORN:MD is just like FORMAT except that it broadcasts output to a Unix socket. Read with [netcat](https://en.wikipedia.org/wiki/Netcat) to debug without disrupting the terminal UI.
 
 ### Old Norse
 You can load all of these libraries via the umbrella package `(require :old-norse)`
@@ -107,44 +106,47 @@ Mouse movement tracking + seperate simultaneous animation timing loop
 
 Treat blocks of text as sprites.
  - Supports ASCII, UNICODE, & emoji (emoji treated as double-width characters)
- - foreground/background color
+ - Foreground/background color
  - Composite layering enabled via transparant character.
  
 In the future, we will also add support for [sixel](https://en.wikipedia.org/wiki/Sixel) graphics.
 - This will allow animation & display of higher-resolution images (including larger text with non-monospaced font).
-- However, the terminal grid will remain the only coordinate system. Sixel sprites will need to
-  snap to the same grid.
+- However, the terminal grid will remain the only coordinate system. Sixel sprites will snap to the same grid.
 
 ## (2) Speed & responsiveness
 
 Design goals:
- 1. 60fps animation
-   - assumes normal screen size
- 2. Screen updates within 16ms of user input
-   - if delpoyed over remote connection, assumes within same geographic region
+ 1. 60fps animation (assumes normal screen size)
+ 2. Update screen within 16ms of user input (if run over remote connection, assumes within same geographic region)
 
-Based on our observation, this can be achieved by managing the following bottlenecks:
-1. Minimize the number of terminal grid cells redrawn per second  - This means eliminating all unecessary redrawing. SKALD does this under the hood by using update/display buffers to optimize screen updates.
-2. Immediate user input reaction - FLOKKR provides this, while also simultaneously managing dynamic animation and state machine and timings.
+Based on our observation, TUI applications can achieve this by managing the following bottlenecks:
+1. Minimize the number of terminal grid cells redrawn per second  - This means eliminating all unecessary redrawing & not unnecessarily clearing the screen. SKALD does this under the hood by using update/display buffers to optimize screen updates.
+2. Immediate reaction to user input - FLOKKR provides this, while also simultaneously managing dynamic animation and state machine and timings.
 3. When deploying remotely, keep in-region - must be managed by the user.
-4. Strategic scheduling of GC pauses -  Currently must be managed by the user. But there is a plan to add a feature to FLOKKR to accept hints to coordinate better/worse times for gc pause. (Additionally, there is also a roadmap to reduce GC pressure created by SKALD/BIFROST libraries themselves.)
+4. Strategic scheduling of GC pauses -  Currently must be managed by the user. But there is a plan to add a feature to FLOKKR to accept hints to coordinate better/worse times for gc. (Additionally, there is also a roadmap to reduce GC pressure created by SKALD/BIFROST libraries themselves.)
 5. Slow DB queries & cloud API calls - must be managed by the user. 
 
 ## (3) Locality
 
 If not structured correctly, even the simplest Terminal UI application can grow into a complicated mess of spaghetti code. The Old Norse way to deal with this is by prioritizing locality. In other words, the TUI application code structure should put related logic close together.
 
-1. JUST ONE FUNCTION TO RENDER THE ENTIRE SCREEN - SKALD is designed to enable you to define a single function to draw the entire screen, and then call it however frequently you want, relying on SKALD's low-level optimization to eliminate unecessay redrawing. SKALD-DRAW only updates the sections of the that have actually changed. In practice, this pattern of application code structure tends to DRASTICALLY simplify & shorten programs.
+1. JUST ONE CONTROL STRUCTURE - FLOKKR makes it possible to put all timing logic & input reaction logic in one place, making it easier to reason about timing & interactive behaviors. Modular composability is still possible, but within rigid constraints (chaining via :SUBFLOKKR) to help prevent hidden scheduling issues.
 
-2. JUST ONE STRUCTURE CONTROLING YOUR APP - FLOKKR makes it possible to view all timing logic & input reaction logic in one place, making it easier to reason about interactive timing behaviors. Modular composability is still possible, but within rigid constraints (chaining via :SUBFLOKKR) to prevent hidden scheduling issues.
+
+2. JUST ONE FUNCTION TO RENDER THE ENTIRE SCREEN - SKALD is designed to enable you to define a single function to draw the entire screen, and then call it however frequently you want, relying on SKALD's low-level optimization to eliminate unecessay redrawing. SKALD-DRAW only updates the sections of the that have actually changed. In practice, this pattern tends to *DRASTICALLY* simplify & shorten program structure.
    
 ## (4) Develop in an hour. Deploy anywhere.
 
 Full-featured, mouse-driven terminal UI applications should work remotely via SSH, or browser-based via TTYD.
 
-In the future, we will:
+In the future, we will also:
+- Add enhanced support for mobile (via TTYD)
 - Provide documentation on easy one-click multi-region deployment via [fly.io](http://fly.io)
-- Add enhanced support for mobile deployment (via TTYD)
+
+## Requirements
+- Terminal with XTERM mouse tracking (iTerm, Xterm, etc.)
+- Monospaced font
+- FLOKKR & MEADHORN require SBCL. BIFROST/SKALD are portable.
 
 ## Recommended conventions
 
@@ -160,18 +162,14 @@ We have found the following prefix naming conventions to be useful when structur
 ;;   [t]-time       an ITU time, like the one returned by GET-INTERNAL-REAL-TIME
 ```
 
-## Requirements
-- Terminal with XTERM mouse tracking (iTerm, Xterm, etc.)
-- Monospaced font
-- FLOKKR & MEADHORN require SBCL. BIFROST/SKALD are portable.
-
 ## Status
 
 v0.0 - Core API subject to change
 
-## Alternatives
+## Lispy alternatives
 
-[cl-tuition](https://github.com/atgreen/cl-tuition)
+- [cl-tuition](https://github.com/atgreen/cl-tuition) - Common Lisp library for building rich, responsive terminal user interfaces (TUIs). It blends the simplicity of TEA with the power of CLOS so you can model state clearly, react to events via generic methods, and render your UI as pure strings.
+- [text-draw](https://shinmera.github.io/text-draw/) - Common Lisp functions to draw graphics using pure Unicode text.
 
 ## License
 
