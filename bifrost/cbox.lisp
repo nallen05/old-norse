@@ -220,8 +220,8 @@
 ;; 	            (sleep *rune-read-poll-frequency*)))))
 
 
-(defun rune-read-no-hang (&optional (stream *terminal-io*))
-  (rune-read-raw-no-hang stream)
+(defun rune-read-no-hang ()
+  (rune-read-raw-no-hang)
   (when *rune*
     (case *rune-name*
       (:mouse-click-left
@@ -265,9 +265,9 @@
 
 
 
-(defun rune-read (&optional (stream *terminal-io*))
+(defun rune-read ()
   (loop (multiple-value-bind (rune cbox)
-            (rune-read-no-hang stream)
+            (rune-read-no-hang)
           (if rune
               (return-from rune-read
                 (values rune

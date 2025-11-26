@@ -1,26 +1,97 @@
 
 # BIFROST 🌈
 
-BIFROST is a Common Lisp library for reading from & controlling the terminal. It is part of the 
-OLD-NORSE terminal toolkit.
+BIFROST is a Common Lisp library for reading from & controlling the terminal. It is part of the OLD-NORSE terminal toolkit.
 
 Key features:
  - Two-way mapping between s-expressions & raw ASCII escape sequences
- - Low-level logic for XTERM mouse event tracking (this isn't officially part of the official ANSI standard but is widely adopted as defacto standard supported by most modern terminal emulators) & defining clickable regions of the screen.
- - Raw IO handling for faster communication with the terminal.
- - Enter development/debugging mode to troubleshoot terminal applications within SLIME/EMACS REPL
+ - Low-level logic for XTERM mouse event tracking (this isn't officially part of the official ANSI standard but is widely adopted as defacto standard supported by most modern terminal emulators)
+ - Low-level logic for defining clickable regions of the screen (CBOXES)
+ - Raw IO handling for faster communication with the terminal
+ - Debugging features to troubleshoot terminal UI applications within SLIME/EMACS REPL
 
-In Norse mythology, Bifrost 🌈 is the rainbow bridge connecting Midgard (realm of mortals) 
-to Asgard (realm of gods). Similarly, Bifrost connects your Lisp program to terminal emulators
-like Xterm, iTerm, OS X Terminal, TTYD, etc.
- 
+In Norse mythology, Bifrost 🌈 is the rainbow bridge connecting Midgard (realm of mortals) to Asgard (realm of gods). Similarly, Bifrost connects your Lisp program to Unix-like terminal emulators like xterm, gnome-terminal, iTerm2, Mac OSX Terminal, TTYD, etc.
+
+# Quick start playbook
+
+Normally you would use BIFROST with FLOKKR & SKALD. But the examples below illustrate how BIFROST works under the hood.
+
+**Run these examples in the terminal, not SLIME/EMACS**
+
+```
+;; query terminal size
+(bifrost:with-rune-raw-io
+  (bifrost:rune-write :query-terminal-size))
+
+;; draw 01234 on the screen at the row/column position 5/10
+(bifrost:with-bifrost
+  (bifrost:rune-write :clear)
+  (dotimes (i 6)
+    (bifrost:rune-write `(:move-cursor 5 ,(+ i 10)))
+    (bifrost:rune-write (code-char (+ 48 i))))
+  (bifrost:rune-write :move-cursor) ; move the cursor to upper left hand corner
+  (values))
+
+;; print keystrokes & mouse clicks
+(bifrost:with-bifrost
+  (bifrost:with-mouse-tracking ()
+    (bifrost:rune-write :clear)
+    (bifrost:rune-write :move-cursor) ; move the cursor to upper left hand corner
+    (format sb-sys:*tty* "~% type some keys &/or click on the screen!")
+    (format sb-sys:*tty* "~% q to quit")
+    (force-output sb-sys:*tty*)
+    (loop
+      (bifrost:rune-case (bifrost:rune-read-raw-no-hang)
+        (nil (sleep 0.1))
+        ((#\q #\Q) (return :done))
+        (otherwise
+         (format sb-sys:*tty* "~%~S" bifrost:*rune*)
+         (finish-output sb-sys:*tty*))))))
+
+;; button that can be clicked on
+(bifrost:with-bifrost
+  (bifrost:with-mouse-tracking ()
+    (bifrost:with-cbox t
+      (bifrost:rune-write :clear)
+      (bifrost:rune-write :move-cursor)
+      (format sb-sys:*tty* "~% Click the button")
+      (format sb-sys:*tty* "~% q to quit")
+      (let ((row 5)
+            (col 10)
+            (text "THE BUTTON"))
+        (bifrost:rune-write `(:move-cursor ,row ,col))
+        (write-string text sb-sys:*tty*)
+	      (bifrost:register-cbox! text
+			                          :min-row row
+                                :min-column col
+                                :max-row (+ row 1)
+                                :max-column (+ col (length text)))
+        (bifrost:rune-write `(:move-cursor ,(+ row 3) 1))
+        (force-output sb-sys:*tty*)
+	      (loop
+	        (bifrost:rune-case (bifrost:rune-read-no-hang)
+            (nil (sleep 0.1))
+            ((#\q #\Q) (return :done))
+            (:cbox-release-left
+             (format sb-sys:*tty*
+                     "~%RUNE: ~S~%CBOX: ~S"
+                     bifrost:*rune*
+                     bifrost:*cbox*)
+             (force-output sb-sys:*tty*))
+            (otherwise nil)))))))
+```
+
+---------------
+
 # KEY CONCEPTS
+
+## IMPORTANT SETUP FORM: WITH-BIFROST
+
+Wrap your enture TUI application in WITH-BIFROST
 
 ## ESCAPE SEQUENCES
 
-Terminal emulators use ESCAPE SEQUENCES -- which are special multi-character sequences -- to 
-represent events that can't be represented with a single ASCII character. For example, pressing
-an arrow key on the keyboard or moving the mouse. You can also use escape sequences to trigger low-level commands such as changing the background color or clearing the screen.
+Terminal emulators use ESCAPE SEQUENCES -- which are special multi-character sequences -- to represent events that can't be represented with a single ASCII character. For example, pressing an arrow key on the keyboard or moving the mouse. You can also use escape sequences to trigger low-level commands such as changing the background color or clearing the screen.
 
 RUNE-READ/RUNE-WRITE map between escape sequences & simple s-expressions in order to make it easier to interact with the terminal emulator from lisp.
 
@@ -48,13 +119,7 @@ The CBOX related runes are:
   `(:CBOX-UNCLICK-LEFT row column)`
     When the user clicks, then moves off of the button region before releasing in order to abort the click
 
-
-## RAW IO
-
-In order for RUNE-READ to work correctly, in you need to call it within  WITH-RUNE-RAW-IO. This is so that it can listen directly to the raw input events
-
-
-# SUPPORTED MOUSE EVENTS
+## MOUSE EVENTS
 
 BIFROST has been tested with the following XTERM mouse tracking modes:
 - 1000 - basic left click/release actions
@@ -71,107 +136,25 @@ There is currently no plan to support the following:
  - mouse wheel scrolling
  - the middle mouse button
 
----------------
+- it initializes `*BIFROST-IO*` to send/receive info from the terminal
+- it also does other important setup
 
+## DEBUGGING MODES
 
-# QUICK START PLAYBOOK EXAMPLES
+When running outside of a Unix-like terminal emulator (eg: loading in SLIME/EMACS), WITH-BIFROST automatically puts the app into a special "read-debug" mode:
+  1. you must send a #\newline (hit ENTER) to send a burst of characters to BIFROST 
+    (this is to bypass any read buffers getting in the way)
+  2. you can use the #\~ character as a special prefix allowing you to enter rune literals
+     (note: this only works as the first thing you send after the last #\newline)
+       ~:up-arrow
+       ~(:move-cursor 2 2)
+       ~#\a
+       ~#\~
 
-Normally you would use the higher-level SKALD library. These examples show how the low-level
-BIFROST library works:
-
-
-```
-;; query terminal size
-(bifrost:with-rune-raw-io
-  (bifrost:rune-write :query-terminal-size))
-
-;; draw 01234 on the screen at the row/column position 5/10
-(progn
-  (bifrost:rune-write :clear)
-  (dotimes (i 6)
-    (bifrost:rune-write `(:move-cursor 5 ,(+ i 10)))
-    (bifrost:rune-write (code-char (+ 48 i))))
-  (bifrost:rune-write :move-cursor) ; move the cursor to upper left hand corner
-  (values))
-
-;; print keystrokes & mouse clicks
-;; (bifrost:with-rune-raw-io
- (bifrost:with-rune-raw-io
-  (bifrost:flush-rune-read-buffer)
-  (bifrost:with-mouse-tracking ()
-    (bifrost:rune-write :clear)
-    (bifrost:rune-write :move-cursor) ; move the cursor to upper left hand corner
-    (format *terminal-io* "~% type some keys &/or click on the screen!")
-    (format *terminal-io* "~% q to quit")
-    (force-output *terminal-io*)
-    (loop
-      (bifrost:rune-case (bifrost:rune-read-raw-no-hang)
-        (nil (sleep 0.1))
-        ((#\q #\Q) (return :done))
-        (otherwise
-         (format *terminal-io* "~%~S" bifrost:*rune*)
-         (finish-output *terminal-io*))))))
-
-;; buttons that can be clicked / tapped
-;; (bifrost:with-rune-raw-io
-(bifrost:with-rune-raw-io
-  (bifrost:flush-rune-read-buffer)
-  (bifrost:with-mouse-tracking ()
-    (bifrost:with-cbox t
-      (bifrost:rune-write :clear)
-      (bifrost:rune-write :move-cursor)
-      (format *terminal-io* "~% click around")
-      (format *terminal-io* "~% q to quit")
-      (let ((row 5)
-            (col 10)
-            (text "BIG-BUTTON"))
-        (bifrost:rune-write `(:move-cursor ,row ,col))
-        (write-string text *terminal-io*)
-	      (bifrost:register-cbox! text
-			                          :min-row row
-                                :min-column col
-                                :max-row (+ row 1)
-                                :max-column (+ col (length text)))
-        (bifrost:rune-write `(:move-cursor ,(+ row 3) 1))
-        (force-output *terminal-io*)
-	      (loop
-	        (bifrost:rune-case (bifrost:rune-read-no-hang)
-            (nil (sleep 0.1))
-            ((#\q #\Q) (return :done))
-            (:cbox-release-left
-             (format *terminal-io*
-                     "~%RUNE: ~S~%CBOX: ~S"
-                     bifrost:*rune*
-                     bifrost:*cbox*)
-             (force-output *terminal-io*))
-            (otherwise nil)))))))
-```
-
-
-Debugging playbook
-
-```
-;; make RUNE-WRITE print #\Esc in a human readable way so that you can more easily
-;; troubleshoot escape sequences generated by your program. also useful for unit tests
-(setf bifrost:*rune-write-debug-mode* :escape-control)
-
-
-;; make RUNE-WRITE fully suppress escape sequences so that you can isolate the
-;; other text your program is sending to the terminal
-(setf bifrost:*rune-write-debug-mode* :no-control)
-
-;; To make RUNE-READ work within SLIME/EMACS REPL
-;; for debugging only
-(setf  bifrost:*rune-read-debug-mode* t)
-
-;; when in this special debug mode, you can use the #\~ character as a special prefix
-;; allowing you to enter rune literals when in read debug mode:
-;;   ~:up-arrow
-;;   ~(:move-cursor 2 2)
-;;   ~#\a
-;;   ~#\~
-
-```
+You can also put the app into "write-debug" mode by setting `BIFROST:*BIFROST-DEBUG-MODE*` to one of the following values:
+- :NO-CONTROL - suppress all escape sequence characters
+- :ESCAPE-CONTROL - print escape character readably, so that escape sequences can be inspected.
+                    use this mode for unit testing TUI apps
 
 
 ---------------
@@ -180,37 +163,40 @@ Debugging playbook
 
 # API
 
-## Writing to the terminal
+## Setup
 
-  `RUNE-WRITE (rune-or-char &optional (stream *terminal-io*))`
-    - send `RUNE-OR-CHAR` to `STREAM`
+Wrap your entire TUI application within WITH-BIFROST:
+
+  `WITH-BIFROST (&body body)`
+    - initializes `*BIFROST-IO*` & `*BIFROST-TTY-P*`
+    - when `BIFROST-TTY-P*` is non-null, executes BODY within raw IO mode. This bypassess line buffering by the terminal. Otherwise, executes BODY within a special "read-debug" 
+    mode
+    - WITH-BIFROST can be called recursively. The top-level call flushes out the IO buffers to do cleanup in between invocations.
+    - FLOKKR calls WITH-BIFROST implicitly. So you can technically run FLOKKR outside of WITH-BIFROST. But it's recommended to wrap everything within WITH-BIFROST, including FLOKKR, if you are building a TUI on top of BIFROST
+    
+It sets these variables:
+   
+  `*BIFROST-TTY-P*`
+  - non-null if inside a Unix-like terminal emulator like xterm, gnome-terminal, iTerm2, Mac OSX Terminal, TTYD, etc.
+  
+  `*BIFROST-IO*`
+   - set by `WITH-BIFROST`
+   - You can write to/from to interact with terminal. If you do this, you will likely need to call FORCE-OUTPUT/FINISH-OUTPUT a lot. Recommend using SKALD instead of interacting with this directly.
+
+
+## Sending runes to the terminal
+
+  `RUNE-WRITE (rune-or-char)`
+    - send `RUNE-OR-CHAR` to `*BIFROST-IO*`
     - runes with no payload can be provided as a keyword or a list, so `:HIDE-CURSOR` & `(:HIDE-CURSOR)` are treated as the same 
     - see below for full dictionary of known tokens
 
-  `*RUNE-WRITE-DEBUG-MODE*`
-    - during normal mode, this should be set to `NIL`
-    - set of to one of the following:
-      `:ESCAPE-CONTROL`
-        print #\Esc as a readible ASCII. this is useful to inspect the control commands you are sending the terminal & also for unit testing
-      `:NO-CONTROL`
-        supress escape sequences. filtering them out makes it easier to debug the rest of your application
 
+## Reading runes from the terminal
 
-
-## Reading from the terminal
-
-Important setup: bypass terminal line buffering
-
-  `WITH-RUNE-RAW-IO (&body body)`
-    executes `BODY` within raw IO mode, in order to bypass line buffering by the terminal.
-    however, if `*RUNE-READ-DEBUG-MODE*` is non-null, then raw mode is not entered
-
-
-Reading from the terminal
-
-  `RUNE-READ (&optional (stream *terminal-io*))`
+  `RUNE-READ ()`
     like `READ-CHAR`, except that:
-      1. `STREAM` defaults to `*TERMINAL-IO*` instead of `*STANDARD-INPUT*`
+      1. it reads from `*BIFROST-IO*`
       2. Multi-character escape sequences are converted to s-expressions we call the return value of `RUNE-READ` a "rune". A rune is either:
          - a "simple rune", which is a character, as would be returned by `READ-CHAR` (eg: `#\a` or `#\Newline`)
          - a "complex rune", which is list of the format `(NAME . PAYLOAD)` representing an escape sequence (eg: `(:MOVE-CURSOR ROW COLUMN)` or `(:UP-ARROW)`)
@@ -220,7 +206,7 @@ Reading from the terminal
      activates a CBOX (which is a rectangular click region defined by the user), then a CBOX related event like `(:CBOX-CLICK-LEFT row column)` is sent instead
        - for more about this, see: `WITH-BIFROST-CBOX` & `REGISTER-CBOX!`
       
-  `RUNE-READ-NO-HANG (&optional (stream *terminal-io*))`
+  `RUNE-READ-NO-HANG ()`
     - like `RUNE-READ` excect that if if there's nothing to read, then it returns `NIL` instead of hanging. This is the `READ-CHAR-NO-HANG` version of `RUNE-READ`
     - NOTE: `RUNE-READ-NO-HANG` actually does do a very small amount of hanging when processing escape sequences (see `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
       
@@ -229,35 +215,17 @@ Reading from the terminal
   `*RUNE-PAYLOAD*`
     these 3 variables are set by `RUNE-READ` & `RUNE-READ-NO-HANG` to match the last rune that was read
 
-  `*RUNE-READ-POLL-FREQUENCY*`
-    - this is how frequently RUNE-READ should poll the input stream for the next characer
-    - used by RUNE-READ, & also used `RUNE-READ-NO-HANG` while parsing escape sequences (see `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
-
   `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*`
     - the only way to tell the difference between an escape sequence & the user hitting ESC is to both (1) see if the characters that come next match a known escape sequence & (2) track the delay between characters (escape sequences should send all the characters at once). This parameter controls how many seconds to wait between characters before deciding that a sequence of valid escape sequence characters was sent too slowly to be an escape sequence
     - it is used by both `RUNE-READ` & `RUNE-READ-NO-HANG` to process escape sequences
     - if you set `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` to NIL, then you can enter escape sequences character-by-character by hand for testing/debugging purposes
 
-Managing the read buffer:
 
-  `FLUSH-RUNE-READ-BUFFER (&key (stream *terminal-io*))`
-   - clears both `*RUNE-READ-BUFFER*` & any input buffered in `STREAM`, so that neither are detected by future calls to `RUNE-READ` or `RUNE-READ-NO-HANG`
-   - returns 2 values:
-       1. the number of characters flushed from `*RUNE-READ-BUFFER*`
-       2. the number of characters flushed from `STREAM`
-   - make sure to call this when starting a new terminal session so that data from the previous session doesn't leak into the new one
-   - NOTE: the read buffer is not reset when RUNE-READ is called on different streams. practically, this shouldn't be an issue, since the library is intended to be used exclusively with `*TERMINAL-IO*`. However, it could cause a gnarly bug if you try switching between streams without calling `FLUSH-RUNE-READ-BUFFER`. So call `FLUSH-RUNE-READ-BUFFER`. That's the workaround for now
-
-  `*RUNE-READ-BUFFER*`
-   - a read buffer that stores characterss read from stream but not yet processed by `RUNE-READ`. This is needed to allow backtracking from multi-char sequences that might be by but aren't an understood escape sequence
-   - Note: if the read buffer contains an escape sequence, you many see the literal characters (starting with `#\esc`) when inspecting `*RUNE-READ-BUFFER*` even though the next call to `RUNE-READ` or `RUNE-READ-NO-HANG` would return a rune instead (consuming those chars)
-
-
-Setup: tracking mouse events
+Tracking mouse events
 
   `WITH-MOUSE-TRACKING ((&optional (mode 1000) (stream *terminal-io*)) &body body)`
     - instruct the terminal to capture & send mouse tracking events, via XTERM mouse tracking standard, then turn it off when done executing `BODY`
-    - currently, the only support mode is 1000 (currently 1001, 1002, 1003, are unsupported)
+    - currently, 1000 & 1003 have been tested
 
   `*BIFROST-MOUSE-TRACKING-MODE*`
     - if within `WITH-BIFROST-MODE-MOUSE-TRACKING-MODE` this will be the mode, otherwise it will be `NIL`. Currently mode 1000 is the only supported mode.
@@ -285,7 +253,7 @@ Defining & managing CBOX click regions
     - they are intended to be set by code drawing to the screen (such as `SKALD:SPRITE` before calling `REGISTER-CBOX!` to make it easier for CBOX regions to match what is drawn on the screen
 
 
-Reading mouse/touch events from the terminal
+Reading mouse/tap events from the terminal
  
   `LOOKUP-CBOX (row column)`
     Exposed to troubleshoot CBOXES matching based on terminal row/column.
@@ -312,20 +280,34 @@ Reading mouse/touch events from the terminal
     for interacting with the `*CBOX*` and `*ACTIVE-CBOX-PRESSED*` objects
 
 
-Debugging in the REPL:
+## debugging
 
-  `*RUNE-READ-DEBUG-MODE*`
-    - during normal mode, this should be set to NIL
-    - set it to `T` to enter a special debugging mode that enables you to read characters entered into the SLIME/EMACS REPL. In this mode:
-         1. raw IO is turned off, so `WITH-RUNE-RAW-IO` just acts like `PROGN`
-         2. it uses call to `READ-LINE` to bypass the SLIME REPL line buffer
-            this means that calls to `RUNE-READ-NO-HANG` are blocking, & that a newline is
-            required to send a burst of characters to be read. This mode should only be used
-            for debugging
+When run outside of a Unix-like terminal emulator (eg: when loading SLIME/EMAC), WITH-BIFROST automatically enters a special "read-debug" mode. In this mode:
+  1. you must send a #\newline (hit ENTER) to send a burst of characters to BIFROST 
+    (this is to bypass any read buffers getting in the way)
+  2. you can use the #\~ character as a special prefix allowing you to enter rune literals
+     (note: this only works as the first thing you send after the last #\newline)
+       ~:up-arrow
+       ~(:move-cursor 2 2)
+       ~#\a
+       ~#\~
+
+You can change the special prefix character allowing you to enter rune literals:
 
   `*RUNE-READ-DEBUG-LITERAL-CHAR*`
     - defaults to `#\~`
     - when in debug mode, this character instructs RUNE-READ to read a literal value using `COMMON-LISP:READ`. This allows you to send rune literals to `RUNE-READ` when debugging/troubleshooting in the REPL
+
+
+You can also put the app into "write-debug" mode:
+
+  `*BIFROST-DEBUG-MODE*`
+    - Defaults to `NIL`
+    - set of to one of the following to enter "write-debug" mode:
+      `:ESCAPE-CONTROL`
+        print #\Esc as a readible ASCII. this is useful to inspect the control commands you are sending the terminal & also for unit testing
+      `:NO-CONTROL`
+        supress escape sequences. filtering them out makes it easier to debug the rest of your application
 
 
 
@@ -348,11 +330,11 @@ Debugging in the REPL:
 
 ## Advanced features
 
-  `RUNE-WRITE-RAW (&optional (stream *terminal-io*))`
+  `RUNE-WRITE-RAW ()`
     just like `RUNE-READ` except that responses from sending queries such as `:QUERY-TERMINAL-SIZE` are not read or parsed.
     
-  `RUNE-READ-RAW (&optional (stream *terminal-io*))`
-  `RUNE-READ-RAW-NO-HANG (&optional (stream *terminal-io*))`
+  `RUNE-READ-RAW ()`
+  `RUNE-READ-RAW-NO-HANG ()`
     these two functions are just like `RUNE-READ` / `RUNE-READ-NO-HANG` except that mouse events (like `:MOUSE-CLICK-LEFT`) are NOT converted to CBOX events (like `:CBOX-CLICK-LEFT`) when a CBOX is matched
 
 

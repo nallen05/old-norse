@@ -7,17 +7,17 @@
 ;;;; sending escape sequences to the terminal
 
 
-(defvar *rune-write-debug-mode* nil)
+(defvar *bifrost-debug-mode* nil)
   ;; NIL
   ;; :no-control
   ;; :escape-control
 
 (defun %send-escape-sequence (stream &rest strings-and-chars)
-  (unless (eq *rune-write-debug-mode* :no-control)
+  (unless (eq *bifrost-debug-mode* :no-control)
     (dolist (% strings-and-chars)
 	    (etypecase   %
 	      (string (write-string % stream))
-	      (character (if (and (eq *rune-write-debug-mode* :escape-control)
+	      (character (if (and (eq *bifrost-debug-mode* :escape-control)
 			                      (char= % #\Esc))
 			                 (format stream "~Ax~X" #\\ (char-code #\Esc))
 			                 (write-char % stream)))))))
@@ -67,7 +67,7 @@
        (%toggle-on)
        (setf *bifrost-terminal-mouse-event-tracking-enabled* mode)))))
 
-(defun rune-write-raw (rune-or-char &optional (stream *terminal-io*))
+(defun rune-write-raw (rune-or-char &optional (stream *bifrost-io*))
   (when rune-or-char
     (if (characterp rune-or-char) 
         (write-char rune-or-char stream)
@@ -154,7 +154,7 @@
   (error "unable to parse query position. Bad escape sequence returned by the terminal after querying cursor position.")
   )
 
-(defun rune-write (rune-or-char &optional (stream *terminal-io*))
+(defun rune-write (rune-or-char &optional (stream *bifrost-io*))
   (rune-write-raw rune-or-char stream)
   (rune-case rune-or-char
     (:query-terminal-size

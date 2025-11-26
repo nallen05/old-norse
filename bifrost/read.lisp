@@ -1,34 +1,60 @@
 
 
-
-
-
-
 (in-package :bifrost)
 
+;; raw interaction with the terminal
+
+(defvar *bifrost-tty-p*)
+(defvar *bifrost-io*)
+
+(defun init-bifrost-io ()
+  (let* ((input-stream (etypecase sb-sys:*tty*
+                         (sb-sys:fd-stream sb-sys:*tty*)
+                         (two-way-stream (two-way-stream-input-stream sb-sys:*tty*))))
+         (fd (sb-sys:fd-stream-fd input-stream)))
+    (setf *bifrost-tty-p*
+          (when (plusp (sb-unix:unix-isatty fd))
+            fd)
+          
+          *bifrost-io*
+          (if *bifrost-tty-p*
+              sb-sys:*tty*
+              *terminal-io*))))
 
 
-;; bypass terminal line buffering
-;; important setup
+;;       (synonym-stream (init-bifrost-io (symbol-value (synonym-stream-symbol sb-sys:*tty*)
+(defun clear-bifrost-io (&optional (stream *bifrost-io*))
+  "Clear buffered input & output"
+  (etypecase stream
+    (synonym-stream (clear-bifrost-io (symbol-value (synonym-stream-symbol stream))))
+    (sb-sys:fd-stream
+     (finish-output stream)
+     (loop while (listen stream)
+           do (read-char-no-hang stream)))
+    (two-way-stream
+     (finish-output (two-way-stream-output-stream stream))
+     (let ((input (two-way-stream-input-stream stream)))
+       (loop while (listen input)
+             do (read-char-no-hang input))))))
 
-(defmacro with-rune-raw-io (&body body)
-  (let ((%doit (gensym "with-rune-raw-io-body")))
-    `(let ((*%within-bypass-terminal-read-buffer-p* t))
-       (declare (special *%within-bypass-terminal-read-buffer-p*))
-       (flet ((,%doit () ,@body))
-         (if *rune-read-debug-mode*
-             (,%doit)
-	           (trivial-raw-io:with-raw-io (:vmin 0 :vtime 0)
-		           (,%doit)))))))
+(defun warn-if-outside-terminal ()
+  (unless *bifrost-tty-p*
+    (warn "We're outside of a Unix-like terminal emulator. Entering \"read-debug\" mode. To send input to BIFROST, you must force with a newline, similar to READ-LINE, in order to bypass any read buffers in the way of raw IO. See also: *BIFROST-DEBUG-MODE*")
+    (finish-output *error-output*)))
 
 
-
-;; read buffer
-;; needed to unread sequences of multiple characters
+;; bifrost read buffer - needed to unread sequences of multiple characters
 
 (defstruct fifo-char-buffer
   first
   last)
+
+(defparameter *rune-read-buffer* (make-fifo-char-buffer))
+
+(defun reset-fifo-char-buffer (&optional (fifo *rune-read-buffer*))
+  (setf (fifo-char-buffer-first fifo) nil
+        (fifo-char-buffer-last fifo)  nil)
+  fifo)
 
 (defun prepend-fifo-char-buffer (char-or-charlist fifo) ;; put it at the beggining
   (when char-or-charlist
@@ -76,6 +102,41 @@
 
 
 
+;; <<<>>> here
+;;   1. [x] export symbol
+;;   2. [x] clear output at toplevel
+;;   3. [.] debugging mode
+;;   4. [ ] update docs
+
+
+;; WITH-BIFROST: important setup form
+
+ (defvar *within-with-bifrost-form* nil)
+
+(defmacro with-bifrost (&body body)
+  (let ((doit (gensym "with-bifrost-body")))
+    `(flet ((,doit ()
+              (let ((*within-with-bifrost-form* t))
+                (declare (special *within-with-bifrost-form*))           
+                ,@body)))
+       (unless *within-with-bifrost-form*
+         (init-bifrost-io)
+         (warn-if-outside-terminal)
+         (reset-fifo-char-buffer)
+         (clear-bifrost-io)) ; remove stray input/output
+       (unwind-protect
+            (if (and *bifrost-tty-p*
+                     (not *within-with-bifrost-form*))
+                (trivial-raw-io:with-raw-io (:vmin 0 :vtime 0)
+                  (,doit))
+                (,doit))
+         (unless *within-with-bifrost-form*
+           (clear-bifrost-io) ; ensure clean state for warnings
+           (reset-fifo-char-buffer)
+           ;; warn a second time, in case the first  was obscured by TUI output
+           (warn-if-outside-terminal))))))
+
+
 ;; whitelist of known RUNES
 ;; defined here for passing rune literals when in T
 
@@ -95,29 +156,10 @@
     :mouse-move))
     
  
-
 ;; Reading from the terminal
-
-(defparameter *rune-read-buffer* (make-fifo-char-buffer))
-
-(defvar *rune-read-poll-frequency* 0.005)
-
-(defun flush-rune-read-buffer (&optional (stream *terminal-io*))
-  (values (let ((n 0))
-	          (loop while (listen stream)
-		              do (progn
-		                   (read-char stream nil nil)
-		                   (incf n)
-		                   (sleep *rune-read-poll-frequency*)))
-	          n)
-	        (let ((n (length (fifo-char-buffer-first *rune-read-buffer*))))
-	          (setf *rune-read-buffer* (make-fifo-char-buffer))
-	          n)))
   
 ;; (defun peek-rune-read-buffer ()
 ;;   (first (fifo-char-buffer-first *rune-read-buffer*)))
-
-(defvar *rune-read-debug-mode* nil)
 
 (defparameter *rune-read-debug-literal-char* #\~)
 
@@ -126,26 +168,47 @@
 like READ-CHAR-NO-HANG except that if multiple characters are buffered to be read from STREAM
 then all of them are read & it returns a list of characters instead of a single character
 
- in order to bypass line buffering done by most terminals, you need to do one of the following
-   A) call within TRIVIAl-RAW-IO:WITH-RAW-IO, or use similar mechanism to bypass at a low-level
-   B) set *RUNE-READ-DEBUG-MODE* to T. This switches %READ-CHAR-BURST-NO-HANG into
-      a special debugging mode, which functions similarly to READ-LINE.
-         a #\newline -> #\a
-         a b c #\newline -> (#\a #\b #\c)
-      T mode supports 2 special cases
-         1. a single newline is interpreted as #\newline:
-           #\newline -> #\newline
-         2. a special character allows you to enter a rune literal
-           ~ :up-arrow -> :UP-ARROW
-           ~ (:move-cursor 1 1) -> (:MOVE-CURSOR 1 1)
-      in the second case, %READ-CHAR-BURST-NO-HANG also returns a second value: T
-      the special character is configurable via *RUNE-READ-DEBUG-LITERAL-CHAR*
-      the special character must be the FIRST character of the buffered line to work:
-         a b ~ :up-arrow -> (#\a #\b #\~ #\: #\u #\p #\- #\a #\r #\r #\o #\w)
-"
-  (if *rune-read-debug-mode*
+this function should only be called within BIFROST:WITH-BIFROST & sets a special flag
+*BIFROST-TTY-P* that indicates whether or not the underlying STREAM is a Unix-like TTY
+& TRIVIAl-RAW-IO:WITH-RAW-IO is activated
 
-      ;; debugging mode; read the docs to understand
+If we're NOT inside of a Unix-like TTY, then we enter a special read-debug mode that causes
+this  function to behaves closer to CL:READ-LINE
+  a #\newline -> #\a
+  a b c #\newline -> (#\a #\b #\c)
+
+Read-debug mode supports 2 special cases
+  1. a single newline is interpreted as #\newline:
+     #\newline -> #\newline
+  2. the special character *rune-read-debug-literal-char* (which defaults to #\~) allows you to
+enter a rune literal
+     ~ :up-arrow -> :UP-ARROW
+     ~ (:move-cursor 1 1) -> (:MOVE-CURSOR 1 1)
+the special character is configurable via *RUNE-READ-DEBUG-LITERAL-CHAR*
+the special character must be the FIRST character of the buffered line to work:
+  a b ~ :up-arrow -> (#\a #\b #\~ #\: #\u #\p #\- #\a #\r #\r #\o #\w)
+if the special character is triggered, %READ-CHAR-BURST-NO-HANG also returns a second value: T
+"
+  (assert *within-with-bifrost-form*)
+  (if *bifrost-tty-p*
+
+      ;; we're in a Unix-like terminal that implmenets standard TTY. Enter no hang mode
+      (let ((c1 (read-char-no-hang stream nil nil)))
+        (when c1
+          (let ((c2 (read-char-no-hang stream nil nil)))
+            (if c2
+                (let ((accum (list c2 c1)))
+                  (loop
+                    (let ((cn (read-char-no-hang stream nil nil)))
+                      (if cn
+                          (push cn accum)
+                          (return-from %read-char-burst-no-hang
+                            (nreverse accum))))))
+                c1))))
+
+      ;; we're not in a standard TTD. we're probably in SLIME/EMACS.
+      ;; Entering a special read-debug mode that looks for newlines & rune literals
+      ;; read the docs to understand
       (let ((c1 (read-char stream nil nil)))
         (cond
 
@@ -156,13 +219,13 @@ then all of them are read & it returns a list of characters instead of a single 
 
           ;; rune literal
 	        ((eql c1 *rune-read-debug-literal-char*)
-	         (let* ((bifrost-literal (read stream nil nil))
-		              (bifrost-literal-type (if (listp bifrost-literal)
-					                                  (first bifrost-literal)
-					                                  bifrost-literal)))
-	           (unless (find bifrost-literal-type
-			                     *rune-read-literal-whitelist*)
-               (error "BIFROST debug node: encountered rune literal of unknown type ~S. Valid types are ~{~S ~}" bifrost-literal *rune-read-literal-whitelist*))
+	         (let ((bifrost-literal (read stream nil nil)))
+	           (unless (or (characterp bifrost-literal)
+                         (find (if (listp bifrost-literal)
+					                         (first bifrost-literal)
+					                         bifrost-literal)
+			                         *rune-read-literal-whitelist*))
+               (error "Encountered an unknown rune literal ~S. Valid types are ~{~S ~}" bifrost-literal *rune-read-literal-whitelist*))
 	           (values bifrost-literal
 		                 t)))
 
@@ -176,22 +239,7 @@ then all of them are read & it returns a list of characters instead of a single 
 				                 (if (null (cdr accum))
 				                     c1
 				                     (nreverse accum)))
-		                   (push cn accum))))))))
-
-      ;; no hang mode
-      ;; must be within TRIVIAl-RAW-IO:WITH-RAW-IO to work with terminal
-      (let ((c1 (read-char-no-hang stream nil nil)))
-        (when c1
-          (let ((c2 (read-char-no-hang stream nil nil)))
-            (if c2
-                (let ((accum (list c2 c1)))
-                  (loop
-                    (let ((cn (read-char-no-hang stream nil nil)))
-                      (if cn
-                          (push cn accum)
-                          (return-from %read-char-burst-no-hang
-                            (nreverse accum))))))
-                c1))))))
+		                   (push cn accum))))))))))
 
 (defun %read-char-no-hang (stream)
   "
@@ -209,9 +257,9 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
           
 	        ;; rune literal seen; only seen within T debug mode
 	        (rune-literal-p
-	         (if *rune-read-debug-mode*
-               (values burst t)
-	             (error "BIFROST: something is wrong! Rune literal seen outside of debug mode: ~S" burst)))
+	         (if *bifrost-tty-p*
+	             (error "Something is wrong! BIFROST::%READ-CHAR-NO-HANG encountered a rune literal seen outside of debug mode: ~S" burst)
+               (values burst t)))
 
 	        ;; single character read
 	        ((characterp burst)
@@ -227,6 +275,8 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 ;; escape sequences
 
 (defvar *rune-read-alternate-esc-character-for-debugging* nil)
+
+(defvar *rune-read-poll-frequency* 0.005)
 
 (defvar *rune-read-escape-sequence-max-hang* 0.1)
 
@@ -396,16 +446,16 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 				                           (%parse-mouse-event 3 row column))))))))))))))))))
 
 
-(defun %rune-read-raw-no-hang (&optional (stream *terminal-io*))
+(defun %rune-read-raw-no-hang (&optional (stream *bifrost-io*))
   (multiple-value-bind (xx rune-literal-p)
       (%read-char-no-hang stream)
     (cond
 
       ;; rune literal
       (rune-literal-p
-       (if *rune-read-debug-mode*
-           xx
-           (error "BIFROST: something is wrong! Rune literal seen outside of debug mode: ~S" xx)))
+       (if *bifrost-tty-p*
+           (error "BIFROST: something is wrong! BIFROST::%RUNE-READ-RAW-NO-HANG encountered a rune literal outside of read-debug mode: ~S" xx)
+           xx))
         
       ;; nothing there
       ((null xx)
@@ -425,7 +475,9 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 (defvar *rune-name* nil)
 (defvar *rune-payload* nil)
 
-(defun rune-read-raw-no-hang (&optional (stream *terminal-io*))
+(defun rune-read-raw-no-hang (&optional (stream *bifrost-io*))
+  (unless *within-with-bifrost-form*
+    (error "BIFROST: RUNE-READ-RAW-NO-HANG called outside of WITH-BIFROST or FLOKKR form. In order to read from the terminal, RUNE-READ-RAW-NO-HANG needs to be within one of these forms"))
   (let ((rune (%rune-read-raw-no-hang stream)))
     (cond
 
@@ -450,7 +502,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
              *rune-payload* nil)
        rune))))
   
-(defun rune-read-raw (&optional (stream *terminal-io*))
+(defun rune-read-raw (&optional (stream *bifrost-io*))
   (loop
     (let ((rune (rune-read-raw-no-hang stream)))
 	    (if rune

@@ -2,20 +2,21 @@
 
 (defpackage :bifrost
   (:use :cl)
-  (:export  ;; writing to the terminal
+  (:export  ;; raw IO
+            :*bifrost-tty-p*
+            :*bifrost-io*
+            :with-bifrost
+
+            ;; writing to the terminal
             :rune-write
-            :*rune-write-debug-mode*
+            :*bifrost-debug-mode*
             
             ;; reading from the terminal
-            :with-rune-raw-io
             :rune-read
             :rune-read-no-hang
             :*rune*
             :*rune-name*
             :*rune-payload*
-
-            ;; refreshing the read buffer
-            :flush-rune-read-buffer
 
             ;; dispatching control flow based on runes
             :rune-case
@@ -23,8 +24,6 @@
             ;; debugging modes
             :*rune-read-debug-mode*
             :*rune-read-debug-literal-char*
-            :*rune-read-poll-frequency*
-            :*rune-read-escape-sequence-max-hang*
               
             ;; tracking mouse events
 	          :with-mouse-tracking
