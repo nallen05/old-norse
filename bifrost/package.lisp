@@ -30,7 +30,7 @@
             :*bifrost-mouse-tracking-mode*
 
 	          ;; defining CBOX click regions
-            :with-cbox
+            :with-cbox-layer
             :register-cbox!
 	          :*cbox-min-row*
             :*cbox-min-column*

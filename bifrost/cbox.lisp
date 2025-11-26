@@ -41,7 +41,7 @@
 (defvar *%within-with-cbox-p* nil)
 (defvar *cbox-stack*          nil)
 
-(defmacro with-cbox (clear-p &body body)
+(defmacro with-cbox-layer (clear-p &body body)
   (let ((%clear-p (gensym "clear-cbox-context")))
     `(let* ((,%clear-p ,clear-p)
             (*%within-with-cbox-p* t)

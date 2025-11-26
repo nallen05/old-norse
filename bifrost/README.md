@@ -51,7 +51,7 @@ Normally you would use BIFROST with FLOKKR & SKALD. But the examples below illus
 ;; button that can be clicked on
 (bifrost:with-bifrost
   (bifrost:with-mouse-tracking ()
-    (bifrost:with-cbox t
+    (bifrost:with-cbox-layer t
       (bifrost:rune-write :clear)
       (bifrost:rune-write :move-cursor)
       (format sb-sys:*tty* "~% Click the button")
