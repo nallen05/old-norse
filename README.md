@@ -8,7 +8,7 @@ Old Norse is collection of Common Lisp libraries for building fast, responsive T
 
 Old Norse was originally created for prototyping games. But it's just as useful for developing quick internal tools (eg: system monitoring, log viewers, build status, etc) or interactive data visualizations (charts, tables, real-time data feeds, etc). 
 
-Together, the Old Norse libraries form a grid-based terminal graphics engine, with focus on UI speed/responsiveness & rapid development.
+Together, the Old Norse libraries form a grid-based terminal graphics engine, that runs on Unix-like terminal emulators, with focus on UI speed/responsiveness & rapid development.
 
 
 ## Libraries 
@@ -17,7 +17,7 @@ Together, the Old Norse libraries form a grid-based terminal graphics engine, wi
 [Bifrost](bifrost/) is a low-level utility for reading from & controlling the terminal
 - Two-way mapping between ASCII escape sequences & s-expressions
 - Low-level logic for mouse events and layerable click regions
-- Raw I/O to bypass terminal read buffer (plus debug mode to troubleshoot TUI within SLIME/EMACS)
+- Raw I/O to bypass terminal read buffer (plus debug modes to troubleshoot TUIs within SLIME/EMACS)
 
 ### Flokkr
 [Flokkr](flokkr/) is a cooperative multitasking library purpose built for building interactive Terminal UI applications
@@ -29,7 +29,7 @@ Together, the Old Norse libraries form a grid-based terminal graphics engine, wi
 [Skald](skald/) is a high-level terminal UI and animation framework
 - Treat blocks of ASCII/unicode text as sprites (transparant char enables composite layering)
 - DSL-based approach to providing features like grid-based positioning/layout/alignment, foreground/background colors, cropping/fill, emojis, etc
-- Optimization to minimize flicker when redrawing the screen
+- Optimized for fast screen redrawing with minimal flicker
 
 ### Meadhorn
 [Meadhorn](meadhorn/) is a simple debugging utility. 
@@ -144,9 +144,10 @@ In the future, we will also:
 - Provide documentation on easy one-click multi-region deployment via [fly.io](http://fly.io)
 
 ## Requirements
-- Terminal with XTERM mouse tracking (iTerm, Xterm, etc.)
+- Unix-like terminal emulator that implements standard TTY interface (xterm, gnome-terminal, iTerm2, Mac OS X Terminal, TTYD, etc.)
 - Monospaced font
-- FLOKKR & MEADHORN require SBCL. BIFROST/SKALD are portable.
+- To use mouse tracking features, terminal must support XTERM mouse tracking protocol
+- Implementation-dependent on SBCL
 
 ## Recommended conventions
 
