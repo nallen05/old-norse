@@ -276,8 +276,6 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
 (defvar *rune-read-alternate-esc-character-for-debugging* nil)
 
-(defvar *rune-read-poll-frequency* 0.005)
-
 (defvar *rune-read-escape-sequence-max-hang* 0.1)
 
 (defvar *%escape-sequence-encountered-characters*)
@@ -328,7 +326,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 	         (return c))
           
 	        ;; no, not yet... keep polling
-	        (t (sleep *rune-read-poll-frequency*)))))))
+	        (t nil))))))
 
 (defmacro with-continue-escape-sequence (stream &body cases)
   (let ((c (gensym "next-escape-sequence-char")))
@@ -501,14 +499,18 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
              *rune-name* nil
              *rune-payload* nil)
        rune))))
-  
+
+(defvar *rune-read-poll-frequency* 0.005)
+
 (defun rune-read-raw (&optional (stream *bifrost-io*))
   (loop
     (let ((rune (rune-read-raw-no-hang stream)))
 	    (if rune
 	        (return-from rune-read-raw
 		        rune)
-	        (sleep *rune-read-poll-frequency*)))))
+          (if *bifrost-tty-p*
+              (sb-sys:wait-until-fd-usable *bifrost-tty-p* :input)
+              (sleep *rune-read-poll-frequency*))))))
 
 
 
