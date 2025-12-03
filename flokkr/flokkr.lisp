@@ -27,6 +27,14 @@
   (or (null itu-time)
       (>= now-itu-time itu-time)))
 
+(defun seconds-until-itu (itu-time &optional (now-itu-time (get-internal-real-time)))
+  (/ (- itu-time now-itu-time)
+     internal-time-units-per-second))
+
+(defun sleep-until-itu (itu-time &optional (now-itu-time (get-internal-real-time)))
+  (let ((seconds (seconds-until-itu itu-time now-itu-time)))
+    (when (plusp seconds)
+      (sleep seconds))))
 
 
 ;; timer manipulation API
@@ -106,71 +114,91 @@
       (values (rfn clauses)
               rescheduler))))
 
-(defmacro subflokkr (&rest clauses)
-  (let ((activated (gensym "flokkr-activated-"))
+  
+
+(defvar *flokkr-input-read-flag* nil)
+
+(defmacro %flokkr (&body clauses)
+  (let ((start-now (gensym "flokkr-start-now-"))
+        (activated (gensym "flokkr-activated-"))
         (input-matched (gensym "flokkr-input-matched-"))
-        (next-wait (gensym "flokkr-next-wait-"))
+        (global-run-timer (gensym "flokkr-run-global-wait-"))
         lexical-state
-        body-forms)
+        body-forms
+        global-scheduler-forms)
     (dolist (c clauses)
       (case (first c)
-        (:input (push `(when bifrost:*rune*
-                         (unless ,input-matched
-                           (bifrost:rune-case bifrost:*rune*
-                                             ,@(mapcar (lambda (in-case)
-                                                         `(,@in-case
-                                                           (setf ,activated t
-                                                                 ,input-matched t)))
-                                                       (rest c)))))
+        (:input (push `(progn
+                         (unless *flokkr-input-read-flag*
+                           (bifrost:rune-read-no-hang)
+                           (setf *flokkr-input-read-flag* t))
+                         (when bifrost:*rune*
+                           (unless ,input-matched
+                             (bifrost:rune-case bifrost:*rune*
+                               ,@(mapcar (lambda (in-case)
+                                           `(,@in-case
+                                             (setf ,activated t
+                                                   ,input-matched t)))
+                                         (rest c))))))
                       body-forms))
         (:also (push `(when ,activated
                         ,@(rest c))
                      body-forms))
         (:subflokkr
          (let ((subflokkr (gensym "flokkr-"))
-               (subtimer (gensym "flokkr-timer-")))
+               (subtimer (gensym "subflokkr-timer-")))
            (push `(,subflokkr ,(second c))
                  lexical-state)
-           (push `(let ((,subtimer (funcall ,subflokkr)))
+           (push `(,subtimer ,start-now)
+                 lexical-state)
+           (push `(progn
+                    (setq ,subtimer (funcall ,subflokkr))
+                    ;; subflokkr THUNK must return an ITU time or NIL
+                    (assert (or (not ,subtimer)
+                                (numberp ,subtimer)))
                     (when ,subtimer
-                      (setf ,activated t)
-                      (setf ,next-wait
-                            (if ,next-wait
-                                (min ,subtimer ,next-wait)
-                                ,subtimer))))
-                  body-forms)))
+                      (setf ,activated t)))
+                 body-forms)
+           (push `(when ,subtimer
+                    (setf ,global-run-timer
+                          (if ,global-run-timer
+                              (min ,subtimer ,global-run-timer)
+                              ,subtimer)))
+                  global-scheduler-forms)))
         (otherwise
-         (format t "~%1~s" c)
          (multiple-value-bind (%c timer) (%get-timer-name c)
-           (format t "~%2~s" %c)
            (multiple-value-bind (%c init) (%get-initial-wait %c)
-             (format t "~%3~s" %c)
              (multiple-value-bind (%c rescheduler) (%get-rescheduler %c timer)
-               (format t "~%4~s" %c)
                (case (first %c)
                  (:do
-                  (push `(,timer ,init)
+                  (push `(,timer (add-itu-seconds ,init ,start-now))
                         lexical-state)
-                  (push `(if (itu-elapsed-p ,timer)
-                             (progn
-                               (setf ,activated t)
-                               ,@(rest %c)
-                               ,rescheduler)
-                             (when ,timer
-                               (setf ,next-wait
-                                     (if ,next-wait
-                                         (min ,timer ,next-wait)
-                                         ,timer))))
-                        body-forms))
+                  (push `(when (itu-elapsed-p ,timer)
+                           (setf ,activated t)
+                           ,@(rest %c)
+                           ,rescheduler)
+                           body-forms)
+                  (push `(when ,timer
+                           (setf ,global-run-timer
+                                 (if ,global-run-timer
+                                     (min ,timer ,global-run-timer)
+                                     ,timer)))
+                        global-scheduler-forms))
                  (otherwise (error "FLOKKR clause not recognized as :DO, :INPUT, :ALSO, or :SUBFLOKKR form: ~A" c)))))))))
-    `(let ,(reverse lexical-state)
+    `(let* ((,start-now (get-internal-real-time))
+            ,@(reverse lexical-state))
        (lambda ()
          (let (,activated
                ,input-matched
-               ,next-wait)
+               ,global-run-timer)
            (declare (ignorable ,activated ,input-matched))
+           (setf ,start-now (get-internal-real-time))
            ,@(reverse body-forms)
-           ,next-wait)))))
+           ,@(reverse global-scheduler-forms)
+           (if (and *flokkr-input-read-flag*
+                    (bifrost:rune-listen))
+               ,start-now
+               ,global-run-timer))))))
 
 
 
@@ -178,42 +206,54 @@
 
 (defun flokkr-run (thunk)
   "Main event loop: call thunk, wait for duration or input, repeat forever"
-  (let ((duration 0)
-        (fd (when (typep *terminal-io* 'sb-sys:fd-stream)
-              (sb-sys:fd-stream-fd *terminal-io*))))
-    (unless fd
-      (warn "FLOKKR: *TERMINAL-IO* is not a SB-SYS:FD-STREAM-FD. This means that FLOKKR is probably being called within SLIME/EMACS. Falling back to polling for user input. FLOKKR is optimized to be run in the terminal"))
-    (tagbody
-     start       
-       ;; if there is input, process it immediately
-       ;; keep processing until no more input is available
-       (when (bifrost:rune-read-no-hang *terminal-io*)
-         (setq duration (funcall thunk))
-         (go start))
+  (let ((global-run-timer (get-internal-real-time)))
+    (bifrost:with-bifrost
+      (loop
+        do (let ((*flokkr-input-read-flag* *flokkr-input-read-flag*))
+             (declare (special *flokkr-input-read-flag*))
+             (setq global-run-timer (funcall thunk))
+;;             (format bifrost:*bifrost-io* "~%grt=~A irf=~A" global-run-timer *flokkr-input-read-flag*)
+             
+             ;; THUNK must return an itu time or NIL
+             (assert (or (not global-run-timer)
+                         (numberp global-run-timer)))
 
-       ;; THUNK must return a duration (number of seconds) or NIL
-       (assert (or (not duration)
-                   (numberp duration)))
-         
-       (if fd
+             (if *flokkr-input-read-flag*
 
-           ;; no input available, wait for duration or next input
-           (when (or (not duration)
-                     (plusp duration))
-             (sb-sys:wait-until-fd-usable fd :input duration))
+                 ;; there is an :INPUT clause inside of THUNK
+                 ;; if there is no input available, then until next input, up to DURATION
+                 (when (or (not global-run-timer)
+                           (plusp global-run-timer))
+                   (if bifrost:*bifrost-tty-p*
 
-           ;; we're in polling mode, so just sleep for a short time
-           (unless (and duration
-                        (< duration 0.01))
-             (sleep (min duration 0.01))))
+                       ;; we're inside a Unix-like terminal emulator, so we can react instantly
+                       ;; to user input
+                       (sb-sys:wait-until-fd-usable bifrost:*bifrost-tty-p*
+                                                    :input (let ((seconds (seconds-until-itu global-run-timer)))
+                                                             (when (plusp seconds)
+                                                               seconds)))
 
-       ;; repeat
-       (go start))))
+                       ;; we're outside of a Unix-like terminal emulator, in read-debug mode
+                       ;; so fall back on inefficient polling :-(
+                       (let ((default-input-polling-timer (add-itu-seconds 0.02)))
+                         (sleep-until-itu (if global-run-timer
+                                              (min global-run-timer
+                                                   default-input-polling-timer)
+                                              default-input-polling-timer)))))
 
-
+                 ;; there is no :INPUT clause inside of THUNK
+                 ;; if there are any active timers, keep going
+                 ;; if not, then exit
+                 (if global-run-timer
+                     (sleep-until-itu global-run-timer)
+                     (return-from flokkr-run))))))))
 
 ;; main API entrypoint
 
-(defmacro flokkr (&rest clauses)
+(defmacro flokkr (&body clauses)
   `(block flokkr
-     (flokkr-run (subflokkr ,@clauses))))
+     (flokkr-run (%flokkr ,@clauses))))
+
+(defmacro subflokkr (&body clauses)
+  `(%flokkr (block subflokkr
+              ,@clauses)))
