@@ -21,8 +21,6 @@
               sb-sys:*tty*
               *terminal-io*))))
 
-
-;;       (synonym-stream (init-bifrost-io (symbol-value (synonym-stream-symbol sb-sys:*tty*)
 (defun clear-bifrost-io (&optional (stream *bifrost-io*))
   "Clear buffered input & output"
   (etypecase stream
@@ -37,9 +35,12 @@
        (loop while (listen input)
              do (read-char-no-hang input))))))
 
+(defvar *bifrost-suppress-outside-tty-warnings* nil)
+
 (defun warn-if-outside-terminal ()
-  (unless *bifrost-tty-p*
-    (warn "We're outside of a Unix-like terminal emulator. Entering \"read-debug\" mode. To send input to BIFROST, you must force with a newline, similar to READ-LINE, in order to bypass any read buffers in the way of raw IO. See also: *BIFROST-DEBUG-MODE*")
+  (unless (or *bifrost-tty-p*
+              *bifrost-suppress-outside-tty-warnings*)
+    (warn "We're outside of a Unix-like terminal emulator. Entering \"read-debug\" mode. To send input to BIFROST, you must force with a newline, similar to READ-LINE, in order to bypass any read buffers in the way of raw IO. See also: *BIFROST-DEBUG-MODE* & *BIFROST-SUPPRESS-OUTSIDE-TTY-WARNINGS")
     (finish-output *error-output*)))
 
 
@@ -50,11 +51,6 @@
   last)
 
 (defparameter *rune-read-buffer* (make-fifo-char-buffer))
-
-(defun reset-fifo-char-buffer (&optional (fifo *rune-read-buffer*))
-  (setf (fifo-char-buffer-first fifo) nil
-        (fifo-char-buffer-last fifo)  nil)
-  fifo)
 
 (defun prepend-fifo-char-buffer (char-or-charlist fifo) ;; put it at the beggining
   (when char-or-charlist
@@ -100,13 +96,14 @@
 	        ret)
 	      (pop (fifo-char-buffer-first fifo)))))
 
+(defun rune-listen ()
+  (or (fifo-char-buffer-first *rune-read-buffer*)
+      (listen *bifrost-io*)))
 
-
-;; <<<>>> here
-;;   1. [x] export symbol
-;;   2. [x] clear output at toplevel
-;;   3. [.] debugging mode
-;;   4. [ ] update docs
+(defun reset-fifo-char-buffer (&optional (fifo *rune-read-buffer*))
+  (setf (fifo-char-buffer-first fifo) nil
+        (fifo-char-buffer-last fifo)  nil)
+  fifo)
 
 
 ;; WITH-BIFROST: important setup form
@@ -158,9 +155,6 @@
  
 ;; Reading from the terminal
   
-;; (defun peek-rune-read-buffer ()
-;;   (first (fifo-char-buffer-first *rune-read-buffer*)))
-
 (defparameter *rune-read-debug-literal-char* #\~)
 
 (defun %read-char-burst-no-hang (stream)
@@ -168,9 +162,14 @@
 like READ-CHAR-NO-HANG except that if multiple characters are buffered to be read from STREAM
 then all of them are read & it returns a list of characters instead of a single character
 
-this function should only be called within BIFROST:WITH-BIFROST & sets a special flag
-*BIFROST-TTY-P* that indicates whether or not the underlying STREAM is a Unix-like TTY
-& TRIVIAl-RAW-IO:WITH-RAW-IO is activated
+this function should only be called within BIFROST:WITH-BIFROST, which sets a special flag
+*BIFROST-TTY-P*
+
+If *BIFROST-TTY-P* is truthy, that indicates that we're inside a Unix-like TTY & that
+WITH-BIFROST has enabled TRIVIAl-RAW-IO:WITH-RAW-IO. In this mode, then %READ-CHAR-BURST-NO-HANG
+is more likely to return an atom like NIL (nothing to read) or a single character. But it is
+still possible to return multiple characters if they were typed very quickly & are sitting in
+ the input buffer.
 
 If we're NOT inside of a Unix-like TTY, then we enter a special read-debug mode that causes
 this  function to behaves closer to CL:READ-LINE
@@ -500,7 +499,8 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
              *rune-payload* nil)
        rune))))
 
-(defvar *rune-read-poll-frequency* 0.005)
+(defvar *rune-read-poll-frequency* 0.005
+  "used only in \"debug-read\" mode, when we're outside of a Unix-like terminal emulator.")
 
 (defun rune-read-raw (&optional (stream *bifrost-io*))
   (loop

@@ -219,6 +219,9 @@ It sets these variables:
     - the only way to tell the difference between an escape sequence & the user hitting ESC is to both (1) see if the characters that come next match a known escape sequence & (2) track the delay between characters (escape sequences should send all the characters at once). This parameter controls how many seconds to wait between characters before deciding that a sequence of valid escape sequence characters was sent too slowly to be an escape sequence
     - it is used by both `RUNE-READ` & `RUNE-READ-NO-HANG` to process escape sequences
     - if you set `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` to NIL, then you can enter escape sequences character-by-character by hand for testing/debugging purposes
+    - it defaults to 0.01
+      - if you are using local connection you could turn this down (eg: 0.05)
+      - if you are on a very high latency remote connection (eg SSH or TTYD) you might want to turn this up (eg: 0.15-0.2)
 
 
 Tracking mouse events

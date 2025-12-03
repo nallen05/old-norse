@@ -12,11 +12,14 @@
             :*bifrost-debug-mode*
             
             ;; reading from the terminal
+            :rune-listen
             :rune-read
             :rune-read-no-hang
             :*rune*
             :*rune-name*
             :*rune-payload*
+            :*rune-read-escape-sequence-max-hang*
+            :*bifrost-suppress-outside-tty-warnings*
 
             ;; dispatching control flow based on runes
             :rune-case
