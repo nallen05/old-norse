@@ -8,25 +8,25 @@
             :with-bifrost
 
             ;; writing to the terminal
-            :rune-write
+            :bifrost-write
             :*bifrost-debug-mode*
             
             ;; reading from the terminal
-            :rune-listen
-            :rune-read
-            :rune-read-no-hang
+            :bifrost-listen
+            :bifrost-read
+            :bifrost-read-no-hang
             :*rune*
             :*rune-name*
             :*rune-payload*
-            :*rune-read-escape-sequence-max-hang*
+            :*bifrost-read-escape-sequence-max-hang*
             :*bifrost-suppress-outside-tty-warnings*
 
             ;; dispatching control flow based on runes
             :rune-case
             
             ;; debugging modes
-            :*rune-read-debug-mode*
-            :*rune-read-debug-literal-char*
+            :*bifrost-read-debug-mode*
+            :*bifrost-read-debug-literal-char*
               
             ;; tracking mouse events
 	          :with-mouse-tracking
@@ -58,9 +58,9 @@
             :*active-cbox-pressed*
 
             ;; advanced mode
-            :rune-write-raw
-            :rune-read-raw
-            :rune-read-raw-no-hang
+            :bifrost-write-raw
+            :bifrost-read-raw
+            :bifrost-read-raw-no-hang
 	    ))
 
 (in-package :bifrost)
@@ -114,7 +114,7 @@
   first
   last)
 
-(defparameter *rune-read-buffer* (make-fifo-char-buffer))
+(defparameter *bifrost-read-buffer* (make-fifo-char-buffer))
 
 (defun prepend-fifo-char-buffer (char-or-charlist fifo) ;; put it at the beggining
   (when char-or-charlist
@@ -160,11 +160,11 @@
 	        ret)
 	      (pop (fifo-char-buffer-first fifo)))))
 
-(defun rune-listen ()
-  (or (fifo-char-buffer-first *rune-read-buffer*)
+(defun bifrost-listen ()
+  (or (fifo-char-buffer-first *bifrost-read-buffer*)
       (listen *bifrost-io*)))
 
-(defun reset-fifo-char-buffer (&optional (fifo *rune-read-buffer*))
+(defun reset-fifo-char-buffer (&optional (fifo *bifrost-read-buffer*))
   (setf (fifo-char-buffer-first fifo) nil
         (fifo-char-buffer-last fifo)  nil)
   fifo)
@@ -201,7 +201,7 @@
 ;; whitelist of known RUNES
 ;; defined here for passing rune literals when in T
 
-(defparameter *rune-read-literal-whitelist*
+(defparameter *bifrost-read-literal-whitelist*
   '(:up-arrow
     :down-arrow
     :right-arrow
@@ -219,7 +219,7 @@
  
 ;; Reading from the terminal
   
-(defparameter *rune-read-debug-literal-char* #\~)
+(defparameter *bifrost-read-debug-literal-char* #\~)
 
 (defun %read-char-burst-no-hang (stream)
   "
@@ -243,11 +243,11 @@ this  function to behaves closer to CL:READ-LINE
 Read-debug mode supports 2 special cases
   1. a single newline is interpreted as #\newline:
      #\newline -> #\newline
-  2. the special character *rune-read-debug-literal-char* (which defaults to #\~) allows you to
+  2. the special character *bifrost-read-debug-literal-char* (which defaults to #\~) allows you to
 enter a rune literal
      ~ :up-arrow -> :UP-ARROW
      ~ (:move-cursor 1 1) -> (:MOVE-CURSOR 1 1)
-the special character is configurable via *RUNE-READ-DEBUG-LITERAL-CHAR*
+the special character is configurable via *BIFROST-READ-DEBUG-LITERAL-CHAR*
 the special character must be the FIRST character of the buffered line to work:
   a b ~ :up-arrow -> (#\a #\b #\~ #\: #\u #\p #\- #\a #\r #\r #\o #\w)
 if the special character is triggered, %READ-CHAR-BURST-NO-HANG also returns a second value: T
@@ -281,14 +281,14 @@ if the special character is triggered, %READ-CHAR-BURST-NO-HANG also returns a s
 	         #\newline)
 
           ;; rune literal
-	        ((eql c1 *rune-read-debug-literal-char*)
+	        ((eql c1 *bifrost-read-debug-literal-char*)
 	         (let ((bifrost-literal (read stream nil nil)))
 	           (unless (or (characterp bifrost-literal)
                          (find (if (listp bifrost-literal)
 					                         (first bifrost-literal)
 					                         bifrost-literal)
-			                         *rune-read-literal-whitelist*))
-               (error "Encountered an unknown rune literal ~S. Valid types are ~{~S ~}" bifrost-literal *rune-read-literal-whitelist*))
+			                         *bifrost-read-literal-whitelist*))
+               (error "Encountered an unknown rune literal ~S. Valid types are ~{~S ~}" bifrost-literal *bifrost-read-literal-whitelist*))
 	           (values bifrost-literal
 		                 t)))
 
@@ -312,8 +312,8 @@ like READ-CHAR-NO-HANG except that
 
 Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal is seen
 "
-  (if (fifo-char-buffer-first *rune-read-buffer*)
-      (pop-fifo-char-buffer *rune-read-buffer*)
+  (if (fifo-char-buffer-first *bifrost-read-buffer*)
+      (pop-fifo-char-buffer *bifrost-read-buffer*)
       (multiple-value-bind (burst rune-literal-p)
 	        (%read-char-burst-no-hang stream)
 	      (cond
@@ -331,15 +331,15 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 	        ;; multiple characters read
 	        (t
 	         (append-fifo-char-buffer (rest burst)
-				                            *rune-read-buffer*)
+				                            *bifrost-read-buffer*)
 	         (first burst))))))
 
 
 ;; escape sequences
 
-(defvar *rune-read-alternate-esc-character-for-debugging* nil)
+(defvar *bifrost-read-alternate-esc-character-for-debugging* nil)
 
-(defvar *rune-read-escape-sequence-max-hang* 0.1)
+(defvar *bifrost-read-escape-sequence-max-hang* 0.1)
 
 (defvar *%escape-sequence-encountered-characters*)
 
@@ -353,7 +353,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 	 (let ((*%abort-escape-sequence-thunk*
 		 (lambda ()
 		   (prepend-fifo-char-buffer (nreverse *%escape-sequence-encountered-characters*)
-					     *rune-read-buffer*)
+					     *bifrost-read-buffer*)
 		   (return-from ,%block 
 		     #\esc))))
 	   (declare (special *%abort-escape-sequence-thunk*))
@@ -361,7 +361,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
 (defun %get-next-escape-sequence-char (stream)
   (let ((start-time (get-internal-real-time))
-	      (timeout-itu-duration (* *rune-read-escape-sequence-max-hang*
+	      (timeout-itu-duration (* *bifrost-read-escape-sequence-max-hang*
 				                         internal-time-units-per-second)))
     (loop
       (multiple-value-bind (c rune-literal-p)
@@ -435,13 +435,13 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 			                   (push ,c *%escape-sequence-encountered-characters*)
 			                   (funcall *%abort-escape-sequence-thunk*))
 			                  (t
-			                   (prepend-fifo-char-buffer ,c *rune-read-buffer*)
+			                   (prepend-fifo-char-buffer ,c *bifrost-read-buffer*)
 			                   (return 
 			                     (let ((,var (read-from-string (coerce (nreverse ,sgr-int-chars)
 								                                                 'string))))
 			                       ,@body))))))))))))
 
-(defun %rune-read-escape-sequence (stream)
+(defun %bifrost-read-escape-sequence (stream)
   (flet ((%parse-mouse-event (button row column)
 	         (list (case button
 			             (0  :mouse-click-left)
@@ -507,7 +507,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 				                           (%parse-mouse-event 3 row column))))))))))))))))))
 
 
-(defun %rune-read-raw-no-hang (&optional (stream *bifrost-io*))
+(defun %bifrost-read-raw-no-hang (&optional (stream *bifrost-io*))
   (multiple-value-bind (xx rune-literal-p)
       (%read-char-no-hang stream)
     (cond
@@ -515,7 +515,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
       ;; rune literal
       (rune-literal-p
        (if *bifrost-tty-p*
-           (error "BIFROST: something is wrong! BIFROST::%RUNE-READ-RAW-NO-HANG encountered a rune literal outside of read-debug mode: ~S" xx)
+           (error "BIFROST: something is wrong! BIFROST::%BIFROST-READ-RAW-NO-HANG encountered a rune literal outside of read-debug mode: ~S" xx)
            xx))
         
       ;; nothing there
@@ -524,9 +524,9 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
       
       ;; escape sequence
       ((or (eql xx #\esc)
-	         (and *rune-read-alternate-esc-character-for-debugging*
-		            (eql xx *rune-read-alternate-esc-character-for-debugging*)))
-       (%rune-read-escape-sequence stream))
+	         (and *bifrost-read-alternate-esc-character-for-debugging*
+		            (eql xx *bifrost-read-alternate-esc-character-for-debugging*)))
+       (%bifrost-read-escape-sequence stream))
      
       ;; an uninteresting character
       (t
@@ -536,10 +536,10 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 (defvar *rune-name* nil)
 (defvar *rune-payload* nil)
 
-(defun rune-read-raw-no-hang (&optional (stream *bifrost-io*))
+(defun bifrost-read-raw-no-hang (&optional (stream *bifrost-io*))
   (unless *within-with-bifrost-form*
-    (error "BIFROST: RUNE-READ-RAW-NO-HANG called outside of WITH-BIFROST or FLOKKR form. In order to read from the terminal, RUNE-READ-RAW-NO-HANG needs to be within one of these forms"))
-  (let ((rune (%rune-read-raw-no-hang stream)))
+    (error "BIFROST: BIFROST-READ-RAW-NO-HANG called outside of WITH-BIFROST or FLOKKR form. In order to read from the terminal, BIFROST-READ-RAW-NO-HANG needs to be within one of these forms"))
+  (let ((rune (%bifrost-read-raw-no-hang stream)))
     (cond
 
       ;; nothing there
@@ -563,18 +563,18 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
              *rune-payload* nil)
        rune))))
 
-(defvar *rune-read-poll-frequency* 0.005
+(defvar *bifrost-read-poll-frequency* 0.005
   "used only in \"debug-read\" mode, when we're outside of a Unix-like terminal emulator.")
 
-(defun rune-read-raw (&optional (stream *bifrost-io*))
+(defun bifrost-read-raw (&optional (stream *bifrost-io*))
   (loop
-    (let ((rune (rune-read-raw-no-hang stream)))
+    (let ((rune (bifrost-read-raw-no-hang stream)))
 	    (if rune
-	        (return-from rune-read-raw
+	        (return-from bifrost-read-raw
 		        rune)
           (if *bifrost-tty-p*
               (sb-sys:wait-until-fd-usable *bifrost-tty-p* :input)
-              (sleep *rune-read-poll-frequency*))))))
+              (sleep *bifrost-read-poll-frequency*))))))
 
 
 
@@ -684,7 +684,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
        (%toggle-on)
        (setf *bifrost-terminal-mouse-event-tracking-enabled* mode)))))
 
-(defun rune-write-raw (rune-or-char &optional (stream *bifrost-io*))
+(defun bifrost-write-raw (rune-or-char &optional (stream *bifrost-io*))
   (when rune-or-char
     (if (characterp rune-or-char) 
         (write-char rune-or-char stream)
@@ -752,10 +752,10 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
                                                 (if (> column 0)
                                                     "C"
                                                     "D"))))))
-            (otherwise (error "RUNE-WRITE: unknown rune ~S" rune-or-char)))))))
+            (otherwise (error "BIFROST-WRITE: unknown rune ~S" rune-or-char)))))))
 
 (defun %read-query-cursor-position-response (stream)
-  (rune-case (rune-read-raw stream)
+  (rune-case (bifrost-read-raw stream)
     (#\Esc
      (with-escape-sequence
        (with-continue-escape-sequence stream
@@ -771,12 +771,12 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
   (error "unable to parse query position. Bad escape sequence returned by the terminal after querying cursor position.")
   )
 
-(defun rune-write (rune-or-char &optional (stream *bifrost-io*))
-  (rune-write-raw rune-or-char stream)
+(defun bifrost-write (rune-or-char &optional (stream *bifrost-io*))
+  (bifrost-write-raw rune-or-char stream)
   (rune-case rune-or-char
     (:query-terminal-size
      (finish-output stream)
-     (rune-read-raw stream))
+     (bifrost-read-raw stream))
     (:query-cursor-position
      (finish-output stream)
      (%read-query-cursor-position-response stream)) ;; work around odd syntax
@@ -807,12 +807,12 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
          (declare (special *bifrost-mouse-tracking-mode*
                            *bifrost-mouse-tracking-valid-events*))
          (when ,%m
-	         (rune-write (list :mouse-reporting ,%m t) ,%s)
-	         (rune-write (list :sgr-mouse-reporting t) ,%s)
+	         (bifrost-write (list :mouse-reporting ,%m t) ,%s)
+	         (bifrost-write (list :sgr-mouse-reporting t) ,%s)
 	         (force-output ,%s))
          (unwind-protect (progn ,@body)
 	         (when ,%m
-	           (rune-write (list :mouse-reporting ,%m nil) ,%s))
+	           (bifrost-write (list :mouse-reporting ,%m nil) ,%s))
 	         (force-output ,%s))))))
 
 
@@ -897,8 +897,8 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
 (defvar *cbox* nil)
 
-(defun rune-read-no-hang ()
-  (rune-read-raw-no-hang)
+(defun bifrost-read-no-hang ()
+  (bifrost-read-raw-no-hang)
   (when *rune*
     (case *rune-name*
       (:mouse-click-left
@@ -942,11 +942,11 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
 
 
-(defun rune-read ()
+(defun bifrost-read ()
   (loop (multiple-value-bind (rune cbox)
-            (rune-read-no-hang)
+            (bifrost-read-no-hang)
           (if rune
-              (return-from rune-read
+              (return-from bifrost-read
                 (values rune
                         cbox))
-              (sleep *rune-read-poll-frequency*)))))
+              (sleep *bifrost-read-poll-frequency*)))))

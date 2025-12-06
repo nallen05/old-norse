@@ -510,14 +510,14 @@
                 (unless (eql c #\zero_width_space)
                   
 	                ;; if necessary, change bg/fg color before continuing
-	                (unless (eq bifrost:*rune-write-debug-mode*
+	                (unless (eq bifrost:*bifrost-write-debug-mode*
                               :no-control)
 		                (unless (= bg last-write-bg)
-                      (bifrost:rune-write `(:background ,bg)
+                      (bifrost:bifrost-write `(:background ,bg)
                                           *skald-output*)
 		                  (setf last-write-bg bg))
 		                (unless (= fg last-write-fg)
-                      (bifrost:rune-write `(:foreground ,fg)
+                      (bifrost:bifrost-write `(:foreground ,fg)
                                           *skald-output*)
 		                  (setf last-write-fg fg)))
                   
@@ -526,7 +526,7 @@
 			                         (= row last-write-row)
 			                         last-write-column
 			                         (= column (1+ last-write-column)))
-		                (if (eq bifrost:*rune-write-debug-mode*
+		                (if (eq bifrost:*bifrost-write-debug-mode*
                             :no-control)
 		                    (when (and last-write-row
 			                             last-write-column)
@@ -537,7 +537,7 @@
 					                                  *skald-output*)
 			                        (write-char #\newline
 				                                  *skald-output*)))
-                        (bifrost:rune-write `(:move-cursor ,row ,column)
+                        (bifrost:bifrost-write `(:move-cursor ,row ,column)
                                             *skald-output*)))
                   )
                   
@@ -565,10 +565,10 @@
     ;; at the end, if the color has changed, put it back in the default color in order to
     ;; to minimize chance of artifacts
     (unless (eql last-write-fg default-fg)
-      (bifrost:rune-write `(:foreground ,default-fg)
+      (bifrost:bifrost-write `(:foreground ,default-fg)
                           *skald-output*))
     (unless (eql last-write-bg default-bg)
-	    (bifrost:rune-write `(:background ,default-bg)
+	    (bifrost:bifrost-write `(:background ,default-bg)
                           *skald-output*))))
 
 
@@ -582,13 +582,13 @@
                  thunk
                  :output s
                  plist))
-        (let ((bifrost:*rune-write-debug-mode* (getf plist
+        (let ((bifrost:*bifrost-write-debug-mode* (getf plist
                                                      :debug-mode
-                                                     bifrost:*rune-write-debug-mode*))
+                                                     bifrost:*bifrost-write-debug-mode*))
               (*skald-terminal-size-override* (getf plist
                                                     :override-terminal-size
                                                     *skald-terminal-size-override*)))
-          (declare (special bifrost:*rune-write-debug-mode*
+          (declare (special bifrost:*bifrost-write-debug-mode*
                             *skald-terminal-size-override*))
           (with-skald-output output
             (funcall thunk))))))
@@ -606,11 +606,11 @@
 
 (defun skald-check-size ()
   (let ((new-size (or *skald-terminal-size-override*
-                      (if bifrost:*rune-write-debug-mode*
+                      (if bifrost:*bifrost-write-debug-mode*
                           (error "SKALD-CHECK-SIZE called in debugging mode ~S without manually overriding the terminakl size. It won't work because it can't communicate with the terminal in this debugging mode. Set *SKALD-TERMINAL-SIZE-OVERRIDE*"
-                                 bifrost:*rune-write-debug-mode*))
+                                 bifrost:*bifrost-write-debug-mode*))
                       (with-skald-output *skald-output*
-                        (rest (bifrost:rune-write :query-terminal-size
+                        (rest (bifrost:bifrost-write :query-terminal-size
                                                   *skald-output*))))))
 
     ;; double check it's a valid size, then set
@@ -636,18 +636,18 @@
 (defun skald-init (&key wait-hook)
   (with-skald-output *skald-output*
     (skald-check-size)
-    (bifrost:rune-write :reset
+    (bifrost:bifrost-write :reset
                         *skald-output*)
     ;; set the color before clearing, otherwise the background may
     ;; be a random color
     (with-default-style
-      (bifrost:rune-write `(:background ,*%background-color-code*)
+      (bifrost:bifrost-write `(:background ,*%background-color-code*)
                           *skald-output*)
-	    (bifrost:rune-write `(:foreground  ,*%foreground-color-code*)
+	    (bifrost:bifrost-write `(:foreground  ,*%foreground-color-code*)
                           *skald-output*))
-    (bifrost:rune-write :clear
+    (bifrost:bifrost-write :clear
                         *skald-output*)
-    (bifrost:rune-write :hide-cursor
+    (bifrost:bifrost-write :hide-cursor
                         *skald-output*)
     (%wipe-buffers!)
     (when wait-hook
@@ -658,7 +658,7 @@
 
 (defun skald-clear (&key wait-hook)
   (with-skald-output *skald-output*
-    (bifrost:rune-write :clear
+    (bifrost:bifrost-write :clear
                         *skald-output*)
     (%wipe-buffers!)
     (when wait-hook
@@ -702,7 +702,7 @@
         ((:null :prep) nil)
         ((:draw :overlay :force-overlay)
          (emit-change-buffer mode)
-         (when (eq bifrost:*rune-write-debug-mode*
+         (when (eq bifrost:*bifrost-write-debug-mode*
                    :no-control)
 	         (write-char #\newline
                        *skald-output*))))

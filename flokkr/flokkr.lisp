@@ -374,7 +374,7 @@
                      (funcall (flokkr-add-global-delay flok) global-delay-seconds))
 
                    ;; (3) execute activated clauses & rescheduling logic
-                   (bifrost:rune-read-no-hang)
+                   (bifrost:bifrost-read-no-hang)
                    (let ((*flokkr-tick-input-matched-p*))
                      (declare (special *flokkr-tick-input-matched-p*))
                      (funcall (flokkr-execute-clauses flok) tick-start-itu))
