@@ -49,12 +49,12 @@ elapsed  step  10hz  4hz  keystroke
 
 # Flokkr design philosophy
 
-1. tightly coupled with BIFROST
-  - so don't read from SB-SYS:*TTY* with anything else while FLOKKR is running
+1. Dedicated to making interactive TUIs
+  - tightly coupled with BIFROST, so don't read directly from `SB-SYS:*TTY*` while FLOKKR is running
 2. Speed: immediately respond to user input; correctly juggle multiple timers; avoid polling
-3. Precision: by default, all timers are tightly syncronized to a predictable global schedule. Allowing background tasks to drift background is possible via :DRIFT.
-4. High locality: All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors.
-5. Support composability: You can define widget behaviors seperately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
+3. Precision: by default, all timers are syncronized to a predictable global schedule. Allowing background tasks to drift background is possible via :DRIFT.
+4. Encourage Old Norse style "high locality" code structure: All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors.
+5. Enable composability: You can define widget behaviors seperately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
 
 # Understanding timer logic
 
@@ -121,7 +121,8 @@ If you use :DRIFT (instead of :SCHEDULE or :AFTER/:REPEAT), then *cooloff* is ke
 (flokkr
   (:do (fast-update) :schedule 0.1)
   (:do (slow-update) :schedule 1)
-  (:also (render-screen) :enforce-cooloff 0.06)) ; display at least 0.06 seconds before next frame
+  (:also (render-screen) 
+  :enforce-cooloff 0.06)) ;; always display every frame for least 0.06 seconds before moving on to the next
 ```
 
 Like :DRIFT, :ENFORCE-COOLOFF enforces cooloff (not duration). But unlike :DRIFT it goes to great length to keep long running timers in sync with the global schedule. If :ENFORCE-COOLOFF sees it will be violated, it applies a global delay to *every other timer* to put the global schedule back in sync. During this "global delay" time all timers are idle, but the app is still free to be interupted by user input.
@@ -196,6 +197,7 @@ Examples:
 :INPUT runs whenever BIFROST:RUNE-READ-NO-HANG detects terminal input. 
 - CASES are handled with BIFROST:RUNE-CASE.
 - after the first time input is matched by BIFROST:RUNE-CASE, then no other :INPUT will run. So pressing a key or clicking a button will only ever trigger one action.
+- Note: FLOKKR calls WITH-BIFROST under the hood, so you are able to run FLOKKR outside of WITH-BIFROST. However, it's recommended good convention to wrap your entire program within WITH-BIFROST, including FLOKKR.
 
 # the :also keyword
 
