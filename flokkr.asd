@@ -7,9 +7,9 @@
 
 (defsystem :flokkr
   :depends-on (:bifrost)
-  :description "Part of the OLD-NORSE Terminal Toolkit. FLOKKR is a cooperative multitasking library for Common Lisp, purpose-built for building highly responsive interactive terminal applications (user dashboards, data visualization, text-based games, etc) using BIFROST. Requires SBCL."
+  :description "FLOKKR is a concurrency library for Common Lisp, purpose-built for building highly responsive interactive terminal applications (user dashboards, data visualization, text-based games, etc) using bifrost/skald. Requires SBCL. Part of the OLD-NORSE Terminal Toolkit."
   :author "Nick Allen <nallen05@gmail.com>"
-  :version "0.3.1"
+  :version "0.4"
   :components
   ((:module :flokkr
             :components ((:file flokkr))
