@@ -12,10 +12,7 @@
   :version "0.1"
   :components
   ((:module :bifrost
-    :components ((:file package)
-		             (:file read)     ;; BIFROST-RAW-READ
-		             (:file write)    ;; BIFROST-WRITE
-		             (:file cbox))    ;; BIFROST-READ, REGISTER-CBOX!
+    :components ((:file bifrost))
     :serial t)))
 
 
