@@ -374,7 +374,7 @@
                      (funcall (flokkr-add-global-delay flok) global-delay-seconds))
 
                    ;; (3) execute activated clauses & rescheduling logic
-                   (bifrost:bifrost-read-no-hang)
+                   (bifrost:rune-read-no-hang)
                    (let ((*flokkr-tick-input-matched-p*))
                      (declare (special *flokkr-tick-input-matched-p*))
                      (funcall (flokkr-execute-clauses flok) tick-start-itu))
@@ -382,7 +382,7 @@
                    ;; (4) compute how long to wait
                    ;; (5) if appropriate, idle in an interuptable way
                    (setf last-tick-start-itu tick-start-itu)
-                   (unless (bifrost:bifrost-listen) ; if there is input, skip waiting
+                   (unless (bifrost:rune-listen) ; if there is input, skip waiting
 
                      ;; if there is no input, then see how long to wait
                      (let ((wait (funcall (flokkr-compute-wait flok))))
