@@ -21,13 +21,14 @@ Normally you would use BIFROST with FLOKKR & SKALD. The examples below are just 
 
 **Run these examples in the terminal, not SLIME/EMACS**
 
-Draw 01234 on the screen at the row/column position 5/10
+Draw abcdef on the screen at the row/column position 5/10
+
 ```lisp 
 (bifrost:with-bifrost
   (bifrost:rune-write :clear)
-  (dotimes (i 6)
-    (bifrost:rune-write `(:move-cursor 5 ,(+ i 10)))
-    (bifrost:rune-write (code-char (+ 48 i))))
+  (bifrost:rune-write `(:move-cursor 5 10))
+  (dolist (c '(#\a #\b #\c #\d #\e #\f))
+    (bifrost:rune-write c))
   (bifrost:rune-write :move-cursor) ; move the cursor to upper left hand corner
   (values))
 ```
@@ -38,7 +39,7 @@ Print keystrokes & mouse clicks
   (bifrost:with-mouse-tracking (1003)
     (bifrost:rune-write :clear)
     (bifrost:rune-write :move-cursor) ; move the cursor to upper left hand corner
-    (format sb-sys:*tty* "~% type some keys &/or click on the screen!")
+    (format sb-sys:*tty* "~% type keys, move mouse, &/or click on the screen!")
     (format sb-sys:*tty* "~% q to quit")
     (force-output sb-sys:*tty*)
     (loop
@@ -79,12 +80,19 @@ A button that can be clicked on
           ((nil) (sleep 0.1))
           ((#\q #\Q) (return :done))
           (otherwise
-           (when (or bifrost:*cbox* bifrost:*hover-cbox*)
+           (when (or bifrost:*pressed-cbox* bifrost:*hover-cbox*)
              (format sb-sys:*tty*
                      "~%~S ~S"
-                     (or bifrost:*cbox* bifrost:*hover-cbox*)
+                     (or bifrost:*pressed-cbox* bifrost:*hover-cbox*)
                      bifrost:*rune-container*)
              (force-output sb-sys:*tty*))))))))
+```
+
+
+Quering the terminal size
+```lisp
+(bifrost:with-bifrost 
+  (bifrost:rune-write :query-terminal-size))
 ```
 
 ---------------
