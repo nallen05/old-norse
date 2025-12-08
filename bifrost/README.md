@@ -24,11 +24,11 @@ Normally you would use BIFROST with FLOKKR & SKALD. The examples below are just 
 Draw 01234 on the screen at the row/column position 5/10
 ```lisp 
 (bifrost:with-bifrost
-  (bifrost:bifrost-write :clear)
+  (bifrost:rune-write :clear)
   (dotimes (i 6)
-    (bifrost:bifrost-write `(:move-cursor 5 ,(+ i 10)))
-    (bifrost:bifrost-write (code-char (+ 48 i))))
-  (bifrost:bifrost-write :move-cursor) ; move the cursor to upper left hand corner
+    (bifrost:rune-write `(:move-cursor 5 ,(+ i 10)))
+    (bifrost:rune-write (code-char (+ 48 i))))
+  (bifrost:rune-write :move-cursor) ; move the cursor to upper left hand corner
   (values))
 ```
 
@@ -36,13 +36,13 @@ Print keystrokes & mouse clicks
 ```lisp 
 (bifrost:with-bifrost
   (bifrost:with-mouse-tracking (1003)
-    (bifrost:bifrost-write :clear)
-    (bifrost:bifrost-write :move-cursor) ; move the cursor to upper left hand corner
+    (bifrost:rune-write :clear)
+    (bifrost:rune-write :move-cursor) ; move the cursor to upper left hand corner
     (format sb-sys:*tty* "~% type some keys &/or click on the screen!")
     (format sb-sys:*tty* "~% q to quit")
     (force-output sb-sys:*tty*)
     (loop
-      (bifrost:bifrost-read-no-hang)
+      (bifrost:rune-read-no-hang)
       (case bifrost:*rune*
         ((nil) (sleep 0.1))
         ((#\q #\Q) (return :done))
@@ -61,20 +61,20 @@ A button that can be clicked on
 (bifrost:with-bifrost
   (bifrost:with-mouse-tracking (1003)
     (bifrost:with-cbox-layer :new
-      (bifrost:bifrost-write :clear)
-      (bifrost:bifrost-write :move-cursor)
+      (bifrost:rune-write :clear)
+      (bifrost:rune-write :move-cursor)
       (format sb-sys:*tty* "~% Click the button")
       (format sb-sys:*tty* "~% q to quit")
       (flet ((place-button (text row col)
-               (bifrost:bifrost-write `(:move-cursor ,row ,col))
+               (bifrost:rune-write `(:move-cursor ,row ,col))
                (write-string text sb-sys:*tty*)
 	             (bifrost:register-cbox! text row col (+ row 1) (+ col (length text)))
-               (bifrost:bifrost-write `(:move-cursor ,(+ row 3) 1))))
+               (bifrost:rune-write `(:move-cursor ,(+ row 3) 1))))
         (place-button "BUTTON A" 5 10)
         (place-button "BUTTON B" 7 10)
         (force-output sb-sys:*tty*))
       (loop
-        (bifrost:bifrost-read-no-hang)
+        (bifrost:rune-read-no-hang)
 	      (case bifrost:*rune*
           ((nil) (sleep 0.1))
           ((#\q #\Q) (return :done))
@@ -101,17 +101,17 @@ Terminal emulators use ESCAPE SEQUENCES, which are special multi-character seque
 - INPUT TO THE TERMINAL: You can use escape sequences to trigger low-level commands such as changing the background color or clearing the screen.
 - OUTPUT FROM THE: The terminal sends some events as escape sequenecs, such as pressing an arrow key on the keyboard or moving the mouse. 
 
-BIFROST-READ/BIFROST-WRITE map between escape sequences & simple s-expressions in order to make it easier to interact with the terminal emulator from lisp.
+RUNE-READ/RUNE-WRITE map between escape sequences & simple s-expressions in order to make it easier to interact with the terminal emulator from lisp.
 
 ## Runes
 
-BIFROST-READ/BIFROST-WRITE are like READ-CHAR/WRITE-CHAR except that they read/write "runes", which can be either of the following:
+RUNE-READ/RUNE-WRITE are like READ-CHAR/WRITE-CHAR except that they read/write "runes", which can be either of the following:
  - "Simple runes" which are characters like `#\a` or `#\Newline`
  - "Complex runes", which are list of the format  `` `(,RUNE ,@PAYLOAD) `` that represent an escape sequence. Example: `(:MOVE-CURSOR row column)` or `(:UP-ARROW)`
 
-BIFROST-READ sets `*RUNE*, *RUNE-PAYLOAD*, *RUNE-CONTAINER*` with each call.
+RUNE-READ sets `*RUNE*, *RUNE-PAYLOAD*, *RUNE-CONTAINER*` with each call.
 
-BIFROST-READ-NO-HANG is like BIFROST-READ except that it returns immediatly. If nothing was read, it sets `*RUNE*, *RUNE-PAYLOAD*, *RUNE-CONTAINER*` all to NIL.
+RUNE-READ-NO-HANG is like RUNE-READ except that it returns immediatly. If nothing was read, it sets `*RUNE*, *RUNE-PAYLOAD*, *RUNE-CONTAINER*` all to NIL.
 
    
 ## Cboxes & cbox layers
@@ -124,7 +124,7 @@ The CBOX related runes are:
 - `:CBOX-UNCLICK-LEFT` - When the user clicks, then moves off of the button region before releasing in order to abort the click
 - `:CBOX-HOVER` - like `:MOUSE-HOVER`, but over a CBOX
 
-When CBOXES are interacted with, BIFROST-READ sets the following: 
+When CBOXES are interacted with, RUNE-READ sets the following: 
 - `*HOVER-CBOX*, *HOVER-CBOX-CONTAINER*` - a CBOX currently being hovered over
 - `*PRESSED-CBOX*, *PRESSED-CBOX-container*` - a CBOX currently being held down by a left click
 
@@ -195,30 +195,30 @@ WITH-BIFROST sets these variables:
 
 ## Sending runes to the terminal
 
-`BIFROST-WRITE (rune-or-char)`
+`RUNE-WRITE (rune-or-char)`
  - send `RUNE-OR-CHAR` to `*BIFROST-IO*`
  - runes with no payload can be provided as a keyword or a list, so `:HIDE-CURSOR` & `(:HIDE-CURSOR)` are treated as the same 
  - see below for full dictionary of known tokens
 
 ## Reading runes from the terminal
 
-`BIFROST-READ ()`
+`RUNE-READ ()`
   - like `READ-CHAR`, except that:
     1. it reads from `*BIFROST-IO*`
-    2. Multi-character escape sequences are converted to s-expressions we call the return value of `BIFROST-READ` a "rune". A rune is either:
+    2. Multi-character escape sequences are converted to s-expressions we call the return value of `RUNE-READ` a "rune". A rune is either:
        - a "simple rune", which is a character, as would be returned by `READ-CHAR` (eg: `#\a` or `#\Newline`)
        - a "complex rune", which is list of the format `(NAME . PAYLOAD)` representing an escape sequence (eg: `(:MOVE-CURSOR ROW COLUMN)` or `(:UP-ARROW)`)
     3. always sets `*RUNE*,*RUNE-PAYLOAD*, *RUNE-CONTAINER*`
     4. based on CBOX interactions, may also set: `*pressed-cbox*,*pressed-cbox-container*,*hover-cbox*,*hover-cbox-container*`. 
 
-`BIFROST-READ-NO-HANG ()`
-  - like `BIFROST-READ` excect that if if there's nothing to read, then it returns `NIL` instead of hanging. This is the `READ-CHAR-NO-HANG` version of `BIFROST-READ`
-  - NOTE: `BIFROST-READ-NO-HANG` actually sometimes does do a very small amount of hanging: when processing escape sequences (see `*BIFROST-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
+`RUNE-READ-NO-HANG ()`
+  - like `RUNE-READ` excect that if if there's nothing to read, then it returns `NIL` instead of hanging. This is the `READ-CHAR-NO-HANG` version of `RUNE-READ`
+  - NOTE: `RUNE-READ-NO-HANG` actually sometimes does do a very small amount of hanging: when processing escape sequences (see `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
 
-`*BIFROST-READ-ESCAPE-SEQUENCE-MAX-HANG*`
+`*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*`
   - the only way to tell the difference between an escape sequence & the user hitting ESC is to both (1) see if the characters that come next match a known escape sequence & (2) track the delay between characters (escape sequences should send all the characters at once). This parameter controls how many seconds to wait between characters before deciding that a sequence of valid escape sequence characters was sent too slowly to be an escape sequence
-  - it is used by both `BIFROST-READ` & `BIFROST-READ-NO-HANG` to process escape sequences
-  - if you set `*BIFROST-READ-ESCAPE-SEQUENCE-MAX-HANG*` to NIL, then you can enter escape sequences character-by-character by hand for testing/debugging purposes
+  - it is used by both `RUNE-READ` & `RUNE-READ-NO-HANG` to process escape sequences
+  - if you set `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` to NIL, then you can enter escape sequences character-by-character by hand for testing/debugging purposes
   - it defaults to 0.01
     - if you are using local connection you could turn this down (eg: 0.05)
     - if you are on a very high latency remote connection (eg SSH or TTYD) you might want to turn this up (eg: 0.15-0.2)
@@ -271,9 +271,9 @@ When run outside of a Unix-like terminal emulator (eg: when loading SLIME/EMAC),
 
 You can change the special prefix character allowing you to enter rune literals:
 
-`*BIFROST-READ-DEBUG-LITERAL-CHAR*`
+`*RUNE-READ-DEBUG-LITERAL-CHAR*`
  - defaults to `#\~`
- - when in debug mode, this character instructs BIFROST-READ to read a literal value using `COMMON-LISP:READ`. This allows you to send rune literals to `BIFROST-READ` when debugging/troubleshooting in the REPL
+ - when in debug mode, this character instructs RUNE-READ to read a literal value using `COMMON-LISP:READ`. This allows you to send rune literals to `RUNE-READ` when debugging/troubleshooting in the REPL
 
 
 You can also put the app into "write-debug" mode:
@@ -287,18 +287,18 @@ You can also put the app into "write-debug" mode:
 
 ## Advanced features
 
-`BIFROST-WRITE-RAW ()` - just like `BIFROST-READ` except that responses from sending queries such as `:QUERY-TERMINAL-SIZE` are not read or parsed.
+`RUNE-WRITE-RAW ()` - just like `RUNE-READ` except that responses from sending queries such as `:QUERY-TERMINAL-SIZE` are not read or parsed.
 
-`BIFROST-READ-RAW (), BIFROST-READ-RAW-NO-HANG ()` - these two functions are just like `BIFROST-READ` / `BIFROST-READ-NO-HANG` except that mouse events (like `:MOUSE-CLICK-LEFT`) are NOT converted to CBOX events (like `:CBOX-CLICK-LEFT`) when a CBOX is matched
+`RUNE-READ-RAW (), RUNE-READ-RAW-NO-HANG ()` - these two functions are just like `RUNE-READ` / `RUNE-READ-NO-HANG` except that mouse events (like `:MOUSE-CLICK-LEFT`) are NOT converted to CBOX events (like `:CBOX-CLICK-LEFT`) when a CBOX is matched
 
 
 ---------------
 
-# BIFROST-WRITE: RUNE DICTIONARY
+# RUNE-WRITE: RUNE DICTIONARY
 
 ## A NOTE ABOUT SYNTAX
 
-BIFROST-WRITE treats keywords as one-element lists as equivalent. So, for example, :QUERY-DIMENSIONS and (:QUERY-DIMENSIONS) are treated the same.
+RUNE-WRITE treats keywords as one-element lists as equivalent. So, for example, :QUERY-DIMENSIONS and (:QUERY-DIMENSIONS) are treated the same.
 
 
 ## COLORS
@@ -342,7 +342,7 @@ These are the understood colors:
 Notes:
  - with not payload, :MOVE-CURSOR moves the cursor to the home position (upper left hand corner); with payload, it moves the cursor to an abslution position
  - :NUDGE-CURSOR moves it relative to the current position. Under the hood, it sends multiple escape sequences
- - BIFROST-READ does not currently support the return sequence for :QUERY-CURSOR-POSITION
+ - RUNE-READ does not currently support the return sequence for :QUERY-CURSOR-POSITION
 
 
 
@@ -358,7 +358,7 @@ Notes:
 
 ## MOUSE TRACKING
 
-Turn on/off mouse tracking modes. MODE should be 1000, 1002, or 1003. Currently, only mode 1000 is fully supported by BIFROST-READ
+Turn on/off mouse tracking modes. MODE should be 1000, 1002, or 1003. Currently, only mode 1000 is fully supported by RUNE-READ
 
 SGR mode is needed to support large screen sizes. WITH-MOUSE-TRACKING enables it by default
 
@@ -415,7 +415,7 @@ SGR mode is needed to support large screen sizes. WITH-MOUSE-TRACKING enables it
 
 ---------------
 
-# BIFROST-READ: RUNE DICTIONARY
+# RUNE-READ: RUNE DICTIONARY
 
 ## ARROW KEYS
 
