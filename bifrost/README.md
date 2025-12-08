@@ -1,5 +1,5 @@
 
-# BIFROST 🌈
+# Bifrost 🌈
 
 In Norse mythology, Bifrost is the rainbow bridge connecting Midgard (realm of mortals) to Asgard (realm of gods). Similarly, Bifrost connects your SBCL program to Unix-like terminal emulators like xterm, gnome-terminal, iTerm2, Mac OSX Terminal, TTYD, etc.
 
@@ -8,9 +8,9 @@ Bifrost is a Common Lisp library for reading from & controlling the terminal. Pa
 Key features:
  - Two-way mapping between s-expressions & raw ASCII escape sequences
  - Low-level logic for XTERM mouse event tracking (this isn't officially part of the official ANSI standard but is widely adopted as defacto standard supported by most modern terminal emulators)
- - Low-level logic for defining clickable regions of the screen (CBOXES)
+ - Low-level logic for defining clickable/hoverable regions of the screen (CBOXES)
  - Raw IO handling for faster communication with the terminal
- - Debugging features to troubleshoot terminal UI applications within SLIME/EMACS REPL
+ - Debugging modes to troubleshoot terminal UI (TUI) applications within SLIME/EMACS REPL
 
 Bifrost is implementation-dependent on SBCL.
 
@@ -60,7 +60,7 @@ A button that can be clicked on
 ```lisp 
 (bifrost:with-bifrost
   (bifrost:with-mouse-tracking (1003)
-    (bifrost:with-cbox-layer t
+    (bifrost:with-cbox-layer :new
       (bifrost:bifrost-write :clear)
       (bifrost:bifrost-write :move-cursor)
       (format sb-sys:*tty* "~% Click the button")
@@ -89,13 +89,13 @@ A button that can be clicked on
 
 ---------------
 
-# KEY CONCEPTS
+# Key concepts
 
-## IMPORTANT SETUP FORM: WITH-BIFROST
+## Emportant setup form: WITH-BIFROST
 
 Wrap your enture TUI application in WITH-BIFROST
 
-## ESCAPE SEQUENCES
+## Escape sequences
 
 Terminal emulators use ESCAPE SEQUENCES, which are special multi-character sequences, to represent events that can't be represented with a single ASCII character. 
 - INPUT TO THE TERMINAL: You can use escape sequences to trigger low-level commands such as changing the background color or clearing the screen.
@@ -103,17 +103,18 @@ Terminal emulators use ESCAPE SEQUENCES, which are special multi-character seque
 
 BIFROST-READ/BIFROST-WRITE map between escape sequences & simple s-expressions in order to make it easier to interact with the terminal emulator from lisp.
 
-## RUNES
+## Runes
 
 BIFROST-READ/BIFROST-WRITE are like READ-CHAR/WRITE-CHAR except that they read/write "runes", which can be either of the following:
  - "Simple runes" which are characters like `#\a` or `#\Newline`
- - "Complex runes", which are list of the format  `` `(,NAME ,@PAYLOAD) `` that represent an
-    escape sequence. Example: `(:MOVE-CURSOR row column)` or `(:UP-ARROW)`
+ - "Complex runes", which are list of the format  `` `(,RUNE ,@PAYLOAD) `` that represent an escape sequence. Example: `(:MOVE-CURSOR row column)` or `(:UP-ARROW)`
 
-BIFROST-READ sets `*RUNE*` to the last rune name read, or character if it was a simple rune.
+BIFROST-READ sets `*RUNE*, *RUNE-PAYLOAD*, *RUNE-CONTAINER*` with each call.
+
+BIFROST-READ-NO-HANG is like BIFROST-READ except that it returns immediatly. If nothing was read, it sets `*RUNE*, *RUNE-PAYLOAD*, *RUNE-CONTAINER*` all to NIL.
 
    
-## CBOXES
+## Cboxes & cbox layers
 
 If you define a click region with `REGISTER-CBOX!`, then raw mouse events such as `(:MOUSE-CLICK-LEFT row column)` are transformed into CBOX events such as `(:CBOX-CLICK-LEFT row column)` 
 
@@ -124,12 +125,14 @@ The CBOX related runes are:
 - `:CBOX-HOVER` - like `:MOUSE-HOVER`, but over a CBOX
 
 When CBOXES are interacted with, BIFROST-READ sets the following: 
-- `*cbox*, *cbox-container*` - the cbox the last call to BIFROST-READ interactived with (or NIL)
-- `*pressed-cbox*, *pressed-cbox-container*` - a CBOX being held down
-- `*hover-cbox*, *hover-cbox-container*` - a CBOX being hovered over (or the one being held down)
+- `*HOVER-CBOX*, *HOVER-CBOX-CONTAINER*` - a CBOX currently being hovered over
+- `*PRESSED-CBOX*, *PRESSED-CBOX-container*` - a CBOX currently being held down by a left click
 
 
-## MOUSE EVENTS
+Use WITH-CBOX-LAYER to accumulate & discard cbox registrations.
+
+
+## Mouse events
 
 BIFROST has been tested with the following XTERM mouse tracking modes:
 - 1000 - basic click/release actions
@@ -142,7 +145,7 @@ BIFROST has not yet been tested with:
  - XTERM 1002 mode, for click-drag events
      
 
-## DEBUGGING MODES
+## Debugging modes
 
 When running outside of a Unix-like terminal emulator (eg: loading in SLIME/EMACS), WITH-BIFROST automatically puts the app into a special "read-debug" mode:
   1. you must send a #\newline (hit ENTER) to send a burst of characters to BIFROST 
@@ -171,10 +174,15 @@ You can also put the app into "write-debug" mode by setting `BIFROST:*BIFROST-DE
 Wrap your entire TUI application within WITH-BIFROST:
 
 `WITH-BIFROST (&body body)`
-  - initializes `*BIFROST-IO*` & `*BIFROST-TTY-P*`. WITH-BIFROST can be called recursively. The top-level call flushes out the IO buffers to do cleanup in between invocations.
-  - when `BIFROST-TTY-P*` is truthy, executes BODY within raw IO mode to bypass line buffering by the terminal. If `BIFROST-TTY-P*` is null, executes BODY within a special "read-debug" mode
-  - Note: FLOKKR calls WITH-BIFROST under the hood, so you are able to run FLOKKR outside of WITH-BIFROST. However, it's recommended good convention to wrap your entire program within WITH-BIFROST, including FLOKKR.
-    
+  - when called at the top-level:
+    - enters raw IO mode to bypass line buffering by the terminal.
+    - initializes `*BIFROST-IO*, *BIFROST-TTY-P*`
+    - IO buffer cleanup before/after
+    - clears `*PRESSED-CBOX*, *HOVER-CBOX*` after
+  - If `BIFROST-TTY-P*` is null, executes BODY within a special "read-debug" mode that uses polling & requires newlines to force terminal input past the read buffer
+  - it's safe to call WITH-BIFROST recursively.
+    - FLOKKR calls WITH-BIFROST under the hood, so you are able to run FLOKKR outside of WITH-BIFROST. However, it's recommended good convention to wrap your entire program within WITH-BIFROST, including FLOKKR.
+   
 WITH-BIFROST sets these variables:
    
 `*BIFROST-TTY-P*`
@@ -201,11 +209,11 @@ WITH-BIFROST sets these variables:
        - a "simple rune", which is a character, as would be returned by `READ-CHAR` (eg: `#\a` or `#\Newline`)
        - a "complex rune", which is list of the format `(NAME . PAYLOAD)` representing an escape sequence (eg: `(:MOVE-CURSOR ROW COLUMN)` or `(:UP-ARROW)`)
     3. always sets `*RUNE*,*RUNE-PAYLOAD*, *RUNE-CONTAINER*`
-    4. based on CBOX interactions, may also set: `*cbox*,*cbox-container*,*pressed-cbox*,*pressed-cbox-container*,*hover-cbox*,*hover-cbox-container*`. For more about this, see: `WITH-BIFROST-CBOX` & `REGISTER-CBOX!`
+    4. based on CBOX interactions, may also set: `*pressed-cbox*,*pressed-cbox-container*,*hover-cbox*,*hover-cbox-container*`. 
 
 `BIFROST-READ-NO-HANG ()`
   - like `BIFROST-READ` excect that if if there's nothing to read, then it returns `NIL` instead of hanging. This is the `READ-CHAR-NO-HANG` version of `BIFROST-READ`
-  - NOTE: `BIFROST-READ-NO-HANG` actually does do a very small amount of hanging when processing escape sequences (see `*BIFROST-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
+  - NOTE: `BIFROST-READ-NO-HANG` actually sometimes does do a very small amount of hanging: when processing escape sequences (see `*BIFROST-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
 
 `*BIFROST-READ-ESCAPE-SEQUENCE-MAX-HANG*`
   - the only way to tell the difference between an escape sequence & the user hitting ESC is to both (1) see if the characters that come next match a known escape sequence & (2) track the delay between characters (escape sequences should send all the characters at once). This parameter controls how many seconds to wait between characters before deciding that a sequence of valid escape sequence characters was sent too slowly to be an escape sequence
@@ -218,23 +226,28 @@ WITH-BIFROST sets these variables:
 
 Tracking mouse events
 
-`WITH-MOUSE-TRACKING ((&optional (mode 1000) (stream *terminal-io*)) &body body)`
+`WITH-MOUSE-TRACKING ((&optional (mode 1000)) &body body)`
   - instruct the terminal to capture & send mouse tracking events, via XTERM mouse tracking standard, then turn it off when done executing `BODY`
-  - currently, 1000 & 1003 have been tested
+  - can be set to:
+    - 1000 - basic click/release actions
+    - 1001 - can selecting blocks of text to implement features like cut/paste (untested)
+    - 1002 - click-drag events (untested)
+    - 1003 - all mouse events, including hover-over events
 
 `*BIFROST-MOUSE-TRACKING-MODE*`
-  - if within `WITH-BIFROST-MODE-MOUSE-TRACKING-MODE` this will be the mode, otherwise it will be `NIL`. Currently mode 1000 is the only supported mode.
+  - if within `WITH-BIFROST-MODE-MOUSE-TRACKING-MODE` this will be the mode, otherwise it will be `NIL`.
 
 
 Defining & managing CBOX click regions
 
-`WITH-CBOX-LAYER (reset-p &body body)`
-  - creates a scoping for setup so that `REGISTER-CBOX!`
-  - if `RESET-P` is truthy, then a brand new context stack is created, forgetting about any CBOXES defined outside of the scope of this form. Run this when initializing a new screen or popup that takes over the entire screen
-  - if `RESET-P` is null, then the current context binding is inherited & will be matched. Use this when a subscreen or popup builds upon a main screen.
-  - once `WITH-BIFROST-CBOX` returns, CBOXES registed by `REGISTER-CBOX!` within `BODY` will be forgotten
+`WITH-CBOX-LAYER (scope &body body)`
+  - creates a scoping layer for collecting & discarding CBOXES registered by `REGISTER-CBOX!`
+  - if SCOPE is:
+    - :INHERIT any current CBOX layers defined by the outer scope are reused/preserve.
+    - :NEW then the CBOX stack is reset
+  - once `WITH-BIFROST-CBOX` returns, new CBOXES registed by `REGISTER-CBOX!` within `BODY` will be forgotten
 
-`REGISTER-CBOX! (identifier &key (min-row *cbox-min-row*) (min-column *cbox-min-column*) (max-row *cbox-max-row*) (max-column *cbox-max-column*))`
+`REGISTER-CBOX! (identifier min-row min-column max-row max-column)`
   - defines a new CBOX, mapping to a rectangular area on the screen
     - `MIN-COLUMN`/`MIN-ROW` should define the upper left hand corner of the rectangle
     - `MAX-COLUMN`/`MAX-ROW` should define the lower right hand corner of the rectangle

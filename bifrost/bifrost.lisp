@@ -31,16 +31,19 @@
             :with-cbox-layer
             :register-cbox!
             
- 	          ;; what CBOX was clicked?
-            :*cbox*
+ 	          ;; what CBOX is being interactived with?
             :*pressed-cbox*
             :*hover-cbox*
 
-            ;; inxpecting cbox stack & object
+            ;; debugging modes
+            :*bifrost-debug-mode*
+            :*bifrost-read-debug-literal-char*
+            
+            ;; inxpecting the cbox stack
+            :find-cbox
             :*cbox-stack*
-            :*cbox-container*
-            :*pressed-cbox-container*
-            :*hover-cbox-container*
+
+            ;; the cbox containers
             :cbox-container
       	    :cbox-container-p
             :cbox-container-payload
@@ -49,11 +52,9 @@
             :cbox-container-min-column
             :cbox-container-max-row
             :cbox-container-max-column
-            :find-cbox
+            :*pressed-cbox-container*
+            :*hover-cbox-container*
 
-            ;; debugging stuff
-            :*bifrost-debug-mode*
-            :*bifrost-read-debug-literal-char*
             
             ;; advanced mode
             :bifrost-write-raw
@@ -166,34 +167,6 @@
   (setf (fifo-char-buffer-first fifo) nil
         (fifo-char-buffer-last fifo)  nil)
   fifo)
-
-
-;; WITH-BIFROST: important setup form
-
- (defvar *within-with-bifrost-form* nil)
-
-(defmacro with-bifrost (&body body)
-  (let ((doit (gensym "with-bifrost-body")))
-    `(flet ((,doit ()
-              (let ((*within-with-bifrost-form* t))
-                (declare (special *within-with-bifrost-form*))           
-                ,@body)))
-       (unless *within-with-bifrost-form*
-         (init-bifrost-io)
-         (warn-if-outside-terminal)
-         (reset-fifo-char-buffer)
-         (clear-bifrost-io)) ; remove stray input/output
-       (unwind-protect
-            (if (and *bifrost-tty-p*
-                     (not *within-with-bifrost-form*))
-                (trivial-raw-io:with-raw-io (:vmin 0 :vtime 0)
-                  (,doit))
-                (,doit))
-         (unless *within-with-bifrost-form*
-           (clear-bifrost-io) ; ensure clean state for warnings
-           (reset-fifo-char-buffer)
-           ;; warn a second time, in case the first  was obscured by TUI output
-           (warn-if-outside-terminal))))))
 
 
 ;; whitelist of known RUNES
@@ -549,8 +522,8 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
       ;; simple rune
       (t (setf *rune* rune
-               *rune-payload* nil
-               *rune-container* nil)))
+               *rune-payload* rune
+               *rune-container* rune)))
     rune))
 
 (defvar *bifrost-read-poll-frequency* 0.005
@@ -809,17 +782,17 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
 
 
-;;;; setup: defining CBOX click regions
+;;;; setup: defining & inspecting CBOX stack
 
 (defvar *%within-with-cbox-p* nil)
 (defvar *cbox-stack*          nil)
 
-(defmacro with-cbox-layer (clear-p &body body)
-  (let ((%clear-p (gensym "clear-cbox-context")))
-    `(let* ((,%clear-p ,clear-p)
-            (*cbox-stack* (if ,%clear-p
-					                    *cbox-stack*
-					                    nil))
+(defmacro with-cbox-layer (scope &body body)
+  (let ((%scope (gensym "cbox-layer-scope")))
+    `(let* ((,%scope ,scope)
+            (*cbox-stack* (ecase ,%scope
+                            (:new nil)
+                            (:inherit *cbox-stack*)))
             (*%within-with-cbox-p* t))
        (declare (special *%within-with-cbox-p*
                          *cbox-stack*))
@@ -846,7 +819,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
                              :max-column max-column)
         *cbox-stack*))
 
-(defun find-cbox (row column)
+(defun find-cbox-container (row column)
   (when *%within-with-cbox-p*
     (assert (numberp row))
     (assert (numberp column))
@@ -857,90 +830,112 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 		                (<= (cbox-container-min-column %cbox) column)
                     (< column (cbox-container-max-column %cbox))))
              *cbox-stack*)))
+
+(defun find-cbox (row column)
+  (let ((cc (find-cbox-container row column)))
+    (when cc
+      (values (cbox-container-payload cc)
+              cc))))
       
 
 
 ;; Reading mouse click / touch screen tap events from the terminal
 
-(defvar *cbox* nil)
-(defvar *cbox-container* nil)
+(defvar *hover-cbox* nil)                 ;; what is the mouse over?
+(defvar *hover-cbox-container* nil)       ;; what is the mouse over?
 
-(defvar *pressed-cbox* nil)               ;; activates on left-click only
-(defvar *pressed-cbox-container* nil)     ;; activates on left-click only
+(defvar *pressed-cbox* nil)               ;; is something being held down? (left click only)
+(defvar *pressed-cbox-container* nil)     ;; is something being held down? (left click only)
 
-(defvar *hover-cbox* nil)                 ;; click events also update this
-(defvar *hover-cbox-container* nil)       ;; click events also update this
-
-(defun bifrost-read-no-hang ()
-  (bifrost-read-raw-no-hang)
-  (setf *cbox* nil
-        *cbox-container* nil)
-  (when *rune*
+(defun %bifrost-process-cbox ()
+  (when *rune-container*
     (case *rune*
       ((:mouse-click-left :mouse-click-middle :mouse-click-right)
        (destructuring-bind (row column)
            *rune-payload*
-         (let ((cc (find-cbox row column)))
-           (when cc
-             (setf *cbox*                   (cbox-container-payload cc)
-                   *cbox-container*         cc
-                   *pressed-cbox*           (when (eq *rune* :mouse-click-left)
-                                              (cbox-container-payload cc))
-                   *pressed-cbox-container* (when (eq *rune* :mouse-click-left)
-                                              cc)
-                   *hover-cbox*             *pressed-cbox*
-                   *hover-cbox-container*   *pressed-cbox-container*
-                   *rune*                   (ecase *rune*
-                                              (:mouse-click-left   :cbox-click-left)
-                                              (:mouse-click-middle :cbox-click-middle)
-                                              (:mouse-click-right  :cbox-click-right))
-                   *rune-container*         (cons *rune*
-                                                  *rune-payload*))))))
+         (multiple-value-bind (cbox cc)
+             (find-cbox row column)
+           (if cc
+               (setf *pressed-cbox*           (when (eq *rune* :mouse-click-left)
+                                                cbox)
+                     *pressed-cbox-container* (when (eq *rune* :mouse-click-left)
+                                                cc)
+                     *hover-cbox*             *pressed-cbox*
+                     *hover-cbox-container*   *pressed-cbox-container*
+                     *rune*                   (ecase *rune*
+                                                (:mouse-click-left   :cbox-click-left)
+                                                (:mouse-click-middle :cbox-click-middle)
+                                                (:mouse-click-right  :cbox-click-right))
+                     *rune-container*         (cons *rune*
+                                                    *rune-payload*))
+               (setf  *pressed-cbox*           nil
+                      *pressed-cbox-container* nil
+                      *hover-cbox*             nil
+                      *hover-cbox-container*   nil)))))
       (:mouse-release
        (destructuring-bind (row column)
            *rune-payload*
-         (let ((cc (find-cbox row column)))
-           (if *pressed-cbox-container*
-               (setf *rune* (if (eq cc *pressed-cbox-container*)
-                                :cbox-release-left
-                                :cbox-unclick-left)
-                     *rune-container*         (cons *rune* *rune-payload*)
-                     *cbox*                   *pressed-cbox*
-                     *cbox-container*         *pressed-cbox-container*)
-               (setf *cbox*                   nil
-                     *cbox-container*         nil))
+         (multiple-value-bind (cbox cc)
+             (find-cbox row column)
+           (when *pressed-cbox-container*
+             (setf *rune* (if (equalp cbox *pressed-cbox*)
+                              :cbox-release-left
+                              :cbox-unclick-left)
+                   *rune-container*         (cons *rune* *rune-payload*)))
            (setf *pressed-cbox*           nil
                  *pressed-cbox-container* nil
-                 *hover-cbox*             (when cc
-                                            (cbox-container-payload cc))
-                 *hover-cbox-container*   (when cc
-                                            cc)))))
+                 *hover-cbox*             cbox
+                 *hover-cbox-container*   cc))))
       ((:mouse-drag-left :mouse-drag-middle :mouse-drag-right :mouse-move)
        (destructuring-bind (row column)
            *rune-payload*
-         (if *pressed-cbox-container*
-             (setf *hover-cbox*             *pressed-cbox*
-                   *hover-cbox-container*   *pressed-cbox-container*)
-             (let ((cc (find-cbox row column)))
-               (setf *hover-cbox*             (when cc
-                                                (cbox-container-payload cc))
-                     *hover-cbox-container*   cc)))
-         (setf *cbox*                   nil
-               *cbox-container*         nil
-               *rune*                   :cbox-hover
-               *rune-container*         (cons *rune*
-                                              *rune-payload*))))
-      (otherwise
-       (setf *cbox* nil
-             *cbox-container* nil))))
-   (values *rune-container*
-           *cbox-container*))
+         (multiple-value-bind (cbox cc)
+             (find-cbox row column)
+           (when cc
+             (setf *rune*                   :cbox-hover
+                   *rune-container*         (cons *rune*
+                                                  *rune-payload*)))
+           (setf *hover-cbox*             cbox
+                 *hover-cbox-container*   cc))))
+      (otherwise nil))))
+
+(defun bifrost-read-no-hang ()
+  (bifrost-read-raw-no-hang)
+  (%bifrost-process-cbox)
+  *rune-container*)
 
 (defun bifrost-read ()
-  (loop (multiple-value-bind (rune-container cbox-container)
-            (bifrost-read-no-hang)
-          (if rune-container
-              (return-from bifrost-read
-                (values rune-container
-                        cbox-container))
-              (sleep *bifrost-read-poll-frequency*)))))
+  (bifrost-read-raw)
+  (%bifrost-process-cbox)
+  *rune-container*)
+
+
+
+;; WITH-BIFROST: important setup form
+
+ (defvar *within-with-bifrost-form* nil)
+
+(defmacro with-bifrost (&body body)
+  (let ((doit (gensym "with-bifrost-body")))
+    `(flet ((,doit ()
+              (let ((*within-with-bifrost-form* t))
+                (declare (special *within-with-bifrost-form*))           
+                ,@body)))
+       (unless *within-with-bifrost-form*
+         (init-bifrost-io)
+         (warn-if-outside-terminal)
+         (reset-fifo-char-buffer)
+         (clear-bifrost-io)) ; remove stray input/output
+       (unwind-protect
+            (if (and *bifrost-tty-p*
+                     (not *within-with-bifrost-form*))
+                (trivial-raw-io:with-raw-io (:vmin 0 :vtime 0)
+                  (,doit))
+                (,doit))
+         (unless *within-with-bifrost-form*
+           (clear-bifrost-io) ; ensure clean state for warnings
+           (reset-fifo-char-buffer)
+           (setf *pressed-cbox* nil
+                 *hover-cbox* nil)
+           ;; warn a second time, in case the first  was obscured by TUI output
+           (warn-if-outside-terminal))))))
