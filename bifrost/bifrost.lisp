@@ -184,6 +184,8 @@
  
 ;; Reading from the terminal
   
+ (defvar *within-with-bifrost-form* nil)
+
 (defparameter *rune-read-debug-literal-char* #\~)
 
 (defun %read-char-burst-no-hang (stream)
@@ -866,8 +868,6 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
 
 ;; WITH-BIFROST: important setup form
-
- (defvar *within-with-bifrost-form* nil)
 
 (defmacro with-bifrost (&body body)
   (let ((doit (gensym "with-bifrost-body")))
