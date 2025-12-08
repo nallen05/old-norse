@@ -21,15 +21,15 @@ Flokkr is part of the Old Norse Terminal Toolkit.
       (4hz-counter 0)
       (keystroke-counter 0))
   (format t "~%elapse  step 10hz  4hz Keystroke")
-  (flokkr
+  (flokkr:flokkr
     (:do (incf 10hz-counter) :schedule 0.1)
     (:after 0.25 :do (incf 4hz-counter) :repeat)
     (:input
       (#\newline (incf keystroke-counter))
       ((#\q #\esc) (return-from flokkr))) ;; hit q or Escape to exit
     (:also (format t "~&~6,2F ~5,1F ~5D ~5D ~6D~%"
-                   *flokkr-elapsed-seconds*
-                   *flokkr-step-seconds*
+                   flokkr:*flokkr-elapsed-seconds*
+                   flokkr:*flokkr-step-seconds*
                    10hz-counter
                    4hz-counter
                    keystroke-counter))))
