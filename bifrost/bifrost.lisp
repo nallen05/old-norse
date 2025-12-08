@@ -3,31 +3,26 @@
 (defpackage :bifrost
   (:use :cl)
   (:export  ;; raw IO
+            :with-bifrost
             :*bifrost-tty-p*
             :*bifrost-io*
-            :with-bifrost
 
             ;; writing to the terminal
             :bifrost-write
-            :*bifrost-debug-mode*
             
             ;; reading from the terminal
-            :bifrost-listen
             :bifrost-read
             :bifrost-read-no-hang
-            :*rune*
-            :*rune-name*
-            :*rune-payload*
+            :bifrost-listen
+            :*rune*                                    ;; changed
+            :*rune-payload*                            ;; eventually to be depricated
+            :*rune-container*                          ;; eventually to be depricated
             :*bifrost-read-escape-sequence-max-hang*
             :*bifrost-suppress-outside-tty-warnings*
 
-            ;; dispatching control flow based on runes
-            :rune-case
-            
-            ;; debugging modes
-            :*bifrost-read-debug-mode*
-            :*bifrost-read-debug-literal-char*
-              
+;;            ;; dispatching control flow based on runes
+;;            :rune-case
+                         
             ;; tracking mouse events
 	          :with-mouse-tracking
             :*bifrost-mouse-tracking-mode*
@@ -35,28 +30,31 @@
 	          ;; defining CBOX click regions
             :with-cbox-layer
             :register-cbox!
-	          :*cbox-min-row*
-            :*cbox-min-column*
-	          :*cbox-max-row*
-	          :*cbox-max-column*
-
-	          ;; reading mouse click /touch screen tap events
-            :cbox
-      	    :cbox-p
-            :cbox-name
-            :cbox-identifier
-            :cbox-payload
-            :cbox-events
-            :cbox-min-row
-            :cbox-min-column
-            :cbox-max-row
-            :cbox-max-column
-            :cbox-pressed-p
-            :lookup-cbox
+            
+ 	          ;; what CBOX was clicked?
             :*cbox*
-            :*cbox-stack*
-            :*active-cbox-pressed*
+            :*pressed-cbox*
+            :*hover-cbox*
 
+            ;; inxpecting cbox stack & object
+            :*cbox-stack*
+            :*cbox-container*
+            :*pressed-cbox-container*
+            :*hover-cbox-container*
+            :cbox-container
+      	    :cbox-container-p
+            :cbox-container-payload
+;;            :cbox-events
+            :cbox-container-min-row
+            :cbox-container-min-column
+            :cbox-container-max-row
+            :cbox-container-max-column
+            :find-cbox
+
+            ;; debugging stuff
+            :*bifrost-debug-mode*
+            :*bifrost-read-debug-literal-char*
+            
             ;; advanced mode
             :bifrost-write-raw
             :bifrost-read-raw
@@ -199,7 +197,7 @@
 
 
 ;; whitelist of known RUNES
-;; defined here for passing rune literals when in T
+;; defined here for passing rune literals when in testing mode
 
 (defparameter *bifrost-read-literal-whitelist*
   '(:up-arrow
@@ -211,10 +209,7 @@
     :mouse-click-middle
     :mouse-click-right
     :mouse-release
-    :mouse-drag-left
-    :mouse-drag-middle
-    :mouse-drag-right
-    :mouse-move))
+    :mouse-move))           ;; mouse-move, mouse-drag-left/middle/right
     
  
 ;; Reading from the terminal
@@ -448,9 +443,9 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 			             (1  :mouse-click-middle)
 			             (2  :mouse-click-right)
 			             (3  :mouse-release)
-			             (32 :mouse-drag-left)
-			             (33 :mouse-drag-middle)
-			             (34 :mouse-drag-right)
+			             (32 :mouse-move)     ;; mouse-drag-left
+			             (33 :mouse-move)     ;; mouse-drag-middle
+			             (34 :mouse-move)     ;; mouse-drag-right
 			             (35 :mouse-move)
 			             (otherwise (funcall *%abort-escape-sequence-thunk*)))
                  row
@@ -533,8 +528,8 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
        xx))))
 
 (defvar *rune* nil)
-(defvar *rune-name* nil)
 (defvar *rune-payload* nil)
+(defvar *rune-container* nil)
 
 (defun bifrost-read-raw-no-hang (&optional (stream *bifrost-io*))
   (unless *within-with-bifrost-form*
@@ -543,25 +538,20 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
     (cond
 
       ;; nothing there
-      ((null rune)
-       (setf *rune* nil
-             *rune-name*  nil
-             *rune-payload* nil)
-       nil)
+      ((null rune) (setf *rune* nil
+                         *rune-payload* nil
+                         *rune-container*  nil))
 
       ;; complex rune
-      ((listp rune)
-       (setf *rune* rune
-             *rune-name* (first rune)
-             *rune-payload* (rest rune))
-       rune)
+      ((listp rune) (setf *rune* (first rune)
+                          *rune-payload* (rest rune)
+                          *rune-container* rune))
 
       ;; simple rune
-      (t
-       (setf *rune* rune
-             *rune-name* nil
-             *rune-payload* nil)
-       rune))))
+      (t (setf *rune* rune
+               *rune-payload* nil
+               *rune-container* nil)))
+    rune))
 
 (defvar *bifrost-read-poll-frequency* 0.005
   "used only in \"debug-read\" mode, when we're outside of a Unix-like terminal emulator.")
@@ -580,35 +570,35 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
 ;; convenience
 
-(defmacro rune-case (rune &body cases)
-  (let ((%rune (gensym "rune"))
-        (%rune-name (gensym "rune-name")))
-    `(let* ((,%rune ,rune)
-            (,%rune-name (if (listp ,%rune)
-                             (first ,%rune)
-                             ,%rune)))
-       (cond
-         ,@(mapcar (lambda (clause)
-                     (destructuring-bind (key . forms)
-                         clause
-                       (cond
-                         ((eql key 'otherwise)
-                          `(t ,@forms))
-                         ((null key)
-                          `((null ,%rune) ,@forms))
-                         ((or (characterp key)
-                              (keywordp key))
-                          `((eql ,%rune-name ,key) ,@forms))
-                         ((listp key)
-                          (cond
-                            ((or (every #'characterp key)
-                                 (every #'keywordp key)    )
-                             `((find ,%rune-name ',key) ,@forms))
-                            ((keywordp (first key))
-                             `((equalp ,%rune-name ,key) ,@forms))
-                            (t (error "malformed RUNE-CASE clause ~S" clause))))
-                         (t (error "malformed RUNE-CASE clause ~S" clause)))))
-                   cases)))))
+;; (defmacro rune-case (rune &body cases)
+;;   (let ((%rune (gensym "rune"))
+;;         (%rune-name (gensym "rune-name")))
+;;     `(let* ((,%rune ,rune)
+;;             (,%rune-name (if (listp ,%rune)
+;;                              (first ,%rune)
+;;                              ,%rune)))
+;;        (cond
+;;          ,@(mapcar (lambda (clause)
+;;                      (destructuring-bind (key . forms)
+;;                          clause
+;;                        (cond
+;;                          ((eql key 'otherwise)
+;;                           `(t ,@forms))
+;;                          ((null key)
+;;                           `((null ,%rune) ,@forms))
+;;                          ((or (characterp key)
+;;                               (keywordp key))
+;;                           `((eql ,%rune-name ,key) ,@forms))
+;;                          ((listp key)
+;;                           (cond
+;;                             ((or (every #'characterp key)
+;;                                  (every #'keywordp key)    )
+;;                              `((find ,%rune-name ',key) ,@forms))
+;;                             ((keywordp (first key))
+;;                              `((equalp ,%rune-name ,key) ,@forms))
+;;                             (t (error "malformed RUNE-CASE clause ~S" clause))))
+;;                          (t (error "malformed RUNE-CASE clause ~S" clause)))))
+;;                    cases)))))
 
 
 
@@ -626,15 +616,15 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
 (defvar *bifrost-debug-mode* nil)
   ;; NIL
-  ;; :no-control
-  ;; :escape-control
+  ;; :human-readable
+  ;; :machine-readable
 
 (defun %send-escape-sequence (stream &rest strings-and-chars)
-  (unless (eq *bifrost-debug-mode* :no-control)
+  (unless (eq *bifrost-debug-mode* :human-readable)
     (dolist (% strings-and-chars)
 	    (etypecase   %
 	      (string (write-string % stream))
-	      (character (if (and (eq *bifrost-debug-mode* :escape-control)
+	      (character (if (and (eq *bifrost-debug-mode* :machine-readable)
 			                      (char= % #\Esc))
 			                 (format stream "~Ax~X" #\\ (char-code #\Esc))
 			                 (write-char % stream)))))))
@@ -755,7 +745,8 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
             (otherwise (error "BIFROST-WRITE: unknown rune ~S" rune-or-char)))))))
 
 (defun %read-query-cursor-position-response (stream)
-  (rune-case (bifrost-read-raw stream)
+  (bifrost-read-raw stream)
+  (case *rune*
     (#\Esc
      (with-escape-sequence
        (with-continue-escape-sequence stream
@@ -767,13 +758,12 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 		             (with-continue-escape-sequence stream
 		               (#\R
                     (return-from %read-query-cursor-position-response
-                      (list :cursor-position row column)))))))))))))
-  (error "unable to parse query position. Bad escape sequence returned by the terminal after querying cursor position.")
-  )
+                      (list :cursor-position row column))))))))))))
+    (otherwise (error "unable to parse query position. Bad escape sequence returned by the terminal after querying cursor position."))))
 
 (defun bifrost-write (rune-or-char &optional (stream *bifrost-io*))
   (bifrost-write-raw rune-or-char stream)
-  (rune-case rune-or-char
+  (case rune-or-char
     (:query-terminal-size
      (finish-output stream)
      (bifrost-read-raw stream))
@@ -827,126 +817,130 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 (defmacro with-cbox-layer (clear-p &body body)
   (let ((%clear-p (gensym "clear-cbox-context")))
     `(let* ((,%clear-p ,clear-p)
-            (*%within-with-cbox-p* t)
             (*cbox-stack* (if ,%clear-p
 					                    *cbox-stack*
-					                    nil)))
+					                    nil))
+            (*%within-with-cbox-p* t))
        (declare (special *%within-with-cbox-p*
                          *cbox-stack*))
        ,@body)))
 
-(defstruct cbox
-  identifier
+(defstruct cbox-container
+  payload
   min-row
   min-column
   max-row
   max-column)
 
-(defvar *cbox-min-row*    nil)
-(defvar *cbox-min-column* nil)
-(defvar *cbox-max-row*    nil)
-(defvar *cbox-max-column* nil)
-
-(defun register-cbox! (identifier &key
-			                             (min-row *cbox-min-row*) (min-column *cbox-min-column*)
-			                             (max-row *cbox-max-row*) (max-column *cbox-max-column*))
+(defun register-cbox! (payload min-row min-column max-row max-column)
   (unless *%within-with-cbox-p*
     (error "REGISTER-CBOX! called outside of WITH-CBOX"))
   (assert (numberp min-row))
   (assert (numberp min-column))
   (assert (numberp max-row))
   (assert (numberp max-column))
-  (push (make-cbox :identifier identifier
-                   :min-row min-row
-                   :min-column min-column
-                   :max-row max-row
-                   :max-column max-column)
+  (push (make-cbox-container :payload payload
+                             :min-row min-row
+                             :min-column min-column
+                             :max-row max-row
+                             :max-column max-column)
         *cbox-stack*))
 
-(defun lookup-cbox (row column)
-  (unless *%within-with-cbox-p*
-    (error "LOOKUP-CBOX called outside of WITH-CBOX"))
-  (assert (numberp row))
-  (assert (numberp column))
-  (find-if (lambda (%cbox)
-	           (and (cbox-p %cbox)
-		              (<= (cbox-min-row %cbox) row)
-                  (< row (cbox-max-row %cbox))
-		              (<= (cbox-min-column %cbox) column)
-                  (< column (cbox-max-column %cbox))))
-           *cbox-stack*))
-
-
-
-
-
-;; pressed buttons, before they are released
-
-(defvar *active-cbox-pressed* nil)
-
-(defun cbox-pressed-p (identifier &key (test #'equalp))
-  (unless *%within-with-cbox-p*
-    (error "CBOX-PRESSED-P called outside of WITH-CBOX"))
-  (and *active-cbox-pressed*
-       (funcall test
-                identifier
-                (cbox-identifier *active-cbox-pressed*))))
+(defun find-cbox (row column)
+  (when *%within-with-cbox-p*
+    (assert (numberp row))
+    (assert (numberp column))
+    (find-if (lambda (%cbox)
+               (assert (cbox-container-p %cbox))
+	             (and (<= (cbox-container-min-row %cbox) row)
+                    (< row (cbox-container-max-row %cbox))
+		                (<= (cbox-container-min-column %cbox) column)
+                    (< column (cbox-container-max-column %cbox))))
+             *cbox-stack*)))
+      
 
 
 ;; Reading mouse click / touch screen tap events from the terminal
 
 (defvar *cbox* nil)
+(defvar *cbox-container* nil)
+
+(defvar *pressed-cbox* nil)               ;; activates on left-click only
+(defvar *pressed-cbox-container* nil)     ;; activates on left-click only
+
+(defvar *hover-cbox* nil)                 ;; click events also update this
+(defvar *hover-cbox-container* nil)       ;; click events also update this
 
 (defun bifrost-read-no-hang ()
   (bifrost-read-raw-no-hang)
+  (setf *cbox* nil
+        *cbox-container* nil)
   (when *rune*
-    (case *rune-name*
-      (:mouse-click-left
+    (case *rune*
+      ((:mouse-click-left :mouse-click-middle :mouse-click-right)
        (destructuring-bind (row column)
            *rune-payload*
-         (let ((cbox (lookup-cbox row column)))
-           (if cbox
-               (setf *cbox*                cbox
-                     *active-cbox-pressed* cbox
-                     *rune-name*           :cbox-click-left
-                     *rune*                (cons *rune-name*
-                                                 *rune-payload*))
-               (setf *cbox* nil
-                     *active-cbox-pressed* nil)))))
+         (let ((cc (find-cbox row column)))
+           (when cc
+             (setf *cbox*                   (cbox-container-payload cc)
+                   *cbox-container*         cc
+                   *pressed-cbox*           (when (eq *rune* :mouse-click-left)
+                                              (cbox-container-payload cc))
+                   *pressed-cbox-container* (when (eq *rune* :mouse-click-left)
+                                              cc)
+                   *hover-cbox*             *pressed-cbox*
+                   *hover-cbox-container*   *pressed-cbox-container*
+                   *rune*                   (ecase *rune*
+                                              (:mouse-click-left   :cbox-click-left)
+                                              (:mouse-click-middle :cbox-click-middle)
+                                              (:mouse-click-right  :cbox-click-right))
+                   *rune-container*         (cons *rune*
+                                                  *rune-payload*))))))
       (:mouse-release
        (destructuring-bind (row column)
            *rune-payload*
-         (let ((cbox (lookup-cbox row column)))
-           (if *active-cbox-pressed*
-               (setf *rune-name*
-                     (if (eql cbox *active-cbox-pressed*)
-                         :cbox-release-left
-                         :cbox-unclick-left)
-                   
-                     *cbox*
-                     *active-cbox-pressed*
-
-                     *active-cbox-pressed*
-                     nil
-
-                     *rune*
-                     (cons *rune-name*
-                           *rune-payload*))
-               (setf *cbox* nil
-                     *active-cbox-pressed* nil)))))
+         (let ((cc (find-cbox row column)))
+           (if *pressed-cbox-container*
+               (setf *rune* (if (eq cc *pressed-cbox-container*)
+                                :cbox-release-left
+                                :cbox-unclick-left)
+                     *rune-container*         (cons *rune* *rune-payload*)
+                     *cbox*                   *pressed-cbox*
+                     *cbox-container*         *pressed-cbox-container*)
+               (setf *cbox*                   nil
+                     *cbox-container*         nil))
+           (setf *pressed-cbox*           nil
+                 *pressed-cbox-container* nil
+                 *hover-cbox*             (when cc
+                                            (cbox-container-payload cc))
+                 *hover-cbox-container*   (when cc
+                                            cc)))))
+      ((:mouse-drag-left :mouse-drag-middle :mouse-drag-right :mouse-move)
+       (destructuring-bind (row column)
+           *rune-payload*
+         (if *pressed-cbox-container*
+             (setf *hover-cbox*             *pressed-cbox*
+                   *hover-cbox-container*   *pressed-cbox-container*)
+             (let ((cc (find-cbox row column)))
+               (setf *hover-cbox*             (when cc
+                                                (cbox-container-payload cc))
+                     *hover-cbox-container*   cc)))
+         (setf *cbox*                   nil
+               *cbox-container*         nil
+               *rune*                   :cbox-hover
+               *rune-container*         (cons *rune*
+                                              *rune-payload*))))
       (otherwise
        (setf *cbox* nil
-             *active-cbox-pressed* nil))))
-   (values *rune*
-           *cbox*))
-
-
+             *cbox-container* nil))))
+   (values *rune-container*
+           *cbox-container*))
 
 (defun bifrost-read ()
-  (loop (multiple-value-bind (rune cbox)
+  (loop (multiple-value-bind (rune-container cbox-container)
             (bifrost-read-no-hang)
-          (if rune
+          (if rune-container
               (return-from bifrost-read
-                (values rune
-                        cbox))
+                (values rune-container
+                        cbox-container))
               (sleep *bifrost-read-poll-frequency*)))))
