@@ -253,12 +253,12 @@
       (case (first c)
         (:input (push `(when bifrost:*rune*
                          (unless *flokkr-tick-input-matched-p*
-                           (bifrost:rune-case bifrost:*rune*
-                                              ,@(mapcar (lambda (cases)
-                                                          `(,@cases
-                                                            (setf ,activated t
-                                                                  *flokkr-tick-input-matched-p* t)))
-                                                        (rest c)))))
+                           (case bifrost:*rune*
+                             ,@(mapcar (lambda (cases)
+                                         `(,@cases
+                                           (setf ,activated t
+                                                 *flokkr-tick-input-matched-p* t)))
+                                (rest c)))))
                       execute-body))
         (:also (push `(when ,activated
                         ,@(rest c))
@@ -382,7 +382,7 @@
                    ;; (4) compute how long to wait
                    ;; (5) if appropriate, idle in an interuptable way
                    (setf last-tick-start-itu tick-start-itu)
-                   (unless (bifrost:rune-listen) ; if there is input, skip waiting
+                   (unless (bifrost:bifrost-listen) ; if there is input, skip waiting
 
                      ;; if there is no input, then see how long to wait
                      (let ((wait (funcall (flokkr-compute-wait flok))))

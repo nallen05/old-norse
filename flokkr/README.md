@@ -194,9 +194,9 @@ Examples:
 
     (:input CASES*)
 
-:INPUT runs whenever BIFROST:RUNE-READ-NO-HANG detects terminal input. 
-- CASES are handled with BIFROST:RUNE-CASE.
-- after the first time input is matched by BIFROST:RUNE-CASE, then no other :INPUT will run. So pressing a key or clicking a button will only ever trigger one action.
+:INPUT runs whenever bifrost detects terminal input. 
+- CASES are handled by CASE, dispatching off of `BIFROST:*RUNE*`
+- after the first time input is matched by CASE, then no other :INPUT will run. So pressing a key or clicking a button will only ever trigger one action.
 - Note: FLOKKR calls WITH-BIFROST under the hood, so you are able to run FLOKKR outside of WITH-BIFROST. However, it's recommended good convention to wrap your entire program within WITH-BIFROST, including FLOKKR.
 
 # the :also keyword
