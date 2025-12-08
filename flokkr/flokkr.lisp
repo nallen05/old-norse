@@ -131,8 +131,9 @@
 ;; LOOP-inspired keyword mini-language
 
 (defstruct flokkr
-  start-tick        ;; (1) start tick: update timers & compute any global delay
-  add-global-delay  ;; (2)  apply global delay, if there is any
+  reads-input-p     ;; (0) does this flokkr look for input from the terminal?
+  advance-timers    ;; (1) start tick: update timers & compute any global delay
+  add-global-delay  ;; (2) apply global delay, if there is any
   execute-clauses   ;; (3) execute activated clauses & rescheduling logic
   compute-wait)     ;; (4) compute how long to wait
 
@@ -198,22 +199,27 @@
     (values (replace-repeat (extract-init clause))
             init-form)))
 
-(defun %extract-enforce-cooloff (clause &aux enforce-cooloff-form enforce-cooloff-seen-p)
+(defun %extract-enforce-cooloff (clause &aux enforce-cooloff-form enforce-cooloff-seen-p on-enforce)
   "clause -> stripped-clause, enforce-cooloff-form, enforce-cooloff-seen-p"
   (labels ((rfn (_)
              (when _
                (destructuring-bind (1st . rest) _
-                 (if (eq 1st :enforce-cooloff)
+                 (case 1st
+                   (:enforce-cooloff
                      (if enforce-cooloff-seen-p
                          (error "FLOKKR: multiple :ENFORCE-COOLOFF forms seen in the same clause (~a)" clause)
                          (progn
                            (setf enforce-cooloff-form (car rest)
                                  enforce-cooloff-seen-p t)
-                           (rfn (cdr rest))))
-                     (cons 1st (rfn rest)))))))
+                           (rfn (cdr rest)))))
+                   (:on-enforce
+                    (setf on-enforce (car rest))
+                    (rfn (cdr rest)))
+                   (otherwise (cons 1st (rfn rest))))))))
     (values (rfn clause)
             enforce-cooloff-form
-            enforce-cooloff-seen-p)))
+            enforce-cooloff-seen-p
+            on-enforce)))
 
 (defun %extract-rescheduling-logic (clause &aux reschedule-form reschedule-type)
   "clause -> stripped-clause, reschedule-form, reschedule-type
@@ -237,10 +243,13 @@
 (defmacro subflokkr (&body clauses)
   (let ((tick-start-itu (gensym "flokkr-tick-start-itu-"))
         (global-delay-seconds (gensym "flokkr-global-delay-"))
+        (on-enforce (gensym "flokkr-on-enforce-global-delay-"))
         (activated (gensym "flokkr-activated-"))
         (next-wait (gensym "flokkr-next-wait-"))
         lexical-state
-        tick-start-body
+        reads-input-p
+        subflokkrs-list
+        advance-timers-body
         add-global-delay-body
         execute-body
         compute-wait-body)
@@ -255,7 +264,8 @@
                                            (setf ,activated t
                                                  *flokkr-tick-input-matched-p* t)))
                                 (rest c)))))
-                      execute-body))
+                      execute-body)
+                 (setf reads-input-p t))
         (:also (push `(when ,activated
                         ,@(rest c))
                      execute-body))
@@ -266,26 +276,28 @@
                   (subflokkr-ret (gensym "subflokkr-returned-value-")))
               (push `(,subflokkr ,form)
                     lexical-state)
-           (push `(let ((,subflokkr-ret (funcall (flokkr-start-tick ,subflokkr))))
-                    (when (> ,subflokkr-ret ,global-delay-seconds )
-                      (setf ,global-delay-seconds ,subflokkr-ret)))
-                 tick-start-body)
-           (push `(funcall (subflokkr-add-global-delay ,subflokkr) ,global-delay-seconds)
-                 add-global-delay-body)
-           (push `(let ((,subflokkr-ret (funcall (subflokkr-execute-clauses ,subflokkr))))
-                    (when ,percolate
-                      (setf ,activated
-                            (or ,subflokkr-ret ,activated))))
-                 execute-body)
-           (push `(let ((,subflokkr-ret (funcall (flokkr-compute-next-wait ,subflokkr))))
-                    (when (or (not ,next-wait)
-                              (and ,next-wait ,subflokkr-ret (< ,subflokkr-ret ,next-wait)))
-                      (setf ,next-wait ,subflokkr-ret)))
-                 compute-wait-body))))
+              (push subflokkr subflokkrs-list)
+              (push `(let ((,subflokkr-ret (funcall (flokkr-advance-timers ,subflokkr))))
+                       (when (> ,subflokkr-ret ,global-delay-seconds )
+                         (setf ,global-delay-seconds ,subflokkr-ret)))
+                    advance-timers-body)
+              (push `(funcall (subflokkr-add-global-delay ,subflokkr) ,global-delay-seconds)
+                    add-global-delay-body)
+              (push `(let ((,subflokkr-ret (funcall (subflokkr-execute-clauses ,subflokkr))))
+                       (when ,percolate
+                         (setf ,activated
+                               (or ,subflokkr-ret ,activated))))
+                    execute-body)
+              (push `(let ((,subflokkr-ret (funcall (flokkr-compute-next-wait ,subflokkr))))
+                       (when (or (not ,next-wait)
+                                 (and ,next-wait ,subflokkr-ret (< ,subflokkr-ret ,next-wait)))
+                         (setf ,next-wait ,subflokkr-ret)))
+                    compute-wait-body))))
         (otherwise
          (multiple-value-bind (%c timer cooloff) (%extract-timer-names c)
            (multiple-value-bind (%c timer-init-form) (%extract-init-form %c)
-             (multiple-value-bind (%c cooloff-form cooloff-seen-p) (%extract-enforce-cooloff %c)
+             (multiple-value-bind (%c cooloff-form cooloff-seen-p on-enforce-form)
+                 (%extract-enforce-cooloff %c)
                (multiple-value-bind (%c scheduler-form scheduler-type) (%extract-rescheduling-logic %c)
                  (case (first %c)
                    (:do 
@@ -302,13 +314,14 @@
                                         (decf ,cooloff *flokkr-step-seconds*)
                                         (when (and (plusp ,cooloff) ,timer (not (plusp ,timer)))
                                           (unless (>= ,global-delay-seconds ,cooloff)
-                                            (setf ,global-delay-seconds ,cooloff)))))
+                                            (setf ,global-delay-seconds ,cooloff
+                                                  ,on-enforce ,on-enforce-form)))))
                                    `(when ,timer
                                       (decf ,timer *flokkr-step-seconds*))))
                               (:drift
                                `(when ,timer
                                   (decf ,timer *flokkr-step-seconds*))))
-                            tick-start-body))
+                            advance-timers-body))
                      (push `(when ,timer
                               (incf ,timer ,global-delay-seconds))
                            add-global-delay-body)
@@ -316,11 +329,13 @@
                               ,@(rest %c)
                               (setf ,activated t)
                               ,@(ecase scheduler-type
-                                  (:schedule `((setf ,timer ,scheduler-form)))
-                                  (:drift `((setf ,timer
-                                                  (let ((_ ,scheduler-form))
-                                                    (when _
-                                                      (+ _ (seconds-between-itu ,tick-start-itu (get-internal-real-time))))))))
+                                  (:schedule
+                                   `((setf ,timer ,scheduler-form)))
+                                  (:drift
+                                   `((setf ,timer
+                                           (let ((_ ,scheduler-form))
+                                             (when _
+                                               (+ _ (seconds-between-itu ,tick-start-itu (get-internal-real-time))))))))
                                   (nil nil))
                               ,@(when (and (eq scheduler-type :schedule)
                                            cooloff-seen-p)
@@ -335,10 +350,17 @@
                    (otherwise (error "FLOKKR: clause not recognized as :DO, :INPUT, :ALSO, or :SUBFLOKKR form: ~A" c))))))))))
     `(let (,@(nreverse lexical-state))
        (make-flokkr
+        ;; (0) does this flokkr look for input from the terminal?
+        :reads-input-p (or ,(when reads-input-p
+                              t)
+                           ,@(mapcar (lambda (sf) `(flokkr-reads-input-p ,sf))
+                                     subflokkrs-list))
         ;; (1) start tick: update timers & compute any global delay
-        :start-tick (lambda (&aux (,global-delay-seconds 0))
-                      ,@(nreverse tick-start-body)
-                      ,global-delay-seconds)
+        :advance-timers (lambda (&aux (,global-delay-seconds 0) ,on-enforce)
+                          ,@(nreverse advance-timers-body)
+                          (when ,on-enforce
+                            (funcall ,on-enforce ,global-delay-seconds))
+                          ,global-delay-seconds)
         ;; (2) apply global delay, if there is any
         :add-global-delay (lambda (,global-delay-seconds)
                             ,@(nreverse add-global-delay-body))
@@ -353,40 +375,41 @@
                         ,@(nreverse compute-wait-body)
                         ,next-wait)))))
 
-(defun flokkr-run (flok &aux flok-start-itu last-tick-start-itu)
-  (assert (flokkr-p flok))
-  (bifrost:with-bifrost
-      (loop do (let ((tick-start-itu (get-internal-real-time)))
-                 (unless flok-start-itu
-                   (setf flok-start-itu tick-start-itu
-                         last-tick-start-itu tick-start-itu))
+(defun %flokkr-run (flok &aux flok-start-itu last-tick-start-itu)
+  (loop do (let ((tick-start-itu (get-internal-real-time)))
+             (unless flok-start-itu
+               (setf flok-start-itu tick-start-itu
+                     last-tick-start-itu tick-start-itu))
 
-                 ;; (1) start tick: update timers & compute any global delay
-                 (let* ((*flokkr-elapsed-seconds* (seconds-between-itu tick-start-itu flok-start-itu))
-                        (*flokkr-step-seconds* (seconds-between-itu tick-start-itu last-tick-start-itu))
-                        (global-delay-seconds (if (plusp *flokkr-step-seconds*)
-                                                  (funcall (flokkr-start-tick flok))
-                                                  0)))
-                   (declare (special *flokkr-elapsed-seconds* *flokkr-step-seconds*))
+             ;; (0) does this flokkr look for input from the terminal?
+             (when (flokkr-reads-input-p flok)
+               (bifrost:rune-read-no-hang))
 
-                   ;; (2) apply global delay, if there is any
-                   (when (plusp global-delay-seconds)
-                     (funcall (flokkr-add-global-delay flok) global-delay-seconds))
+             ;; (1) start tick: update timers & compute any global delay
+             (let* ((*flokkr-elapsed-seconds* (seconds-between-itu tick-start-itu flok-start-itu))
+                    (*flokkr-step-seconds* (seconds-between-itu tick-start-itu last-tick-start-itu))
+                    (global-delay-seconds (if (plusp *flokkr-step-seconds*)
+                                              (funcall (flokkr-advance-timers flok))
+                                              0)))
+               (declare (special *flokkr-elapsed-seconds* *flokkr-step-seconds*))
 
-                   ;; (3) execute activated clauses & rescheduling logic
-                   (bifrost:rune-read-no-hang)
-                   (let ((*flokkr-tick-input-matched-p*))
-                     (declare (special *flokkr-tick-input-matched-p*))
-                     (funcall (flokkr-execute-clauses flok) tick-start-itu))
+               ;; (2) apply global delay, if there is any
+               (when (plusp global-delay-seconds)
+                 (funcall (flokkr-add-global-delay flok) global-delay-seconds))
 
-                   ;; (4) compute how long to wait
-                   ;; (5) if appropriate, idle in an interuptable way
-                   (setf last-tick-start-itu tick-start-itu)
-                   (unless (bifrost:rune-listen) ; if there is input, skip waiting
+               ;; (3) execute activated clauses & rescheduling logic
+               (let (*flokkr-tick-input-matched-p*)
+                 (declare (special *flokkr-tick-input-matched-p*))
+                 (funcall (flokkr-execute-clauses flok) tick-start-itu))
 
-                     ;; if there is no input, then see how long to wait
+               ;; (4) compute how long to wait
+               ;; (5) if appropriate, idle in an interuptable way
+               (setf last-tick-start-itu tick-start-itu)
+               (if (flokkr-reads-input-p flok)
+
+                   ;; this flokkr looks for input, so only wait if there is no input
+                   (unless (bifrost:rune-listen)
                      (let ((wait (funcall (flokkr-compute-wait flok))))
-                       ;; WAIT must be an number of seconds or NIL
                        (assert (or (not wait)
                                    (numberp wait)))
                        (if bifrost:*bifrost-tty-p*
@@ -403,7 +426,74 @@
                                                  (>= (get-internal-real-time) stop))
                                        do (sleep 0.02)))
                                (loop until (bifrost:rune-listen)
-                                     do (sleep 0.02)))))))))))
+                                     do (sleep 0.02))))))
+                   ;; this flokkr does not look for input, so just wait unconditionally
+                   (let ((wait (funcall (flokkr-compute-wait flok))))
+                     (if wait
+                         (sleep wait)
+
+                         ;; there are no timers & we're not waiting for input, so just exit
+                         (return-from %flokkr-run))))))))
+
+(defun flokkr-run (flok)
+  (assert (flokkr-p flok))
+  (if (flokkr-reads-input-p flok)
+      (bifrost:with-bifrost
+        (%flokkr-run flok))
+      (%flokkr-run flok)))
+
+
+;; (defun flokkr-run (flok &aux flok-start-itu last-tick-start-itu)
+;;   (assert (flokkr-p flok))
+;;   (bifrost:with-bifrost
+;;       (loop do (let ((tick-start-itu (get-internal-real-time)))
+;;                  (unless flok-start-itu
+;;                    (setf flok-start-itu tick-start-itu
+;;                          last-tick-start-itu tick-start-itu))
+
+;;                  ;; (1) start tick: update timers & compute any global delay
+;;                  (let* ((*flokkr-elapsed-seconds* (seconds-between-itu tick-start-itu flok-start-itu))
+;;                         (*flokkr-step-seconds* (seconds-between-itu tick-start-itu last-tick-start-itu))
+;;                         (global-delay-seconds (if (plusp *flokkr-step-seconds*)
+;;                                                   (funcall (flokkr-advance-timers flok))
+;;                                                   0)))
+;;                    (declare (special *flokkr-elapsed-seconds* *flokkr-step-seconds*))
+
+;;                    ;; (2) apply global delay, if there is any
+;;                    (when (plusp global-delay-seconds)
+;;                      (funcall (flokkr-add-global-delay flok) global-delay-seconds))
+
+;;                    ;; (3) execute activated clauses & rescheduling logic
+;;                    (bifrost:rune-read-no-hang)
+;;                    (let ((*flokkr-tick-input-matched-p*))
+;;                      (declare (special *flokkr-tick-input-matched-p*))
+;;                      (funcall (flokkr-execute-clauses flok) tick-start-itu))
+
+;;                    ;; (4) compute how long to wait
+;;                    ;; (5) if appropriate, idle in an interuptable way
+;;                    (setf last-tick-start-itu tick-start-itu)
+;;                    (unless (bifrost:rune-listen) ; if there is input, skip waiting
+
+;;                      ;; if there is no input, then see how long to wait
+;;                      (let ((wait (funcall (flokkr-compute-wait flok))))
+;;                        ;; WAIT must be an number of seconds or NIL
+;;                        (assert (or (not wait)
+;;                                    (numberp wait)))
+;;                        (if bifrost:*bifrost-tty-p*
+;;                            ;; we're inside a Unix-like terminal emulator, so we can react instantly
+;;                            ;; to user input
+;;                            (sb-sys:wait-until-fd-usable bifrost:*bifrost-tty-p* :input wait)
+                           
+;;                            ;; we're outside of a Unix-like terminal emulator, in read-debug mode
+;;                            ;; so fall back on inefficient polling :-(
+;;                            (if wait
+;;                                (let* ((now (get-internal-real-time))
+;;                                       (stop (+ now (floor (* wait internal-time-units-per-second)))))
+;;                                  (loop until (or (bifrost:rune-listen)
+;;                                                  (>= (get-internal-real-time) stop))
+;;                                        do (sleep 0.02)))
+;;                                (loop until (bifrost:rune-listen)
+;;                                      do (sleep 0.02)))))))))))
 
 (defmacro flokkr (&body clauses)
   `(block flokkr
@@ -428,7 +518,7 @@
 ;;                             (unless (>= global-delay cooloff)
 ;;                               (setf enforce-global-delay cooloff)))
 ;;                          ;; subflokkr
-;;                          (let ((subflokkr-delay (funcall (flokkr-start-tick sf) elapsed-seconds)))
+;;                          (let ((subflokkr-delay (funcall (flokkr-advance-timers sf) elapsed-seconds)))
 ;;                             (unless (>= global-delay subflokkr-delay)
 ;;                               (setf global-delay subflokkr-delay)))
 ;;                         global-delay)

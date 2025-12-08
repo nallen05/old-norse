@@ -14,7 +14,57 @@ Flokkr is part of the Old Norse Terminal Toolkit.
 
 # Quickstart
 
+## Example: two syncronized timers
+
+```lisp
+(let ((10hz 0)
+      (4hz 0))
+  (format t "~%elapse  step 10hz  4hz~%")
+  (flokkr:flokkr
+    (:do (incf 10hz) :schedule 0.1)
+    (:after 0.25 :do (incf 4hz) :repeat)
+    (:also (format t "~&~6,2F ~5,1F ~5D ~5D"
+                   flokkr:*flokkr-elapsed-seconds*
+                   flokkr:*flokkr-step-seconds*
+                   10hz
+                   4hz))))
+```
+
+Running the above will start endlessly printing a sequence like:
+```
+elapsed  step  10hz  4hz
+   0.10   0.1     1    0
+
+```
+...and so on, until you C-c to quit
+ - "elapsed" is how many seconds have gone by since FLOKKR started running
+ - "step" is how many seconds have gony by since the last tick
+ - "10hz" & "4hz" count cycles at that speed
+
+
+# Example: A timer + user input
+
 *Run this example in the terminal, not SLIME/EMACS*
+
+```lisp
+(let ((1hz 0)
+      (input 0)
+      last-input)
+  (format t "~%elapse  step 1hz  input last-input")
+  (flokkr:flokkr
+    (:do (incf 1hz) :schedule 0.1)
+    (:input
+      ((#\q #\esc) (return-from flokkr)) ;; hit q or Escape to exit
+      (otherwise (incf keystroke-counter) (setf last-input bifrost:*rune*)))
+    (:also (format t "~&~6,2F ~5,1F ~5D ~5D ~6D~%"
+                   flokkr:*flokkr-elapsed-seconds*
+                   flokkr:*flokkr-step-seconds*
+                   1hz
+                   input
+                   last-input)]]]
+```
+
+
 
 ```lisp
 (let ((10hz-counter 0)
@@ -52,8 +102,8 @@ elapsed  step  10hz  4hz  keystroke
 1. Dedicated to making interactive TUIs
   - tightly coupled with BIFROST, so don't read directly from `SB-SYS:*TTY*` while FLOKKR is running
 2. Speed: immediately respond to user input; correctly juggle multiple timers; avoid polling
-3. Precision: by default, all timers are syncronized to a predictable global schedule. Allowing background tasks to drift background is possible via :DRIFT.
-4. Encourage Old Norse style "high locality" code structure: All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors.
+3. Precision & predictability: by default, all timers syncronize via a global schedule. So you can depend on them interesecting at recurring frequences.
+4. All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. (Encourage Old Norse "high locality" code structure)
 5. Enable composability: You can define widget behaviors seperately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
 
 # Understanding timer logic
@@ -66,7 +116,7 @@ elapsed  step  10hz  4hz  keystroke
   (:after 0.25 :do (task2) :repeat)) ;; timer 2
 ```
 
-Each a timer define a time duration (expressed in seconds) between the start of the a tick & the start a subsequent tick when it should activate.
+Each a timer defines its own time duration (expressed in seconds) between the start of the current tick & the start of a future tick when it should activate.
 
 
 ```
@@ -77,7 +127,7 @@ Tick N starts                             Scheduled Tick N+1 start
 <--------- scheduled duration ------------>
 ```
 
-FLOKKR keeps timers in sync with each other by scheduling based on tick-start to tick-start (instead of tick-end to tick-start). Long running tasks cut into the idle cooloff period (not the global schedule).
+FLOKKR keeps timers in sync with each other by scheduling based on tick-start to tick-start. Long running tasks cut into the idle cooloff period between tick execution ending & the next tick starting.
 
 ```
 Tick N starts
@@ -99,13 +149,15 @@ Tick N starts
                       <--- interuptable -->
 ```
 
-Thus:
-- The actual duration between two ticks (start-to-start) should match the exact scheduled duration.
-- When two timers are running simultaniously (eg: one repeating every 0.1 second & another every 0.25 seconds) they should intersect at predictable frequencies (eg: at 0.5, 1.0, 1.5, 2.0, etc...). This is ideal for SKALD screen updates (where you want to be very precise about when you update the screen) & game timings (eg: a timing puzzle).
-
 During the idle cooloff period, when not busy, the app may be interupted by user input (:INPUT).
 
-If you use :DRIFT (instead of :SCHEDULE or :AFTER/:REPEAT), then *cooloff* is kept consistent (not start-to-start duration). This causes the timings of sibling timers in the same FLOKKR form to diverge with each other, due to small differences in how long it takes work to complete. This is ideal for things like a background task that polls a rate limited API. But less ideal for things like game objects or connected UI widgets that need to be tightly in sync with each other.
+Thus:
+- The actual duration between two scheduled ticks (start-to-start) should match the exact scheduled duration.
+- When two timers are running simultaniously (eg: one repeating every 0.1 second & another every 0.25 seconds) they should intersect at predictable frequencies (eg: at 0.5, 1.0, 1.5, 2.0, etc...). This is ideal for SKALD screen updates (where you want to be very precise about when you update the screen) & game timings (eg: a timing puzzle).
+
+## Use :DRIFT to enforce rigid cooloff, but it will breaking synronization with the global schedule
+
+If you use :DRIFT (instead of :SCHEDULE or :AFTER/:REPEAT), then *cooloff* is kept consistent (not start-to-start duration). This causes the timings of sibling timers in the same FLOKKR form to diverge with each other due to small differences in how long it takes work to complete. This is ok for things like a background task that polls a rate limited API. But less ideal for things like game objects or connected UI widgets that need to be tightly in sync with each other.
 
 ```lisp
 (flokkr
@@ -114,18 +166,17 @@ If you use :DRIFT (instead of :SCHEDULE or :AFTER/:REPEAT), then *cooloff* is ke
 ```
 
 
-
-## use :ENFORCE-COOLOFF to enforce hard cooloff without breaking synronization between timers
+## Use :ENFORCE-COOLOFF to enforce hard cooloff without breaking synronization between timers
 
 ```lisp
 (flokkr
   (:do (fast-update) :schedule 0.1)
   (:do (slow-update) :schedule 1)
-  (:also (render-screen) 
-  :enforce-cooloff 0.06)) ;; always display every frame for least 0.06 seconds before moving on to the next
+  (:also (render-screen)
+   :enforce-cooloff 0.06)) ;; every frame should display for least 0.06 seconds before moving on to the next one
 ```
 
-Like :DRIFT, :ENFORCE-COOLOFF enforces cooloff (not duration). But unlike :DRIFT it goes to great length to keep long running timers in sync with the global schedule. If :ENFORCE-COOLOFF sees it will be violated, it applies a global delay to *every other timer* to put the global schedule back in sync. During this "global delay" time all timers are idle, but the app is still free to be interupted by user input.
+Like :DRIFT, :ENFORCE-COOLOFF enforces cooloff (not duration). But unlike :DRIFT it goes to great length to keep long running timers in sync with the global schedule. If :ENFORCE-COOLOFF sees it will be violated, it applies a global delay to *every other timer* in the flokkr form to put the global schedule back in sync. During this "global delay" period all timers are idle, but the app is still free to be interupted by user input.
 
 ```
 Tick N starts                       Scheduled Tick N+1 start
@@ -158,8 +209,8 @@ Tick N starts                       Scheduled Tick N+1 start
 
 ## `FLOKKR (&body clauses)`
 A macro. The main entry point to the Flokkr API. 
-- Endlessly runs CLAUSES. Use `(RETURN-FROM FLOKKR)` to escape. 
-- Clauses are defined using a keyword mini-language (inspired by the LOOP macro).
+- Runs CLAUSES. CLAUSES are are defined using a keyword mini-language (inspired by the LOOP macro).
+- Exits if there are no active timers & or :INPUT clause. But usually you use `(RETURN-FROM FLOKKR)` to escape. 
 
 ## `SUBFLOKKR (&body clauses)`
 A macro. Returns a subflokkr objet, to be imported and used within FLOKKR (or another SUBFLOKKR) via the :SUBFLOKKR keyword.
