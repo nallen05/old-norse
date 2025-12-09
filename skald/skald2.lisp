@@ -2,14 +2,6 @@
 
 
 
-;; INBOX
-;; - CBOX identifier EQUALP
-;; - :cbox-swipe-up
-;; - DON'T expose *SKALD-OUTPUT*       ????
-;;   *SKALD-OUTPUT-ROW* -> *SKALD-ROW* ????
-;; - skald-check-size -> skald-check-terminal-size
-;;   skald-sync-buffer -> skald-sync-buffer
-
 
 ;;;;; INSTRUCTIONS FOR ADDING DOUBLE-WIDTH CHARACTER (EMOJI) SUPPORT
 ;;
@@ -510,14 +502,14 @@
                 (unless (eql c #\zero_width_space)
                   
 	                ;; if necessary, change bg/fg color before continuing
-	                (unless (eq bifrost:*bifrost-write-debug-mode*
-                              :no-control)
+	                (unless (eq bifrost:*bifrost-debug-mode*
+                              :human-readable)
 		                (unless (= bg last-write-bg)
-                      (bifrost:bifrost-write `(:background ,bg)
+                      (bifrost:rune-write `(:background ,bg)
                                           *skald-output*)
 		                  (setf last-write-bg bg))
 		                (unless (= fg last-write-fg)
-                      (bifrost:bifrost-write `(:foreground ,fg)
+                      (bifrost:rune-write `(:foreground ,fg)
                                           *skald-output*)
 		                  (setf last-write-fg fg)))
                   
@@ -526,8 +518,8 @@
 			                         (= row last-write-row)
 			                         last-write-column
 			                         (= column (1+ last-write-column)))
-		                (if (eq bifrost:*bifrost-write-debug-mode*
-                            :no-control)
+		                (if (eq bifrost:*bifrost-debug-mode*
+                            :human-readable)
 		                    (when (and last-write-row
 			                             last-write-column)
 		                      (if (and (= row last-write-row)
@@ -537,7 +529,7 @@
 					                                  *skald-output*)
 			                        (write-char #\newline
 				                                  *skald-output*)))
-                        (bifrost:bifrost-write `(:move-cursor ,row ,column)
+                        (bifrost:rune-write `(:move-cursor ,row ,column)
                                             *skald-output*)))
                   )
                   
@@ -565,10 +557,10 @@
     ;; at the end, if the color has changed, put it back in the default color in order to
     ;; to minimize chance of artifacts
     (unless (eql last-write-fg default-fg)
-      (bifrost:bifrost-write `(:foreground ,default-fg)
+      (bifrost:rune-write `(:foreground ,default-fg)
                           *skald-output*))
     (unless (eql last-write-bg default-bg)
-	    (bifrost:bifrost-write `(:background ,default-bg)
+	    (bifrost:rune-write `(:background ,default-bg)
                           *skald-output*))))
 
 
@@ -582,13 +574,13 @@
                  thunk
                  :output s
                  plist))
-        (let ((bifrost:*bifrost-write-debug-mode* (getf plist
+        (let ((bifrost:*bifrost-debug-mode* (getf plist
                                                      :debug-mode
-                                                     bifrost:*bifrost-write-debug-mode*))
+                                                     bifrost:*bifrost-debug-mode*))
               (*skald-terminal-size-override* (getf plist
                                                     :override-terminal-size
                                                     *skald-terminal-size-override*)))
-          (declare (special bifrost:*bifrost-write-debug-mode*
+          (declare (special bifrost:*bifrost-debug-mode*
                             *skald-terminal-size-override*))
           (with-skald-output output
             (funcall thunk))))))
@@ -606,11 +598,11 @@
 
 (defun skald-check-size ()
   (let ((new-size (or *skald-terminal-size-override*
-                      (if bifrost:*bifrost-write-debug-mode*
+                      (if bifrost:*bifrost-debug-mode*
                           (error "SKALD-CHECK-SIZE called in debugging mode ~S without manually overriding the terminakl size. It won't work because it can't communicate with the terminal in this debugging mode. Set *SKALD-TERMINAL-SIZE-OVERRIDE*"
-                                 bifrost:*bifrost-write-debug-mode*))
+                                 bifrost:*bifrost-debug-mode*))
                       (with-skald-output *skald-output*
-                        (rest (bifrost:bifrost-write :query-terminal-size
+                        (rest (bifrost:rune-write :query-terminal-size
                                                   *skald-output*))))))
 
     ;; double check it's a valid size, then set
@@ -636,18 +628,18 @@
 (defun skald-init (&key wait-hook)
   (with-skald-output *skald-output*
     (skald-check-size)
-    (bifrost:bifrost-write :reset
+    (bifrost:rune-write :reset
                         *skald-output*)
     ;; set the color before clearing, otherwise the background may
     ;; be a random color
     (with-default-style
-      (bifrost:bifrost-write `(:background ,*%background-color-code*)
+      (bifrost:rune-write `(:background ,*%background-color-code*)
                           *skald-output*)
-	    (bifrost:bifrost-write `(:foreground  ,*%foreground-color-code*)
+	    (bifrost:rune-write `(:foreground  ,*%foreground-color-code*)
                           *skald-output*))
-    (bifrost:bifrost-write :clear
+    (bifrost:rune-write :clear
                         *skald-output*)
-    (bifrost:bifrost-write :hide-cursor
+    (bifrost:rune-write :hide-cursor
                         *skald-output*)
     (%wipe-buffers!)
     (when wait-hook
@@ -658,7 +650,7 @@
 
 (defun skald-clear (&key wait-hook)
   (with-skald-output *skald-output*
-    (bifrost:bifrost-write :clear
+    (bifrost:rune-write :clear
                         *skald-output*)
     (%wipe-buffers!)
     (when wait-hook
@@ -702,8 +694,8 @@
         ((:null :prep) nil)
         ((:draw :overlay :force-overlay)
          (emit-change-buffer mode)
-         (when (eq bifrost:*bifrost-write-debug-mode*
-                   :no-control)
+         (when (eq bifrost:*bifrost-debug-mode*
+                   :human-readable)
 	         (write-char #\newline
                        *skald-output*))))
 
@@ -770,37 +762,37 @@
 	       (*skald-output-column* ,column))
      (declare (special *skald-output-row*
                        *skald-output-column*))
-     (setf bifrost:*cbox-min-row*
-           (if *%window-bounding-box-min-row*
-               (- *%window-bounding-box-min-row*
-                  (if *skald-window-border*
-                      1
-                      0))
-               *skald-output-row*)
+     ;; (setf bifrost:*cbox-min-row*
+     ;;       (if *%window-bounding-box-min-row*
+     ;;           (- *%window-bounding-box-min-row*
+     ;;              (if *skald-window-border*
+     ;;                  1
+     ;;                  0))
+     ;;           *skald-output-row*)
 
-           bifrost:*cbox-min-column*
-           (if *%window-bounding-box-min-column*
-               (- *%window-bounding-box-min-column*
-                  (if *skald-window-border*
-                      1
-                      0))
-               *skald-output-column*)
+     ;;       bifrost:*cbox-min-column*
+     ;;       (if *%window-bounding-box-min-column*
+     ;;           (- *%window-bounding-box-min-column*
+     ;;              (if *skald-window-border*
+     ;;                  1
+     ;;                  0))
+     ;;           *skald-output-column*)
 
-           bifrost:*cbox-max-row*
-           (if *%window-bounding-box-max-row*
-               (+ *%window-bounding-box-max-row*
-                  (if *skald-window-border*
-                      1
-                      0))
-               *skald-output-row*)
+     ;;       bifrost:*cbox-max-row*
+     ;;       (if *%window-bounding-box-max-row*
+     ;;           (+ *%window-bounding-box-max-row*
+     ;;              (if *skald-window-border*
+     ;;                  1
+     ;;                  0))
+     ;;           *skald-output-row*)
            
-           bifrost:*cbox-max-column*
-           (if *%window-bounding-box-max-column*
-               (+ *%window-bounding-box-max-column*
-                  (if *skald-window-border*
-                      1
-                      0))
-               *skald-output-column*))
+     ;;       bifrost:*cbox-max-column*
+     ;;       (if *%window-bounding-box-max-column*
+     ;;           (+ *%window-bounding-box-max-column*
+     ;;              (if *skald-window-border*
+     ;;                  1
+     ;;                  0))
+     ;;           *skald-output-column*))
      ,@body))
 
 
@@ -834,19 +826,21 @@
 	         (>= column *%window-bounding-box-max-column*))))
 
 (defun update-cbox-bounding-box! (&key (row *skald-output-row*)
-                                       (column *skald-output-column*))
-  (when (< row bifrost:*cbox-min-row*)
-    (setf bifrost:*cbox-min-row*
-          row))
-  (when (> (1+ row) bifrost:*cbox-max-row*)
-    (setf bifrost:*cbox-max-row*
-          (1+ row)))
-  (when (< column bifrost:*cbox-min-column*)
-    (setf bifrost:*cbox-min-column*
-          column))
-  (when (> (1+ column) bifrost:*cbox-max-column*)
-    (setf bifrost:*cbox-max-column*
-          (1+ column))))
+                                    (column *skald-output-column*))
+  (declare (ignorable row column))
+  ;; (when (< row bifrost:*cbox-min-row*)
+  ;;   (setf bifrost:*cbox-min-row*
+  ;;         row))
+  ;; (when (> (1+ row) bifrost:*cbox-max-row*)
+  ;;   (setf bifrost:*cbox-max-row*
+  ;;         (1+ row)))
+  ;; (when (< column bifrost:*cbox-min-column*)
+  ;;   (setf bifrost:*cbox-min-column*
+  ;;         column))
+  ;; (when (> (1+ column) bifrost:*cbox-max-column*)
+  ;;   (setf bifrost:*cbox-max-column*
+  ;;         (1+ column)))
+  )
 
 
 #|

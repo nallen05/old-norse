@@ -51,31 +51,31 @@
 	           "RED_SPAN"))))
 
     (shieldwall:with-shield-group ":FORCE-OVERLAY"
-      (shieldwall:shield ":FORCE-OVERLAY in :ESCAPE-CONTROL mode"
+      (shieldwall:shield ":FORCE-OVERLAY in :MACHINE-READABLE mode"
                          "\\x1B[2;2Htest1 aaa"
 		                     (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control
+                                                 :debug-mode :machine-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
 			                       (skald:span (2 2) "test1 aaa"))))
 
-      (shieldwall:shield ":FORCE-OVERLAY in :NO-CONTROL mode"
+      (shieldwall:shield ":FORCE-OVERLAY in :HUMAN-READABLE mode"
                          "test1 aaa
 "
 		                     (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :no-control
+                                                   :debug-mode :human-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
 			                       (skald:span (2 2) "test1 aaa"))))
 
       
       
-      (shieldwall:shield "slightly more complex :FORCE-OVERLAY in :ESCAPE-CONTROL mode"
+      (shieldwall:shield "slightly more complex :FORCE-OVERLAY in :MACHINE-READABLE mode"
                          '("\\x1B[2;2Htest2 aaa"
                            "\\x1B[2;2Htest2 bbb"
                            "\\x1B[2;2Htest2 ccc")
                          (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control)
+                                                 :debug-mode :machine-readable)
                            
 		                       (list
                             (skald:with-skald-test (:output nil)
@@ -88,7 +88,7 @@
                               (skald:skald-draw (:force-overlay)
 		                            (skald:span (2 2) "test2 ccc"))))))
 
-      (shieldwall:shield "slightly more complex :FORCE-OVERLAY in :NO-CONTROL mode"
+      (shieldwall:shield "slightly more complex :FORCE-OVERLAY in :HUMAN-READABLE mode"
                          '(
                            "test2 aaa
 "
@@ -98,7 +98,7 @@
 ")
 
                          (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control)
+                                                 :debug-mode :human-readable)
                            
 		                       (list
                             (skald:with-skald-test (:output nil)
@@ -113,10 +113,10 @@
 
 
     (shieldwall:with-shield-group ":FORCE-OVERLAY SKALD-INIT"
-      (shieldwall:shield "SKALD-INIT in :ESCAPE-CONTROL mode"
+      (shieldwall:shield "SKALD-INIT in :MACHINE-READABLE mode"
                          "\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l\\x1B[3;3Htest2 aaa"
                          (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control
+                                                 :debug-mode :machine-readable
                                                  :output nil)
                            (skald:skald-init)
 		                       (skald:skald-draw (:force-overlay)
@@ -124,22 +124,22 @@
 
       
     (shieldwall:with-shield-group ":OVERLAY"
-      (shieldwall:shield ":OVERLAY in :ESCAPE-CONTROL mode"
+      (shieldwall:shield ":OVERLAY in :MACHINE-READABLE mode"
                          "\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l\\x1B[3;3Htest2 aaa"
                          (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control
+                                                 :debug-mode :machine-readable
                                                  :output nil)
                            (skald:skald-init)
 		                       (skald:skald-draw (:overlay)
 		                         (skald:span (3 3) "test2 aaa"))))
 
-      (shieldwall:shield "slightly more complex :OVERLAY in :ESCAPE-CONTROL mode"
+      (shieldwall:shield "slightly more complex :OVERLAY in :MACHINE-READABLE mode"
                          '("\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l"
                            "\\x1B[3;3Htest2 aaa"
                            ""
                            "\\x1B[3;9Hbbb")
                          (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control)
+                                                 :debug-mode :machine-readable)
                            (list (skald:with-skald-test (:output nil)
                                    (skald:skald-init))
                                  (skald:with-skald-test (:output nil)
@@ -152,7 +152,7 @@
                                    (skald:skald-draw (:overlay)
 		                                 (skald:span (3 3) "test2 bbb"))))))
       
-      (shieldwall:shield ":OVERLAY in :NO-CONTROL mode"
+      (shieldwall:shield ":OVERLAY in :HUMAN-READABLE mode"
                          '(
                            ""
                            "test2 aaa
@@ -162,7 +162,7 @@
                            "bbb
 ")
                          (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control)
+                                                 :debug-mode :human-readable)
                            (list (skald:with-skald-test (:output nil)
                                    (skald:skald-init))
                                  (skald:with-skald-test (:output nil)
@@ -208,13 +208,13 @@
 	           "RED_SPAN"))))
 
     (shieldwall:with-shield-group ":DRAW"
-      (shieldwall:shield ":DRAW in :ESCAPE-CONTROL mode"
+      (shieldwall:shield ":DRAW in :MACHINE-READABLE mode"
                          '("\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l"
                            "\\x1B[2;2Htest 4 aaa"
                            "\\x1B[2;9Hbbb"
                            "\\x1B[2;2H    \\x1B[2;7H \\x1B[2;9H   \\x1B[3;3Htest 4 ccc")
                          (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :escape-control)
+                                                 :debug-mode :machine-readable)
 		                       (list (skald:with-skald-test (:output nil)
                                    (skald:skald-init))
                                  (skald:with-skald-test (:output nil)
@@ -230,7 +230,7 @@
                                      (skald:span (3 3)
                                        "test 4 ccc"))))))
   
-      (shieldwall:shield ":DRAW in :NO-CONTROL mode"
+      (shieldwall:shield ":DRAW in :HUMAN-READABLE mode"
                          '(
                            ""
                            "test 4 aaa
@@ -241,7 +241,7 @@
 test 4 ccc
 ")
                          (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :no-control)
+                                                 :debug-mode :human-readable)
 		                       (list (skald:with-skald-test (:output nil)
                                    (skald:skald-init))
                                  (skald:with-skald-test (:output nil)
@@ -272,7 +272,7 @@ test 4 ccc
                                          (skald:span (1 1)
                                            "abcd")))
                                      (skald:with-skald-test (:output nil
-                                                             :debug-mode :no-control)
+                                                             :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald:span (1 2)
                                            #\x))))
@@ -282,7 +282,7 @@ test 4 ccc
                            '(#\b #\Newline #\c #\newline)
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80)
                                                            :output nil
-                                                           :debug-mode :no-control)
+                                                           :debug-mode :human-readable)
                                      (skald:skald-init)
                                      (skald:skald-draw ()
                                        (skald:span (1 0)  #\a)
@@ -305,7 +305,7 @@ test 4 ccc
                                          point
                                        (coerce (skald:with-skald-test (:override-terminal-size '(24 80)
                                                                        :output nil
-                                                                       :debug-mode :no-control)
+                                                                       :debug-mode :human-readable)
                                                  (skald:skald-init)
                                                  (skald:skald-draw ()
                                                    (skald::with-window-bounding-box 2 5 2 5
@@ -336,7 +336,7 @@ test 4 ccc
                                          (skald:span (1 1)
                                            "abcd")))
                                      (skald:with-skald-test (:output nil
-                                                             :debug-mode :no-control)
+                                                             :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald:span (1 2)
                                            #\grinning_face))))
@@ -353,7 +353,7 @@ test 4 ccc
                                              #\grinning_face
                                              "cd")))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald:span (1 2)
                                              #\x))))
@@ -370,7 +370,7 @@ test 4 ccc
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald:span (1 2)
                                              #\x))))
@@ -386,7 +386,7 @@ test 4 ccc
                                              "ab"
                                              #\grinning_face)))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald:span (1 2)
                                              #\x))))
@@ -412,7 +412,7 @@ test 4 ccc
                                              #\c
                                              #\d)))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 3
                                              (skald::with-point-and-cbox-dimensions 1 2
@@ -430,7 +430,7 @@ test 4 ccc
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 3
                                              (skald::with-point-and-cbox-dimensions 1 2
@@ -448,7 +448,7 @@ test 4 ccc
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 3 2
                                              (skald::with-point-and-cbox-dimensions 1 2
@@ -466,7 +466,7 @@ test 4 ccc
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 4 1
                                              (skald::with-point-and-cbox-dimensions 1 2
@@ -484,7 +484,7 @@ test 4 ccc
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 2
                                              (skald::with-point-and-cbox-dimensions 1 2
@@ -502,7 +502,7 @@ test 4 ccc
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 1 2
                                              (skald::with-point-and-cbox-dimensions 1 2
@@ -520,7 +520,7 @@ test 4 ccc
                                              #\c
                                              #\d)))
                                        (skald:with-skald-test (:output nil
-                                                               :debug-mode :no-control)
+                                                               :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 1 2
                                              (skald::with-point-and-cbox-dimensions 1 2
@@ -547,7 +547,7 @@ test 4 ccc
                                                      (skald:span (1 1)
                                                        "abcd")))
                                                  (skald:with-skald-test (:output nil
-                                                                         :debug-mode :no-control)
+                                                                         :debug-mode :human-readable)
                                                    (skald:skald-draw ()
                                                      (skald::with-window-bounding-box 1 2 column width
                                                        (skald::with-point-and-cbox-dimensions 1 2
@@ -573,7 +573,7 @@ test 4 ccc
                                            #\c
                                            #\d)))
                                      (skald:with-skald-test (:output nil
-                                                             :debug-mode :no-control)
+                                                             :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 3
                                            (skald::with-point-and-cbox-dimensions 1 2
@@ -591,7 +591,7 @@ test 4 ccc
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
-                                                             :debug-mode :no-control)
+                                                             :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 3
                                            (skald::with-point-and-cbox-dimensions 1 2
@@ -609,7 +609,7 @@ test 4 ccc
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
-                                                             :debug-mode :no-control)
+                                                             :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 3 2
                                            (skald::with-point-and-cbox-dimensions 1 2
@@ -628,7 +628,7 @@ test 4 ccc
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
-                                                             :debug-mode :no-control)
+                                                             :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 4 1
                                            (skald::with-point-and-cbox-dimensions 1 2
@@ -646,7 +646,7 @@ test 4 ccc
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
-                                                             :debug-mode :no-control)
+                                                             :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 2
                                            (skald::with-point-and-cbox-dimensions 1 2
@@ -668,7 +668,7 @@ test 4 ccc
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
-                                                             :debug-mode :no-control)
+                                                             :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 1 2
                                            (skald::with-point-and-cbox-dimensions 1 2
@@ -690,7 +690,7 @@ test 4 ccc
                                            #\c
                                            #\d)))
                                      (skald:with-skald-test (:output nil
-                                                             :debug-mode :no-control)
+                                                             :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 1 2
                                            (skald::with-point-and-cbox-dimensions 1 2
