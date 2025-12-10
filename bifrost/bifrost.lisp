@@ -892,6 +892,9 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
            (setf *pressed-cbox* nil
                  *pressed-cbox-container* nil
                  *hover-cbox* nil
-                 *hover-cbox-container* nil)
+                 *hover-cbox-container* nil
+                 *rune* nil
+                 *rune-payload* nil
+                 *rune-container* nil)
            ;; warn a second time, in case the first  was obscured by TUI output
            (warn-if-outside-terminal))))))
