@@ -68,7 +68,9 @@ Elapsed 10hz 4hz
  - "elapsed" is how many seconds have gone by since FLOKKR started running
  - "10hz" & "4hz" count cycles at that speed
  
-You may notice some small jitter (eg: the 10hz timer firing at 0.254 seconds instead of 0.250 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the schedular, so it does not compound/accumulate across multiple ticks.
+As you can see, the timers intersect cleanly at 0.5 seconds, 1 seconds, 1.5 seconds, 2 seconds, etc.
+ 
+You may also notice some small jitter (eg: the 10hz timer firing at 0.254 seconds instead of 0.250 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the schedular, so it does not compound/accumulate across multiple ticks.
 
 
 # Example: timer + simultaneous user input processing
@@ -199,17 +201,16 @@ Tick N starts                       Scheduled Tick N+1 start
 ## `FLOKKR (&body clauses)`
 A macro. The main entry point to the Flokkr API. 
 - Runs CLAUSES. CLAUSES are are defined using a keyword mini-language (inspired by the LOOP macro).
-- Exits if there are no active timers & or :INPUT clause. But usually you use `(RETURN-FROM FLOKKR)` to escape. 
+- Exits automatically if there are no active timers & also no :INPUT clause. But normally you would use `(RETURN-FROM FLOKKR)` to escape on a specific triggered event. 
 
 ## `SUBFLOKKR (&body clauses)`
 A macro. Returns a subflokkr objet, to be imported and used within FLOKKR (or another SUBFLOKKR) via the :SUBFLOKKR keyword.
 - CLAUSES are handled the same as FLOKKR
 
-## `*FLOKKR-ELAPSED-SECONDS*`
-## `*FLOKKR-STEP-SECONDS*`
+## `*FLOKKR-ELAPSED-SECONDS*, *FLOKKR-STEP-SECONDS*`
 These special variables are set within a FLOKKR form. They are exposed mostly for debugging/troubleshooting.
-- `*FLOKKR-ELAPSED-SECONDS*`is bound to the number of seconds that have elasped since the FLOKKR started.
-- `*FLOKKR-STEP-SECONDS*`is bound to the number of seconds that have elasped since the most recent tick.
+- `*FLOKKR-ELAPSED-SECONDS*`- the number of seconds that have elasped since the FLOKKR started.
+- `*FLOKKR-STEP-SECONDS*` - the number of seconds that have elasped since the most recent tick.
 
 
 # keyword mini-DSL
@@ -285,19 +286,18 @@ The :WITH-NAMED-TIMER keyword allows you to expose the name of a timer, so that 
 Example:
 
 ```lisp
-(defparameter *timer* 0)
+(defparameter *stopwatch* 0)
 
 (flokkr
-  ;; every 1 second, advance the timer & update the screen
+  ;; every 1 second, advance the stoppwatch & update the screen
   (:with-named-timer timer
-   :after 1 :do (incf *timer*) (render-stopwatch)
+   :after 1 :do (incf *stopwatch*) (render-stopwatch)
    :reschedule 1)
   (:input
     ;; hit spacebar key to pause/unpause the timer
-     (#\space (flokkr-reschedule timer
-                                 (if timer
-                                     nil
-                                     *timer*)))))
+     (#\space (setf timer (if timer
+                              nil
+                              *timer*)))))
 ```
 
 
@@ -306,9 +306,6 @@ Example:
 
 
 # Composing subflokkrs
-
-:PERCOLATE
-:SUBFLOKKR-DRIFT
 
 `SUBFLOKKR (&rest clauses)`
 A macro. Used to define subflokkrs that can be run by FLOKKR-MAIN (or by other subflokkrs) via the :SUBFLOKKR keyword.
@@ -324,9 +321,12 @@ Example:
     (:do (update-system-message-notifications user) :reschedule 1)))
 
 (flokkr-main
-  (:subflokkr player-notifications-widget user)
-(:also (render-screen))
+  (:subflokkr (player-notifications-widget user) :percolate t)
+  (:also (render-screen)))
 ```
+
+if :PERCOLATE it truthy, then then timer/:INPUT activations within a subflokker trigger :ALSO forms within the outer-level flokkr form that imported the subflokkr.
+
 
 # Flokkr design philosophy
 
