@@ -19,91 +19,80 @@ Flokkr is part of the Old Norse Terminal Toolkit.
 ```lisp
 (let ((10hz 0)
       (4hz 0))
-  (format t "~%elapse  step 10hz  4hz~%")
+  (format t "~%elapse 10hz  4hz     step~%")
   (flokkr:flokkr
     (:do (incf 10hz) :schedule 0.1)
     (:after 0.25 :do (incf 4hz) :repeat)
-    (:also (format t "~&~6,2F ~5,1F ~5D ~5D"
+    (:also (format t "~&~7,3F ~4D ~4D ~8,4F"
                    flokkr:*flokkr-elapsed-seconds*
-                   flokkr:*flokkr-step-seconds*
                    10hz
-                   4hz))))
+                   4hz
+                   flokkr:*flokkr-step-seconds*))))
 ```
 
 Running the above will start endlessly printing a sequence like:
 ```
-elapsed  step  10hz  4hz
-   0.10   0.1     1    0
-
+elapse 10hz  4hz     step
+  0.000    1    0   0.0000
+  0.101    2    0   0.1007
+  0.205    3    0   0.1046
+  0.254    3    1   0.0483
+  0.301    4    1   0.0472
+  0.405    5    1   0.1043
+  0.505    6    2   0.1002
+  0.603    7    2   0.0972
+  0.702    8    2   0.0993
+  0.754    8    3   0.0526
+  0.804    9    3   0.0500
+  0.900   10    3   0.0960
+  1.000   11    4   0.1000
+  1.104   12    4   0.1039
+  1.203   13    4   0.0988
+  1.255   13    5   0.0522
+  1.305   14    5   0.0502
+  1.405   15    5   0.1000
+  1.505   16    6   0.1000
+  1.600   17    6   0.0950
 ```
 ...and so on, until you C-c to quit
  - "elapsed" is how many seconds have gone by since FLOKKR started running
  - "step" is how many seconds have gony by since the last tick
  - "10hz" & "4hz" count cycles at that speed
+ 
+You may notice some small jitter (eg: the 10hz timer firing at 0.754 seconds instead of 0.75 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the schedular, so it does not compound/accumulate across multiple ticks.
 
 
 # Example: A timer + user input
 
 *Run this example in the terminal, not SLIME/EMACS*
 
+Hit buttons on the keyboard or 
+
 ```lisp
 (let ((1hz 0)
       (input 0)
       last-input)
-  (format t "~%elapse  step 1hz  input last-input")
+  (format t "~%elapse   1hz input last-input")
   (flokkr:flokkr
-    (:do (incf 1hz) :schedule 0.1)
+    (:do (incf 1hz) :schedule 1)
     (:input
-      ((#\q #\esc) (return-from flokkr)) ;; hit q or Escape to exit
-      (otherwise (incf keystroke-counter) (setf last-input bifrost:*rune*)))
-    (:also (format t "~&~6,2F ~5,1F ~5D ~5D ~6D~%"
+      ((#\q #\esc) (return-from flokkr:flokkr)) ;; hit q or Escape to exit
+      (otherwise (incf input) (setf last-input bifrost:*rune*)))
+    (:also (format t "~&~6,2F ~5D ~5D ~s~%"
                    flokkr:*flokkr-elapsed-seconds*
-                   flokkr:*flokkr-step-seconds*
                    1hz
                    input
-                   last-input)]]]
+                   last-input)
+            (force-output))))
 ```
-
-
-
-```lisp
-(let ((10hz-counter 0)
-      (4hz-counter 0)
-      (keystroke-counter 0))
-  (format t "~%elapse  step 10hz  4hz Keystroke")
-  (flokkr:flokkr
-    (:do (incf 10hz-counter) :schedule 0.1)
-    (:after 0.25 :do (incf 4hz-counter) :repeat)
-    (:input
-      (#\newline (incf keystroke-counter))
-      ((#\q #\esc) (return-from flokkr))) ;; hit q or Escape to exit
-    (:also (format t "~&~6,2F ~5,1F ~5D ~5D ~6D~%"
-                   flokkr:*flokkr-elapsed-seconds*
-                   flokkr:*flokkr-step-seconds*
-                   10hz-counter
-                   4hz-counter
-                   keystroke-counter))))
-```
-
-Running the above will start endlessly printing a sequence like:
-```
-elapsed  step  10hz  4hz  keystroke
-   0.10   0.1     1    0          0
-
-```
-...and so on, until you hit q or Escape to quit.
- - "elapsed" is how many seconds have gone by since FLOKKR started running
- - "step" is how many seconds have gony by since the last tick
- - "10hz" & "4hz" count cycles at that speed
- - "keystroke" is how many times the user hit the Enter/Return button
 
 # Flokkr design philosophy
 
 1. Dedicated to making interactive TUIs
-  - tightly coupled with BIFROST, so don't read directly from `SB-SYS:*TTY*` while FLOKKR is running
+  - tightly coupled with BIFROST, so don't read directly from `SB-SYS:*TTY*` while FLOKKR is looking for input
 2. Speed: immediately respond to user input; correctly juggle multiple timers; avoid polling
 3. Precision & predictability: by default, all timers syncronize via a global schedule. So you can depend on them interesecting at recurring frequences.
-4. All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. (Encourage Old Norse "high locality" code structure)
+4. All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. (Encourages Old Norse "high locality" code structure)
 5. Enable composability: You can define widget behaviors seperately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
 
 # Understanding timer logic
@@ -287,8 +276,6 @@ Example:
   (:do (background-task1) :drift 0.1)                 ;; timer 1
   (:after 0.25 :do (background-task2) :repeat-drift)) ;; timer 2
 ```
-
-
 
 
 ## Named timers
