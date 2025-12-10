@@ -5,16 +5,17 @@ Terminal UI (TUI) applications require concurrency: different screen components 
 
 # FLOKKR
 
-Flokkr is a concurrency library for Common Lisp, purpose-built for building interactive terminal UI applications using skald/bifrost. It is part of the Old Norse Terminal Toolkit.
+Flokkr is a concurrency library for Common Lisp, purpose-built for building interactive TUI applications using skald/bifrost. It is part of the Old Norse Terminal Toolkit.
 
 Features:
 - Manage multiple dynamic timing loops via a mini-DSL (inspired by the LOOP macro)
-- Immediate response to user input from the terminal
-- Emphasis on syncronization for predictable coordination between multiple timers
-- Define forms & compose them seperately via :SUBFLOKKR
+- Responds immediatly to user input from the terminal
+- Emphasis on predictable syncronization for coordinating timers
+- Define behaviors seperately then compose via :SUBFLOKKR
 
 Form factor:
-- Cooperative multitasking (there is also a roadmap plan to add an additional lightweight async feature, based on SBCL threads, to handle slow DB queries & cloud API calls outside of the main loop)
+- Cooperative multitasking
+  - (There is also a roadmap plan to add an additional lightweight async feature, based on SBCL threads, to handle slow DB queries & cloud API calls outside of the main loop)
 - Integrated with bifrost for processing events from the terminal
 - Implementation-depedent on SBCL
 
@@ -67,10 +68,10 @@ Elapsed 10hz 4hz
  - "elapsed" is how many seconds have gone by since FLOKKR started running
  - "10hz" & "4hz" count cycles at that speed
  
-You may notice some small jitter (eg: the 10hz timer firing at 0.245 seconds instead of 0.25 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the schedular, so it does not compound/accumulate across multiple ticks.
+You may notice some small jitter (eg: the 10hz timer firing at 0.254 seconds instead of 0.250 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the schedular, so it does not compound/accumulate across multiple ticks.
 
 
-# Example: A timer + user input
+# Example: timer + simultaneous user input processing
 
 *Run this example in the terminal, not SLIME/EMACS*
 
@@ -329,7 +330,7 @@ Example:
 
 # Flokkr design philosophy
 
-1. Dedicated to making interactive TUIs
+1. Dedicated to making interactive TUIs with Skald/Bifrost
 2. Speed: immediately respond to user input; correctly juggle multiple timers; avoid polling
 3. Precision & predictability: by default, all timers syncronize via a global schedule. So you can depend on them interesecting at recurring frequences.
 4. All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. (Encourages Old Norse "high locality" code structure)
