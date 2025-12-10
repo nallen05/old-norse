@@ -1,16 +1,22 @@
 
 # Problem Statement
 
-Terminal UI applications require concurrency: different screen components need to be able to update at different timings (eg: a CPU monitoring graph updating at 10hz & a status panel updating at 1hz after 1 second initialization period), while simultaneously also providing immediate responsiveness to user input. However, terminal IO itself is single threaded.
+Terminal UI (TUI) applications require concurrency: different screen components need to be able to update at different timings (eg: a CPU monitoring graph updating at 10hz & a status panel updating at 1hz after 1 second initialization period), while simultaneously also providing immediate responsiveness to user input. However, terminal IO itself is single threaded.
 
 # FLOKKR
 
-Flokkr is a concurrency library for Common Lisp, purpose-built for building interactive terminal UI applications using skald/bifrost. 
-- Flokkr is built around a mini-DSL (inspired by the LOOP macro)
-- Flokkr is based on a cooperative multitasking model. But there is a plan to add an additional lightweight async feature, based on SBCL threads, to handle slow DB queries & cloud API calls outside of the main loop.
-- Flokkr is implementation-dependent on SBCL.
+Flokkr is a concurrency library for Common Lisp, purpose-built for building interactive terminal UI applications using skald/bifrost. It is part of the Old Norse Terminal Toolkit.
 
-Flokkr is part of the Old Norse Terminal Toolkit.
+Features:
+- Manage multiple dynamic timing loops via a mini-DSL (inspired by the LOOP macro)
+- Immediate response to user input from the terminal
+- Emphasis on syncronization for predictable coordination between multiple timers
+- Define forms & compose them seperately via :SUBFLOKKR
+
+Form factor:
+- Cooperative multitasking (there is also a roadmap plan to add an additional lightweight async feature, based on SBCL threads, to handle slow DB queries & cloud API calls outside of the main loop)
+- Integrated with bifrost for processing events from the terminal
+- Implementation-depedent on SBCL
 
 # Quickstart
 
@@ -19,81 +25,74 @@ Flokkr is part of the Old Norse Terminal Toolkit.
 ```lisp
 (let ((10hz 0)
       (4hz 0))
-  (format t "~%elapse 10hz  4hz     step~%")
+  (format t "~%Elapsed 10hz 4hz~%")
   (flokkr:flokkr
-    (:do (incf 10hz) :schedule 0.1)
+    (:after 0.1 :do (incf 10hz) :repeat)
     (:after 0.25 :do (incf 4hz) :repeat)
-    (:also (format t "~&~7,3F ~4D ~4D ~8,4F"
+    (:also (format t "~&~7,3F ~4D ~3D"
                    flokkr:*flokkr-elapsed-seconds*
                    10hz
-                   4hz
-                   flokkr:*flokkr-step-seconds*))))
+                   4hz))))
 ```
 
 Running the above will start endlessly printing a sequence like:
 ```
-elapse 10hz  4hz     step
-  0.000    1    0   0.0000
-  0.101    2    0   0.1007
-  0.205    3    0   0.1046
-  0.254    3    1   0.0483
-  0.301    4    1   0.0472
-  0.405    5    1   0.1043
-  0.505    6    2   0.1002
-  0.603    7    2   0.0972
-  0.702    8    2   0.0993
-  0.754    8    3   0.0526
-  0.804    9    3   0.0500
-  0.900   10    3   0.0960
-  1.000   11    4   0.1000
-  1.104   12    4   0.1039
-  1.203   13    4   0.0988
-  1.255   13    5   0.0522
-  1.305   14    5   0.0502
-  1.405   15    5   0.1000
-  1.505   16    6   0.1000
-  1.600   17    6   0.0950
+Elapsed 10hz 4hz
+  0.101    1   0
+  0.201    2   0
+  0.254    2   1
+  0.301    3   1
+  0.401    4   1
+  0.501    5   2
+  0.601    6   2
+  0.701    7   2
+  0.751    7   3
+  0.802    8   3
+  0.902    9   3
+  1.003   10   4
+  1.104   11   4
+  1.200   12   4
+  1.252   12   5
+  1.300   13   5
+  1.401   14   5
+  1.502   15   6
+  1.602   16   6
+  1.702   17   6
+  1.755   17   7
+  1.802   18   7
+  1.902   19   7
+  2.001   20   8
 ```
 ...and so on, until you C-c to quit
  - "elapsed" is how many seconds have gone by since FLOKKR started running
- - "step" is how many seconds have gony by since the last tick
  - "10hz" & "4hz" count cycles at that speed
  
-You may notice some small jitter (eg: the 10hz timer firing at 0.754 seconds instead of 0.75 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the schedular, so it does not compound/accumulate across multiple ticks.
+You may notice some small jitter (eg: the 10hz timer firing at 0.245 seconds instead of 0.25 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the schedular, so it does not compound/accumulate across multiple ticks.
 
 
 # Example: A timer + user input
 
 *Run this example in the terminal, not SLIME/EMACS*
 
-Hit buttons on the keyboard or 
+Hit buttons on the keyboard (for example: up/down/left/right arrows)
 
 ```lisp
 (let ((1hz 0)
       (input 0)
       last-input)
-  (format t "~%elapse   1hz input last-input")
+  (format t "~%elapse 1hz input last-input")
   (flokkr:flokkr
     (:do (incf 1hz) :schedule 1)
     (:input
       ((#\q #\esc) (return-from flokkr:flokkr)) ;; hit q or Escape to exit
       (otherwise (incf input) (setf last-input bifrost:*rune*)))
-    (:also (format t "~&~6,2F ~5D ~5D ~s~%"
+    (:also (format t "~&~4,2F ~5D ~5D ~s~%"
                    flokkr:*flokkr-elapsed-seconds*
                    1hz
                    input
                    last-input)
             (force-output))))
 ```
-
-# Flokkr design philosophy
-
-1. Dedicated to making interactive TUIs
-  - tightly coupled with BIFROST, so don't read directly from `SB-SYS:*TTY*` while FLOKKR is looking for input
-2. Speed: immediately respond to user input; correctly juggle multiple timers; avoid polling
-3. Precision & predictability: by default, all timers syncronize via a global schedule. So you can depend on them interesecting at recurring frequences.
-4. All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. (Encourages Old Norse "high locality" code structure)
-5. Enable composability: You can define widget behaviors seperately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
 
 # Understanding timer logic
 
@@ -328,7 +327,13 @@ Example:
 (:also (render-screen))
 ```
 
+# Flokkr design philosophy
 
+1. Dedicated to making interactive TUIs
+2. Speed: immediately respond to user input; correctly juggle multiple timers; avoid polling
+3. Precision & predictability: by default, all timers syncronize via a global schedule. So you can depend on them interesecting at recurring frequences.
+4. All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. (Encourages Old Norse "high locality" code structure)
+5. Enable composability: You can define widget behaviors seperately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
 
 # Recommended conventions
 
