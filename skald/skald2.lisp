@@ -64,7 +64,7 @@
 ;;	       :sprite-sixel              ;; not yet implemented
 
            ;; windows
-           :window
+           :solo-window
            :*skald-window-border*
            :*skald-window-border-chars*
    	       :*skald-window-height*
@@ -74,7 +74,7 @@
 	         ;; organizing the terminal screen into windows/grids
 	         :grid
  	         :column
-	         :gwindow
+	         :window
 ;;	       :row                         ;; not yet implemented
 
            ;; defining & referencing colors
@@ -160,7 +160,7 @@
 
 (defparameter *skald-window-width*        10)
 
-(defvar *%plist*)      ;; passed around by WINDOW/GWINDOW/COLUMN/GRID for inheritence
+(defvar *%plist*)      ;; passed around by SOLO-WINDOW/WINDOW/COLUMN/GRID for inheritence
 
 (defvar *%grid-column-count*)
 (defvar *%grid-row-count*)
@@ -207,7 +207,7 @@
      ,@body))
 
 (defmacro with-extend-style (&body body)
-  "used by SPAN/SPRITE/WINDOW/GWINDOW"
+  "used by SPAN/SPRITE/SOLO-WINDOW/WINDOW"
   (let ((%bg (gensym "bg-color"))
 	      (%fg (gensym "fg-color")))
     `(let* ((*skald-mask-mode-p* (getf *%plist* :mask))
@@ -1525,41 +1525,41 @@ Writes to the change buffer
   ;; add ASCII border
   (%maybe-render-window-ascii-border))
 
-(defun window* (row column plist &rest sprites)
+(defun solo-window* (row column plist &rest sprites)
   (unless *%within-skald-draw*
     (error "WINDOW called outside of SKALD-DRAW: ~S ~S ~S" row column sprites))
   (with-plist plist
     (with-window-grid row column
       (with-window-grid-column
-	(with-window
-	  (apply #'%render-window sprites)))))
+	      (with-window
+	        (apply #'%render-window sprites)))))
   (values))
 
-(defmacro window ((row column
-                  &rest kwd-args
-		               &key align background foreground mask transparant-char
-		                    width height fill-char
-		                    border border-chars border-foreground border-background)
-                  &body sprites)
+(defmacro solo-window ((row column
+                        &rest kwd-args
+		                    &key align background foreground mask transparant-char
+		                      width height fill-char
+		                      border border-chars border-foreground border-background)
+                       &body sprites)
   (declare (ignore align background foreground mask transparant-char
 		               width height fill-char
 		               border border-chars border-foreground border-background))
-  `(window* ,row
-	          ,column
-	          (list ,@kwd-args)
-	          ,@sprites))
+  `(solo-window* ,row
+	               ,column
+	               (list ,@kwd-args)
+	               ,@sprites))
 
 
-;; grids of columns/rows/gwindows
+;; grids of columns/rows/windows
   
 (defmacro with-extend-plist (plist &body body)
   `(let ((*%plist* (append ,plist *%plist*)))
      (declare (special *%plist*))
      ,@body))
 
-(defun gwindow* (plist &rest sprites)
+(defun window* (plist &rest sprites)
   (unless *%within-skald-draw*
-    (error "GWINDOW called outside of SKALD-DRAW: ~S" sprites))
+    (error "WINDOW called outside of SKALD-DRAW: ~S" sprites))
   (assert (boundp '*skald-window-border*))
   (assert (boundp '*%plist*))
   (assert *%grid-row-count*)
@@ -1574,15 +1574,15 @@ Writes to the change buffer
       (incf *%grid-row-count*)))
   (values))
 
-(defmacro gwindow ((&rest kwd-args
-		    &key align background foreground mask transparant-char
-		         height fill-char)
-		   &body sprites)
+(defmacro window ((&rest kwd-args
+		                &key align background foreground mask transparant-char
+		                  height fill-char)
+		               &body sprites)
   (declare (ignore align background foreground mask transparant-char
-		   height fill-char))
-  `(gwindow* (list ,@kwd-args)
-	     ,@sprites))
-  
+		               height fill-char))
+  `(window* (list ,@kwd-args)
+	           ,@sprites))
+
 (defun call-in-column* (plist thunk)
   (assert (boundp '*skald-window-border*))
   (assert (boundp '*%plist*))
@@ -1602,14 +1602,14 @@ Writes to the change buffer
 		               &key width height align
 		                 mask fill-char transparant-char
 		                 foreground background)
-		              &body gwindows)
+		              &body windows)
   (declare (ignore width height align mask
 		               fill-char transparant-char
 		               foreground background))
   `(call-in-column* (list ,@kwd-args)
 		                (lambda ()
 		                  "COLUMN thunk"
-		                  ,@gwindows)))
+		                  ,@windows)))
 
 (defun call-in-grid* (y x plist thunk)
   (with-plist plist

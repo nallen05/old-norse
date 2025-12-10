@@ -30,9 +30,9 @@
           ((#\q #\Q) (return :done))
           (otherwise
            (skald:skald-draw (:force-overlay)
-             (skald:window (8 2 :width 40
-                                :height 20
-                                :border nil)
+             (skald:solo-window (8 2 :width 40
+                                     :height 20
+                                     :border nil)
                (format nil "RUNE: ~S" bifrost:*rune*)
                (format nil "CBOX: ~S" bifrost:*cbox*)
                (format nil "CBOX-PRESSED: ~S" bifrost:*active-cbox-pressed*)
@@ -266,9 +266,9 @@
                                bifrost:*cbox-max-column*)))
     )
   
-  (shieldwall:with-shield-group "WINDOW tests"
+  (shieldwall:with-shield-group "SOLO-WINDOW tests"
    
-    (shieldwall:with-shield-group "WINDOW left alignment"
+    (shieldwall:with-shield-group "SOLO-WINDOW left alignment"
 
 
       ;;;; clickaround tests
@@ -277,9 +277,9 @@
         (skald:skald-init)
         (dotimes (i 20)
           (skald:skald-draw ()
-	          (skald:window (3 3 :width (- 24 i)
-			                         :height 7
-			                         :border t)
+	          (skald:solo-window (3 3 :width (- 24 i)
+			                              :height 7
+			                              :border t)
 	            "THERE ARE 7 ROWS"
 	            "red green in row 2???"
 	            "row 3"
@@ -295,7 +295,7 @@
 
 
         ;;;; unit tests / sprite
-      (shieldwall:shield "window :HUMAN-READABLE"
+      (shieldwall:shield "SOLO-WINDOW :HUMAN-READABLE"
                          "+----------+
 |foo       |
 |bar       |
@@ -313,8 +313,8 @@
                                                  :debug-mode :human-readable
                                                  :output nil)
 		                       (skald:skald-draw (:force-overlay)
-		                         (skald:window (3 3 :width 10
-					                                      :height 10)
+		                         (skald:solo-window (3 3 :width 10
+					                                           :height 10)
 			                         "foo"
 			                         `(:with-background :yellow
 			                            (:with-foreground  :red
@@ -325,14 +325,14 @@
 			                              "buzz"))
 			                         "boof"))))
 
-      (shieldwall:shield "window :MACHINE-READABLE"
+      (shieldwall:shield "SOLO-WINDOW :MACHINE-READABLE"
                          "\\x1B[4;4H+----------+\\x1B[5;4H|foo       |\\x1B[6;4H|\\x1B[43m\\x1B[31mbar       \\x1B[40m\\x1B[37m|\\x1B[7;4H|\\x1B[43mbaz       \\x1B[40m|\\x1B[8;4H|\\x1B[43m\\x1B[34mbuzz      \\x1B[40m\\x1B[37m|\\x1B[9;4H|boof      |\\x1B[10;4H|          |\\x1B[11;4H|          |\\x1B[12;4H|          |\\x1B[13;4H|          |\\x1B[14;4H|          |\\x1B[15;4H+----------+"
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
                                                  :output nil)
 		                       (skald:skald-draw (:force-overlay)
-		                         (skald:window (4 4 :width 10
-					                                      :height 10)
+		                         (skald:solo-window (4 4 :width 10
+					                                           :height 10)
 			                         "foo"
 			                         `(:with-background :yellow
 			                            (:with-foreground  :red
@@ -343,7 +343,7 @@
 			                              "buzz"))
 			                         "boof"))))
 
-    (shieldwall:with-shield-group "WINDOW :FILL-CHAR"
+    (shieldwall:with-shield-group "SOLO-WINDOW :FILL-CHAR"
 
       (shieldwall:shield ":FILL-CHAR window left alignment"
                          "+----------+
@@ -363,9 +363,9 @@
                                                  :debug-mode :human-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
-			                       (skald:window (4 4 :width 10
-					                                      :height 10
-					                                      :fill-char #\~)
+			                       (skald:solo-window (4 4 :width 10
+					                                           :height 10
+					                                           :fill-char #\~)
 			                         "foo"
 			                         `(:with-background :yellow
 				                          (:with-foreground  :red
@@ -394,10 +394,10 @@
                                                  :debug-mode :human-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
-				                     (skald:window (4 4 :width 10
-						                                    :height 10
-						                                    :fill-char #\~
-						                                    :align :right)
+				                     (skald:solo-window (4 4 :width 10
+						                                         :height 10
+						                                         :fill-char #\~
+						                                         :align :right)
 				                       "foo"
 				                       `(:with-background :yellow
 				                          (:with-foreground  :red
@@ -415,9 +415,9 @@
                                                  :debug-mode :machine-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
-		                         (skald:window (4 4 :width 10
-					                                      :height 10
-					                                      :fill-char #\~)
+		                         (skald:solo-window (4 4 :width 10
+					                                           :height 10
+					                                           :fill-char #\~)
 			                         "foo"
 			                         `(:with-background :yellow
 			                            (:with-foreground  :red
@@ -429,7 +429,7 @@
 			                         "boof"))))
       )
 
-    (shieldwall:with-shield-group "WINDOW right alignment"
+    (shieldwall:with-shield-group "window right alignment"
  	  
           ;;;; clickaround tests
 	        #+nil
@@ -437,11 +437,11 @@
             (skald:skald-init)
 	          (dotimes (i 20)
 	            (skald:skald-draw ()
-	              (skald:window (3 3 :width (- 24 i)
-				                           :height 7
-				                           :fill-char #\~
-				                           :border t
-				                           :align :right)
+	              (skald:solo-window (3 3 :width (- 24 i)
+				                                :height 7
+				                                :fill-char #\~
+				                                :border t
+				                                :align :right)
 		              "THERE ARE 7 ROWS"
 		              "red green in row 2???"
 		              "row 3"
@@ -468,8 +468,7 @@
                                                  :debug-mode :human-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
-			                       (skald:window (2 2 :align :right
-					                                    )
+			                       (skald:solo-window (2 2 :align :right)
 			                         "foo"
 			                         "baar"
 			                         "baaaz"))))
@@ -491,10 +490,10 @@
                                                  :debug-mode :human-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
-			                       (skald:window (4 4 :width 24
-					                                      :height 7
-					                                      :border t
-					                                      :align :right)
+			                       (skald:solo-window (4 4 :width 24
+					                                           :height 7
+					                                           :border t
+					                                           :align :right)
 			                         "THERE ARE 7 ROWS"
 			                         "red green in row 2???"
 			                         "row 3"
@@ -513,10 +512,10 @@
                                                  :debug-mode :machine-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
-			                       (skald:window (4 4 :width 24
-					                                      :height 7
-					                                      :border t
-					                                      :align :right)
+			                       (skald:solo-window (4 4 :width 24
+					                                           :height 7
+					                                           :border t
+					                                           :align :right)
 			                         "THERE ARE 7 ROWS"
 			                         "red green in row 2???"
 			                         "row 3"
@@ -531,7 +530,7 @@
       
       )
       
-    (shieldwall:with-shield-group "WINDOW center alignments"
+    (shieldwall:with-shield-group "window center alignments"
 
           ;;;; clickaround tests
 	        #+nil
@@ -539,10 +538,10 @@
             (skald:skald-init)
 	          (dotimes (i 20)
               (skald:skald-draw ()
-	              (skald:window (3 3 :width (- 28 i)
-				                           :height 7
-				                           :border t
-				                           :align :center-left)
+	              (skald:solo-window (3 3 :width (- 28 i)
+				                                :height 7
+				                                :border t
+				                                :align :center-left)
 		              "THERE ARE 7 ROWS"
 		              "red green in row 2???"
 		              "row 3"
@@ -572,10 +571,10 @@
                                                  :debug-mode :human-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
-			                       (skald:window (4 4 :width 30
-					                                      :height 7
-					                                      :border t
-					                                      :align :center-left)
+			                       (skald:solo-window (4 4 :width 30
+					                                           :height 7
+					                                           :border t
+					                                           :align :center-left)
 			                         "THERE ARE 7 ROWS"
 			                         "red green in row 2???"
 			                         "row 3"
@@ -603,10 +602,10 @@
                                                  :debug-mode :human-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
-			                       (skald:window (4 4 :width 12
-					                                      :height 7
-					                                      :border t
-					                                      :align :center-left)
+			                       (skald:solo-window (4 4 :width 12
+					                                           :height 7
+					                                           :border t
+					                                           :align :center-left)
 			                         "THERE ARE 7 ROWS"
 			                         "red green in row 2???"
 			                         "row 3"
@@ -630,14 +629,14 @@
       (skald:with-skald-test (:override-terminal-size '(24 80))
         (skald:skald-init)
         (skald:skald-draw ()
-	        (skald:window (3 3
-			                     :width 6
-			                     :height 5
-			                     :foreground :yellow
-			                     :background :cyan
-			                     :border t
-			                     :border-foreground :red
-			                     :border-background :blue)
+	        (skald:solo-window (3 3
+			                          :width 6
+			                          :height 5
+			                          :foreground :yellow
+			                          :background :cyan
+			                          :border t
+			                          :border-foreground :red
+			                          :border-background :blue)
 	          (format nil "~%one~%two~%three~%"))))
 
 
@@ -648,14 +647,14 @@
                                                  :debug-mode :machine-readable
                                                  :output nil)
                            (skald:skald-draw (:force-overlay)
-		                         (skald:window (4 4
-				                                      :width 6
-				                                      :height 5
-				                                      :foreground :yellow
-				                                      :background :cyan
-				                                      :border t
-				                                      :border-foreground :red
-				                                      :border-background :blue)
+		                         (skald:solo-window (4 4
+				                                           :width 6
+				                                           :height 5
+				                                           :foreground :yellow
+				                                           :background :cyan
+				                                           :border t
+				                                           :border-foreground :red
+				                                           :border-background :blue)
 			                         (format nil "~%one~%two~%three~%")))))
         )
 
@@ -667,10 +666,10 @@
                                                    :debug-mode :machine-readable
                                                    :output nil)
                              (skald:skald-draw (:force-overlay)
-		                           (skald:window (2 4
-				                                        :width 5
-				                                        :height 5
-				                                        :border nil)
+		                           (skald:solo-window (2 4
+				                                             :width 5
+				                                             :height 5
+				                                             :border nil)
                                  "123456789123456789123456789"
                                  "123456789123456789123456789"
                                  "123456789123456789123456789"
@@ -690,10 +689,10 @@
                                                    :debug-mode :machine-readable
                                                    :output nil)
                              (skald:skald-draw (:force-overlay)
-		                           (skald:window (2 4
-				                                        :width 5
-				                                        :height 5
-				                                        :border t)
+		                           (skald:solo-window (2 4
+				                                             :width 5
+				                                             :height 5
+				                                             :border t)
                                  "123456789123456789123456789"
                                  "123456789123456789123456789"
                                  "123456789123456789123456789"
@@ -708,7 +707,7 @@
     )
 
 
-    (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW"
+    (shieldwall:with-shield-group "GRID/COLUMN/WINDOW"
 
     ;;;; clickaround tests
     #+nil
@@ -726,17 +725,17 @@
 				                          :border border
 				                          :border-chars border-chars)
 		               (skald:column ()
-		                 (skald:gwindow () "1")
- 		                 (skald:gwindow () "2")
-		                 (skald:gwindow () "3"))
+		                 (skald:window () "1")
+ 		                 (skald:window () "2")
+		                 (skald:window () "3"))
 		               (skald:column ()
-		                 (skald:gwindow () "4")
- 		                 (skald:gwindow () "5")
-		                 (skald:gwindow () "6"))
+		                 (skald:window () "4")
+ 		                 (skald:window () "5")
+		                 (skald:window () "6"))
 		               (skald:column ()
-		                 (skald:gwindow () "7")
- 		                 (skald:gwindow () "8")
-		                 (skald:gwindow () "9")))))
+		                 (skald:window () "7")
+ 		                 (skald:window () "8")
+		                 (skald:window () "9")))))
         (skald:skald-init)
         (skald:skald-draw ()
 	        (draw-background))
@@ -757,9 +756,9 @@
 
 
 
-      (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW tests"
+      (shieldwall:with-shield-group "GRID/COLUMN/WINDOW tests"
     
-        (shieldwall:with-shield-group "simple GRID/COLUMN/GWINDOW"
+        (shieldwall:with-shield-group "simple GRID/COLUMN/WINDOW"
 
           (shieldwall:shield "grid: 1x3"
                              "+----+
@@ -783,9 +782,9 @@
 		                             (skald:grid (3 3 :width 4
 				                                          :height 3)
 			                             (skald:column ()
-			                               (skald:gwindow () "1")
- 			                               (skald:gwindow () "2")
-			                               (skald:gwindow () "3"))))))
+			                               (skald:window () "1")
+ 			                               (skald:window () "2")
+			                               (skald:window () "3"))))))
 
       
           (shieldwall:shield "grid: 3x1"
@@ -801,11 +800,11 @@
                                (skald:skald-draw (:force-overlay)
 		                             (skald:grid (3 3 :width 4 :height 3)
 			                             (skald:column ()
-			                               (skald:gwindow () "1"))
+			                               (skald:window () "1"))
 			                             (skald:column ()
- 			                               (skald:gwindow () "2"))
+ 			                               (skald:window () "2"))
 			                             (skald:column ()
-			                               (skald:gwindow () "3"))))))
+			                               (skald:window () "3"))))))
 
           (shieldwall:shield "grid: 3x3"
                              "+----+----+----+
@@ -828,20 +827,20 @@
                                (skald:skald-draw (:force-overlay)
 		                             (skald:grid (5 5 :width 4 :height 3)
 			                             (skald:column ()
-			                               (skald:gwindow () "1")
- 			                               (skald:gwindow () "2")
-			                               (skald:gwindow () "3"))
+			                               (skald:window () "1")
+ 			                               (skald:window () "2")
+			                               (skald:window () "3"))
 			                             (skald:column ()
-			                               (skald:gwindow () "4")
- 			                               (skald:gwindow () "5")
-			                               (skald:gwindow () "6"))
+			                               (skald:window () "4")
+ 			                               (skald:window () "5")
+			                               (skald:window () "6"))
 			                             (skald:column ()
-			                               (skald:gwindow () "7")
- 			                               (skald:gwindow () "8")
-			                               (skald:gwindow () "9"))))))
+			                               (skald:window () "7")
+ 			                               (skald:window () "8")
+			                               (skald:window () "9"))))))
         )
 
-        (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW with transparant border (not the same as no border)"
+        (shieldwall:with-shield-group "GRID/COLUMN/WINDOW with transparant border (not the same as no border)"
 
           (shieldwall:shield "grid: 3x3 transparant border (not the same as no border)"
                              "1    4    7   
@@ -863,20 +862,20 @@
 				                                          :border t
 				                                          :border-chars nil)
 			                             (skald:column ()
-			                               (skald:gwindow () "1")
- 			                               (skald:gwindow () "2")
-			                               (skald:gwindow () "3"))
+			                               (skald:window () "1")
+ 			                               (skald:window () "2")
+			                               (skald:window () "3"))
 			                             (skald:column ()
-			                               (skald:gwindow () "4")
- 			                               (skald:gwindow () "5")
-			                               (skald:gwindow () "6"))
+			                               (skald:window () "4")
+ 			                               (skald:window () "5")
+			                               (skald:window () "6"))
 			                             (skald:column ()
-			                               (skald:gwindow () "7")
- 			                               (skald:gwindow () "8")
-			                               (skald:gwindow () "9"))))))
+			                               (skald:window () "7")
+ 			                               (skald:window () "8")
+			                               (skald:window () "9"))))))
           )
 
-        (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW without ASCII border"
+        (shieldwall:with-shield-group "GRID/COLUMN/WINDOW without ASCII border"
 
           (shieldwall:shield "grid: 3x3 no border"
                              "1   4   7   
@@ -897,17 +896,17 @@
 				                                          :height 3
 				                                          :border nil)
 			                             (skald:column ()
-			                               (skald:gwindow () "1")
- 			                               (skald:gwindow () "2")
-			                               (skald:gwindow () "3"))
+			                               (skald:window () "1")
+ 			                               (skald:window () "2")
+			                               (skald:window () "3"))
 			                             (skald:column ()
-			                               (skald:gwindow () "4")
- 			                               (skald:gwindow () "5")
-			                               (skald:gwindow () "6"))
+			                               (skald:window () "4")
+ 			                               (skald:window () "5")
+			                               (skald:window () "6"))
 			                             (skald:column ()
-			                               (skald:gwindow () "7")
- 			                               (skald:gwindow () "8")
-			                               (skald:gwindow () "9"))))))
+			                               (skald:window () "7")
+ 			                               (skald:window () "8")
+			                               (skald:window () "9"))))))
           )
         )
 
@@ -984,9 +983,9 @@
                                                      :debug-mode :human-readable
                                                      :output nil)
                                (skald:skald-draw (:force-overlay)
-			                           (skald:window (3 3
-					                                        :width 10
-					                                        :height 10)
+			                           (skald:solo-window (3 3
+					                                             :width 10
+					                                             :height 10)
 			                             "foo"
 			                             "bar"
 			                             `(:span "ba"
@@ -1011,24 +1010,24 @@
 					                                      :border t
 					                                      :align :left)
 			                             (skald:column ()
-			                               (skald:gwindow () `(:call-with-point ,#'fn))
-			                               (skald:gwindow () `(:call-with-point ,#'fn))
-			                               (skald:gwindow () `(:call-with-point ,#'fn)))
+			                               (skald:window () `(:call-with-point ,#'fn))
+			                               (skald:window () `(:call-with-point ,#'fn))
+			                               (skald:window () `(:call-with-point ,#'fn)))
 			                             (skald:column ()
-			                               (skald:gwindow () `(:call-with-point ,#'fn))
-			                               (skald:gwindow () `(:call-with-point ,#'fn))
-			                               (skald:gwindow () `(:call-with-point ,#'fn)))
+			                               (skald:window () `(:call-with-point ,#'fn))
+			                               (skald:window () `(:call-with-point ,#'fn))
+			                               (skald:window () `(:call-with-point ,#'fn)))
 			                             (skald:column ()
-			                               (skald:gwindow () `(:call-with-point ,#'fn))
-			                               (skald:gwindow () `(:call-with-point ,#'fn))
-			                               (skald:gwindow () `(:call-with-point ,#'fn))))))
+			                               (skald:window () `(:call-with-point ,#'fn))
+			                               (skald:window () `(:call-with-point ,#'fn))
+			                               (skald:window () `(:call-with-point ,#'fn))))))
 		                         (nreverse accum))))
      
         )
     
 
 
-      (shieldwall:with-shield-group "GRID/COLUMN/GWINDOW :ALIGN"
+      (shieldwall:with-shield-group "GRID/COLUMN/WINDOW :ALIGN"
 
         (shieldwall:shield "grid align (odd width content)"
                            "window=15 sprite=7
@@ -1053,12 +1052,12 @@
 		                           (skald:span (1 1) "window=15 sprite=7")
 		                           (skald:grid (2 1 :width 13 :height 1)
 			                           (skald:column ()
-			                             (skald:gwindow (:align :left)          "      |")
-			                             (skald:gwindow (:align :left)          "ODD_NU|")   
-			                             (skald:gwindow (:align :center-left)      "ODD|NUM")
-			                             (skald:gwindow (:align :center-right)     "ODD|NUM")
-			                             (skald:gwindow (:align :right)               "|DD_NUM") 
-			                             (skald:gwindow (:align :right)               "|      "))))))
+			                             (skald:window (:align :left)          "      |")
+			                             (skald:window (:align :left)          "ODD_NU|")   
+			                             (skald:window (:align :center-left)      "ODD|NUM")
+			                             (skald:window (:align :center-right)     "ODD|NUM")
+			                             (skald:window (:align :right)               "|DD_NUM") 
+			                             (skald:window (:align :right)               "|      "))))))
                           
         (shieldwall:shield "grid align (odd width content, odd width window, squished)"
                            "window=7 sprite=7
@@ -1083,12 +1082,12 @@
 		                           (skald:span (1 1) "window=7 sprite=7")
 		                           (skald:grid (2 1 :width 7 :height 1)
 			                           (skald:column ()
-			                             (skald:gwindow (:align :left)          "   |   ")
-			                             (skald:gwindow (:align :left)          "ODD|NUM")   
-			                             (skald:gwindow (:align :center-left)      "ODD|NUM")
-			                             (skald:gwindow (:align :center-right)     "ODD|NUM")
-			                             (skald:gwindow (:align :right)               "ODD|NUM") 
-			                             (skald:gwindow (:align :right)               "   |   "))))))
+			                             (skald:window (:align :left)          "   |   ")
+			                             (skald:window (:align :left)          "ODD|NUM")   
+			                             (skald:window (:align :center-left)      "ODD|NUM")
+			                             (skald:window (:align :center-right)     "ODD|NUM")
+			                             (skald:window (:align :right)               "ODD|NUM") 
+			                             (skald:window (:align :right)               "   |   "))))))
 
         (shieldwall:shield "grid align (odd width content, odd width window, more squished)"
                            "window=5 sprite=7
@@ -1113,12 +1112,12 @@
 		                           (skald:span (1 1) "window=5 sprite=7")
 		                           (skald:grid (2 1 :width 5 :height 1)
 			                           (skald:column ()
-			                             (skald:gwindow (:align :left)          "  |    ")
-			                             (skald:gwindow (:align :left)          "OD|_NUM")   
-			                             (skald:gwindow (:align :center-left)      "ODD|NUM")
-			                             (skald:gwindow (:align :center-right)     "ODD|NUM")
-			                             (skald:gwindow (:align :right)               "ODD_|UM") 
-			                             (skald:gwindow (:align :right)               "    |  "))))))
+			                             (skald:window (:align :left)          "  |    ")
+			                             (skald:window (:align :left)          "OD|_NUM")   
+			                             (skald:window (:align :center-left)      "ODD|NUM")
+			                             (skald:window (:align :center-right)     "ODD|NUM")
+			                             (skald:window (:align :right)               "ODD_|UM") 
+			                             (skald:window (:align :right)               "    |  "))))))
 
     
         (shieldwall:shield "grid align (odd width content, even width window)"
@@ -1146,13 +1145,13 @@
 		                           (skald:span (1 1) "window=14 sprite=7")
 		                           (skald:grid (2 1 :width 14 :height 1)
 			                           (skald:column ()
-			                             (skald:gwindow (:align :left)          "      |")
-			                             (skald:gwindow (:align :left)          "ODD_NU|")
-			                             (skald:gwindow (:align :center-left)      "ODD|NUM")
-			                             (skald:gwindow (:align :left)          "      \\")
-			                             (skald:gwindow (:align :center-right)     "ODD|NUM")
-			                             (skald:gwindow (:align :right)               "|DD_NUM") 
-			                             (skald:gwindow (:align :right)               "|      "))))))
+			                             (skald:window (:align :left)          "      |")
+			                             (skald:window (:align :left)          "ODD_NU|")
+			                             (skald:window (:align :center-left)      "ODD|NUM")
+			                             (skald:window (:align :left)          "      \\")
+			                             (skald:window (:align :center-right)     "ODD|NUM")
+			                             (skald:window (:align :right)               "|DD_NUM") 
+			                             (skald:window (:align :right)               "|      "))))))
 
         (shieldwall:shield "grid align (odd width content, even width window, squished)"
                            "window=4 sprite=7
@@ -1179,13 +1178,13 @@
 		                           (skald:span (1 1) "window=4 sprite=7")
 		                           (skald:grid (2 1 :width 4 :height 1)
 			                           (skald:column ()
-			                             (skald:gwindow (:align :left)            " |     ")
-			                             (skald:gwindow (:align :left)            "O|D_NUM")
-			                             (skald:gwindow (:align :center-left)   "ODD|NUM")
-			                             (skald:gwindow (:align :left)            " \\     ")
-			                             (skald:gwindow (:align :center-right)  "ODD|NUM")
-			                             (skald:gwindow (:align :right)       "ODD_N|M") 
-			                             (skald:gwindow (:align :right)        "    | "))))))
+			                             (skald:window (:align :left)            " |     ")
+			                             (skald:window (:align :left)            "O|D_NUM")
+			                             (skald:window (:align :center-left)   "ODD|NUM")
+			                             (skald:window (:align :left)            " \\     ")
+			                             (skald:window (:align :center-right)  "ODD|NUM")
+			                             (skald:window (:align :right)       "ODD_N|M") 
+			                             (skald:window (:align :right)        "    | "))))))
    
         (shieldwall:shield "grid align (even width content, even width window)"
          "window=16 sprite=8
@@ -1212,13 +1211,13 @@
 		                         (skald:span (1 1) "window=16 sprite=8")
 		                         (skald:grid (2 1 :width 16 :height 1)
 			                         (skald:column ()
-			                           (skald:gwindow (:align :left)         "       |")
-			                           (skald:gwindow (:align :left)         "EVEN_NU|")
-			                           (skald:gwindow (:align :center-left)     "EVE|_NUM")
-			                           (skald:gwindow (:align :left)         "       \\")
-			                           (skald:gwindow (:align :center-right)      "EVEN|NUM")
-			                           (skald:gwindow (:align :right)               "|VEN_NUM")
-			                           (skald:gwindow (:align :right)               "|       "))))))
+			                           (skald:window (:align :left)         "       |")
+			                           (skald:window (:align :left)         "EVEN_NU|")
+			                           (skald:window (:align :center-left)     "EVE|_NUM")
+			                           (skald:window (:align :left)         "       \\")
+			                           (skald:window (:align :center-right)      "EVEN|NUM")
+			                           (skald:window (:align :right)               "|VEN_NUM")
+			                           (skald:window (:align :right)               "|       "))))))
       
         (shieldwall:shield "grid align (even width content, even width window, squished)"
                            "window=8 sprite=8
@@ -1243,12 +1242,12 @@
 		                           (skald:span (1 1) "window=8 sprite=8")
 		                           (skald:grid (2 1 :width 8 :height 1)
 			                           (skald:column ()
-			                             (skald:gwindow (:align :left)         "   |    ")
-			                             (skald:gwindow (:align :left)         "EVE|_NUM")
-			                             (skald:gwindow (:align :center-left)  "EVE|_NUM")
-			                             (skald:gwindow (:align :center-right) "EVE|_NUM")
-			                             (skald:gwindow (:align :right)        "EVE|_NUM")
-			                             (skald:gwindow (:align :right)        "   |    "))))))
+			                             (skald:window (:align :left)         "   |    ")
+			                             (skald:window (:align :left)         "EVE|_NUM")
+			                             (skald:window (:align :center-left)  "EVE|_NUM")
+			                             (skald:window (:align :center-right) "EVE|_NUM")
+			                             (skald:window (:align :right)        "EVE|_NUM")
+			                             (skald:window (:align :right)        "   |    "))))))
       
         (shieldwall:shield "grid align (even width content, even width window, more squished)"
                            "window=4 sprite=8
@@ -1275,13 +1274,13 @@
 		                           (skald:span (1 1) "window=4 sprite=8")
 		                           (skald:grid (2 1 :width 4 :height 1)
 			                           (skald:column ()
-			                             (skald:gwindow (:align :left)              " |      ")
-			                             (skald:gwindow (:align :left)              "E|EN_NUM")
-			                             (skald:gwindow (:align :center-left)     "EVE|_NUM")
-			                             (skald:gwindow (:align :left)              " \\     ")
-			                             (skald:gwindow (:align :center-right)   "EVEN|NUM")
-			                             (skald:gwindow (:align :right)        "EVEN_N|M")
-			                             (skald:gwindow (:align :right)        "      | "))))))
+			                             (skald:window (:align :left)              " |      ")
+			                             (skald:window (:align :left)              "E|EN_NUM")
+			                             (skald:window (:align :center-left)     "EVE|_NUM")
+			                             (skald:window (:align :left)              " \\     ")
+			                             (skald:window (:align :center-right)   "EVEN|NUM")
+			                             (skald:window (:align :right)        "EVEN_N|M")
+			                             (skald:window (:align :right)        "      | "))))))
 		    
         (shieldwall:shield "grid align (even width content, odd width window"
                           "+-----------------+
@@ -1308,14 +1307,14 @@
                             (skald:skald-draw (:force-overlay)
 		                          (skald:grid (2 1 :width 17 :height 1)
 			                          (skald:column ()
-			                            (skald:gwindow (:align :left)         "       |")
-			                            (skald:gwindow (:align :left)         "EVEN_NU|")
-			                            (skald:gwindow (:align :center-left)     "EVE|_NUM")
-			                            (skald:gwindow (:align :left)         "       \\")
-			                            (skald:gwindow (:align :right)        "\\       ")
-			                            (skald:gwindow (:align :center-right)      "EVEN|NUM")
-			                            (skald:gwindow (:align :right)               "|VEN_NUM")
-			                            (skald:gwindow (:align :right)               "|       "))))))
+			                            (skald:window (:align :left)         "       |")
+			                            (skald:window (:align :left)         "EVEN_NU|")
+			                            (skald:window (:align :center-left)     "EVE|_NUM")
+			                            (skald:window (:align :left)         "       \\")
+			                            (skald:window (:align :right)        "\\       ")
+			                            (skald:window (:align :center-right)      "EVEN|NUM")
+			                            (skald:window (:align :right)               "|VEN_NUM")
+			                            (skald:window (:align :right)               "|       "))))))
       
         (shieldwall:shield "grid align (even width content, odd width window, squished)"
                            "window=5 sprite=8
@@ -1340,12 +1339,12 @@
 		                           (skald:span (1 1) "window=5 sprite=8")
 		                           (skald:grid (2 1 :width 5 :height 1)
 			                           (skald:column ()
-			                             (skald:gwindow (:align :left)         "  |     ")
-			                             (skald:gwindow (:align :left)         "EV|N_NUM")
-			                             (skald:gwindow (:align :center-left)     "EVEN|NUM")
-			                             (skald:gwindow (:align :center-right)      "EVE|_NUM")
-			                             (skald:gwindow (:align :right)               "EVEN_|UM")
-			                             (skald:gwindow (:align :right)               "     |  "))))))
+			                             (skald:window (:align :left)         "  |     ")
+			                             (skald:window (:align :left)         "EV|N_NUM")
+			                             (skald:window (:align :center-left)     "EVEN|NUM")
+			                             (skald:window (:align :center-right)      "EVE|_NUM")
+			                             (skald:window (:align :right)               "EVEN_|UM")
+			                             (skald:window (:align :right)               "     |  "))))))
         )
     )
 
@@ -1390,17 +1389,17 @@
 	                 (skald:sprite (2 2)
 		                 `(:sprite ,@rectangle))))
 	             (draw-table (transparant-char)
-	               (skald:window (4 4
-			                            :width 16
-			                            :height 10
-			                            :fill-char #\~
-			                            :transparant-char transparant-char
-			                            :foreground :cyan
-			                            :background :blue
-			                            :border t
-			                            :border-foreground :black
-			                            :border-background :white
-			                            :align :center-left)
+	               (skald:solo-window (4 4
+			                                 :width 16
+			                                 :height 10
+			                                 :fill-char #\~
+			                                 :transparant-char transparant-char
+			                                 :foreground :cyan
+			                                 :background :blue
+			                                 :border t
+			                                 :border-foreground :black
+			                                 :border-background :white
+			                                 :align :center-left)
 	                 (format nil "~%entertain~%three~%educated~%elephants~%"))))
           (skald:skald-init)
           (dolist (c '(#\nul #\e #\~))
@@ -1419,17 +1418,17 @@
                                                    :debug-mode :machine-readable
                                                    :output nil)
                              (skald:skald-draw (:force-overlay)
-		                           (skald:window (5 5
-				                                        :width 16
-				                                        :height 10
-				                                        :fill-char #\~
-				                                        :transparant-char transparant-char
-				                                        :foreground :yellow
-				                                        :background :cyan
-				                                        :border t
-				                                        :border-foreground :red
-				                                        :border-background :blue
-				                                        :align :center-left)
+		                           (skald:solo-window (5 5
+				                                             :width 16
+				                                             :height 10
+				                                             :fill-char #\~
+				                                             :transparant-char transparant-char
+				                                             :foreground :yellow
+				                                             :background :cyan
+				                                             :border t
+				                                             :border-foreground :red
+				                                             :border-background :blue
+				                                             :align :center-left)
 			                           (format nil "~%entertain~%three~%educated~%elephants~%"))))))
       
       (shieldwall:shield "WINDOW :TRANSPARANT-CHAR 2"
@@ -1439,17 +1438,17 @@
                                                    :debug-mode :machine-readable
                                                    :output nil)
                              (skald:skald-draw (:force-overlay)
-		                           (skald:window (5 5
-				                                        :width 16
-				                                        :height 10
-				                                        :fill-char #\~
-				                                        :transparant-char transparant-char
-				                                        :foreground :yellow
-				                                        :background :cyan
-				                                        :border t
-				                                        :border-foreground :red
-				                                        :border-background :blue
-				                                        :align :center-left)
+		                           (skald:solo-window (5 5
+				                                             :width 16
+				                                             :height 10
+				                                             :fill-char #\~
+				                                             :transparant-char transparant-char
+				                                             :foreground :yellow
+				                                             :background :cyan
+				                                             :border t
+				                                             :border-foreground :red
+				                                             :border-background :blue
+				                                             :align :center-left)
 			                           (format nil "~%entertain~%three~%educated~%elephants~%"))))))
       )
 
