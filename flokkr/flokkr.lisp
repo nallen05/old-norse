@@ -233,7 +233,12 @@
                               (setf ,activated t)
                               ,@(ecase scheduler-type
                                   (:schedule
-                                   `((setf ,timer ,scheduler-form)))
+;;                                   `((setf ,timer ,scheduler-form)))
+                                   (let ((next (gensym "flokkr-scheduler-next-")))
+                                     `((let ((,next ,scheduler-form))
+                                         (if ,next
+                                             (incf ,timer ,next)
+                                             (setf ,timer nil))))))
                                   (:drift
                                    `((setf ,timer
                                            (let ((_ ,scheduler-form))
