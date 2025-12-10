@@ -124,8 +124,8 @@
 ;; writing to the change buffer
 
 (defparameter *skald-output*         t)  ;; T -> *TERMINAL-IO*
-(defvar       *skald-row*)
-(defvar       *skald-column*)
+(defvar       *skald-row*            0)
+(defvar       *skald-column*         0)
 (defvar       *%within-skald-output* nil)
 (defvar       *%within-skald-draw*   nil)
 
@@ -755,46 +755,6 @@
 			                   *%window-bounding-box-max-column*))
        ,@body)))
 
-;; setup: bounding box for CBOX click regions
-
-(defmacro with-point-and-cbox-dimensions (row column &body body)
-  `(let ((*skald-row*    ,row)
-	       (*skald-column* ,column))
-     (declare (special *skald-row*
-                       *skald-column*))
-     ;; (setf bifrost:*cbox-min-row*
-     ;;       (if *%window-bounding-box-min-row*
-     ;;           (- *%window-bounding-box-min-row*
-     ;;              (if *skald-window-border*
-     ;;                  1
-     ;;                  0))
-     ;;           *skald-row*)
-
-     ;;       bifrost:*cbox-min-column*
-     ;;       (if *%window-bounding-box-min-column*
-     ;;           (- *%window-bounding-box-min-column*
-     ;;              (if *skald-window-border*
-     ;;                  1
-     ;;                  0))
-     ;;           *skald-column*)
-
-     ;;       bifrost:*cbox-max-row*
-     ;;       (if *%window-bounding-box-max-row*
-     ;;           (+ *%window-bounding-box-max-row*
-     ;;              (if *skald-window-border*
-     ;;                  1
-     ;;                  0))
-     ;;           *skald-row*)
-           
-     ;;       bifrost:*cbox-max-column*
-     ;;       (if *%window-bounding-box-max-column*
-     ;;           (+ *%window-bounding-box-max-column*
-     ;;              (if *skald-window-border*
-     ;;                  1
-     ;;                  0))
-     ;;           *skald-column*))
-     ,@body))
-
 
 ;; write to change buffer respecting bounding boxes & transparant/fill chars
 
@@ -824,23 +784,6 @@
 	         (< column *%window-bounding-box-min-column*))
       (and *%window-bounding-box-max-column*
 	         (>= column *%window-bounding-box-max-column*))))
-
-(defun update-cbox-bounding-box! (&key (row *skald-row*)
-                                    (column *skald-column*))
-  (declare (ignorable row column))
-  ;; (when (< row bifrost:*cbox-min-row*)
-  ;;   (setf bifrost:*cbox-min-row*
-  ;;         row))
-  ;; (when (> (1+ row) bifrost:*cbox-max-row*)
-  ;;   (setf bifrost:*cbox-max-row*
-  ;;         (1+ row)))
-  ;; (when (< column bifrost:*cbox-min-column*)
-  ;;   (setf bifrost:*cbox-min-column*
-  ;;         column))
-  ;; (when (> (1+ column) bifrost:*cbox-max-column*)
-  ;;   (setf bifrost:*cbox-max-column*
-  ;;         (1+ column)))
-  )
 
 
 #|
@@ -988,8 +931,7 @@ Writes to the change buffer
               (and (not ignore-window-bounding-box)
                    (outside-window-bounding-box-p)))
     (unless (char= c *skald-transparant-char*)
-      (%%write-single-width-character-to-change-buffer-low-level c nil nil))
-    (update-cbox-bounding-box!))
+      (%%write-single-width-character-to-change-buffer-low-level c nil nil)))
   (incf *skald-column*))
 
 ;; <<<>> THIS IS WHERE THE EMOJI BUG IS
@@ -1010,7 +952,6 @@ Writes to the change buffer
               (%%write-single-width-character-to-change-buffer-low-level #\replacement_character
                                                                          nil
                                                                          nil))
-            (update-cbox-bounding-box!)
             (incf *skald-column*
                   2))
 
@@ -1025,7 +966,6 @@ Writes to the change buffer
               (%%write-single-width-character-to-change-buffer-low-level #\zero_width_space
                                                                          t
                                                                          nil))
-            (update-cbox-bounding-box!)
             (incf *skald-column*)))))
 
 
@@ -1209,8 +1149,9 @@ Writes to the change buffer
 	          (ecase *skald-window-horizontal-align*
 	            (:left
 	             (with-line-start column
-		             (with-point-and-cbox-dimensions row column
-		               (map nil #'%render-span subsegments))))
+                 (setf *skald-row* row
+                       *skald-column* column)
+		             (map nil #'%render-span subsegments)))
 	            ((:right :center-left :center-right)
 	             (let* ((preview (with-output-to-string (*skald-output*)
 				                         (declare (special *skald-output*))
@@ -1219,8 +1160,9 @@ Writes to the change buffer
 					                                (mapcar #'length
 						                                      (skald::%chop-string-by-newline preview)))))
 		             (with-adjusted-line-start/simple column span-length
-		               (with-point-and-cbox-dimensions row *%line-start-column*
-		                 (map nil #'%render-span subsegments))))))
+                   (setf *skald-row* row
+                         *skald-column* *%line-start-column*)
+		               (map nil #'%render-span subsegments)))))
 	          (values)))))))
 
 (defmacro span ((row column
@@ -1380,8 +1322,9 @@ Writes to the change buffer
 	          (ecase *skald-window-horizontal-align*
 	            (:left
 	             (with-line-start column
-		             (with-point-and-cbox-dimensions row column
-		               (map nil #'%render-sprite sprites))))
+                 (setf *skald-row* row
+                       *skald-column* column)
+		             (map nil #'%render-sprite sprites)))
 	            ((:right :center-left :center-right)
 	             (let* ((preview (with-output-to-string (*skald-output*)
 				                         (declare (special *skald-output*))
@@ -1390,8 +1333,9 @@ Writes to the change buffer
 					                                (mapcar #'length
 						                                      (%chop-string-by-newline preview)))))
 		             (with-adjusted-line-start/simple column span-length
-		               (with-point-and-cbox-dimensions row *%line-start-column*
-		                 (map nil #'%render-sprite sprites))))))
+                   (setf *skald-row* row
+                         *skald-column* *%line-start-column*)
+		               (map nil #'%render-sprite sprites)))))
 	          (values)))))))
 
 (defmacro sprite ((row column
@@ -1501,9 +1445,10 @@ Writes to the change buffer
 	             (with-align
 		             (ecase *skald-window-horizontal-align*
 		               (:left
-		                (with-line-start *%window-bounding-box-min-column* 
-		                  (with-point-and-cbox-dimensions *%window-bounding-box-min-row* *%line-start-column*
-			                  (,%doit))))
+		                (with-line-start *%window-bounding-box-min-column*
+                      (setf *skald-row* *%window-bounding-box-min-row*
+                            *skald-column* *%line-start-column*)
+			                (,%doit)))
 		               ((:right :center-left :center-right)
 		                (let* ((preview (with-output-to-string (*skald-output*)
 				                              (declare (special *skald-output*))
@@ -1512,8 +1457,9 @@ Writes to the change buffer
 						                                    (mapcar #'length
 							                                          (%chop-string-by-newline preview)))))
 		                  (with-adjusted-line-start/window longest-line
-			                  (with-point-and-cbox-dimensions *%window-bounding-box-min-row* *%line-start-column*
-			                    (,%doit)))))))))))))) 
+                        (setf *skald-row* *%window-bounding-box-min-row*
+                              *skald-column* *%line-start-column*)
+			                  (,%doit)))))))))))))
 
 (defun %maybe-append-blank-lines ()
   (assert (boundp '*%window-bounding-box-max-row*))
