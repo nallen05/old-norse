@@ -135,9 +135,9 @@
 (defvar *%background-color-code*)
 (defvar *%foreground-color-code*)
 (defvar *%window-bounding-box-min-row*)
-(defvar *%window-bounding-box-min-column*)
+(defvar *%window-bounding-box-min-col*)
 (defvar *%window-bounding-box-max-row*)
-(defvar *%window-bounding-box-max-column*)
+(defvar *%window-bounding-box-max-col*)
 (defvar *%line-start-column*)             ;; for span/sprite :ALIGN
 (defvar *%mask-background-color-code*)
 (defvar *%mask-foreground-color-code*)
@@ -740,14 +740,14 @@
 	          (,%height ,height)
 	          (*%window-bounding-box-max-row* (when (and *%window-bounding-box-min-row* ,%height)
 				                                      (+ *%window-bounding-box-min-row* ,%height)))
-	          (*%window-bounding-box-min-column* ,column)
+	          (*%window-bounding-box-min-col* ,column)
 	          (,%width ,width)
-	          (*%window-bounding-box-max-column* (when (and *%window-bounding-box-min-column* ,%width)
-				                                         (+ *%window-bounding-box-min-column* ,%width))))
+	          (*%window-bounding-box-max-col* (when (and *%window-bounding-box-min-col* ,%width)
+				                                         (+ *%window-bounding-box-min-col* ,%width))))
        (declare (special *%window-bounding-box-min-row*
 			                   *%window-bounding-box-max-row*
-			                   *%window-bounding-box-min-column*
-			                   *%window-bounding-box-max-column*))
+			                   *%window-bounding-box-min-col*
+			                   *%window-bounding-box-max-col*))
        ,@body)))
 
 
@@ -767,18 +767,18 @@
 
 (defun outside-window-bounding-box-p (&key (row *skald-row*)
                                            (column *skald-col*))
-  (assert (boundp '*%window-bounding-box-min-column*))
-  (assert (boundp '*%window-bounding-box-max-column*))
+  (assert (boundp '*%window-bounding-box-min-col*))
+  (assert (boundp '*%window-bounding-box-max-col*))
   (assert (boundp '*%window-bounding-box-min-row*))
   (assert (boundp '*%window-bounding-box-max-row*))
   (or (and *%window-bounding-box-min-row*
 	         (< row *%window-bounding-box-min-row*))		 
       (and *%window-bounding-box-max-row*
 	         (>= row *%window-bounding-box-max-row*))
-      (and *%window-bounding-box-min-column*
-	         (< column *%window-bounding-box-min-column*))
-      (and *%window-bounding-box-max-column*
-	         (>= column *%window-bounding-box-max-column*))))
+      (and *%window-bounding-box-min-col*
+	         (< column *%window-bounding-box-min-col*))
+      (and *%window-bounding-box-max-col*
+	         (>= column *%window-bounding-box-max-col*))))
 
 
 #|
@@ -1174,7 +1174,7 @@ Writes to the change buffer
 ;; ASCII sprites (multi-line)
 
 (defun %begin-sprite-line ()
-  (assert (boundp '*%window-bounding-box-min-column*))
+  (assert (boundp '*%window-bounding-box-min-col*))
   (assert (characterp *skald-fill-char*))
   (assert (integerp *%line-start-column*))
   (assert (integerp *skald-row*))
@@ -1184,18 +1184,18 @@ Writes to the change buffer
 
   ;; if we're to the right of the bounding box
   ;; add left fill until we reach it
-  (when (and *%window-bounding-box-min-column*
-	           (> *skald-col* *%window-bounding-box-min-column*)
+  (when (and *%window-bounding-box-min-col*
+	           (> *skald-col* *%window-bounding-box-min-col*)
 	           (not (eql *skald-fill-char*
 		                   *skald-transparant-char*)))
-    (let ((filler-length (- *skald-col* *%window-bounding-box-min-column*)))
-      (setf *skald-col* *%window-bounding-box-min-column*)
+    (let ((filler-length (- *skald-col* *%window-bounding-box-min-col*)))
+      (setf *skald-col* *%window-bounding-box-min-col*)
       (dotimes (% filler-length)
 	      (write-to-change-buffer *skald-fill-char*)))))
 
 (defun %finish-sprite-line ()
-  (assert (boundp '*%window-bounding-box-min-column*))
-  (assert (boundp '*%window-bounding-box-max-column*))
+  (assert (boundp '*%window-bounding-box-min-col*))
+  (assert (boundp '*%window-bounding-box-max-col*))
   (assert (characterp *skald-fill-char*))
   (assert (integerp *%line-start-column*))
   (assert (integerp *skald-col*))
@@ -1203,17 +1203,17 @@ Writes to the change buffer
 
   ;; if we're in a window & the line ended to the left of the window right bounds
   ;; then add right fill
-  (when (and *%window-bounding-box-max-column*
-	           (< *skald-col* *%window-bounding-box-max-column*)
+  (when (and *%window-bounding-box-max-col*
+	           (< *skald-col* *%window-bounding-box-max-col*)
 	           (not (eql *skald-fill-char*
 		                   *skald-transparant-char*)))
 
     ;; but of course, don't write to the left of the window left bounds
     ;; in the off chance the line ended before reaching the visible part of the bounding box
-    (when (and *%window-bounding-box-min-column*
-	             (< *skald-col* *%window-bounding-box-min-column*))
-      (setf *skald-col* *%window-bounding-box-min-column*))
-    (let ((filler-length (- *%window-bounding-box-max-column* *skald-col*)))
+    (when (and *%window-bounding-box-min-col*
+	             (< *skald-col* *%window-bounding-box-min-col*))
+      (setf *skald-col* *%window-bounding-box-min-col*))
+    (let ((filler-length (- *%window-bounding-box-max-col* *skald-col*)))
       (dotimes (% filler-length)
 	      (write-to-change-buffer *skald-fill-char*))))
   (incf *skald-row*)
@@ -1387,18 +1387,18 @@ Writes to the change buffer
     `(let ((,%sprite-width ,sprite-width))
        (assert (keywordp *skald-window-horizontal-align*))
        (assert (integerp *skald-window-width*))
-       (assert (integerp *%window-bounding-box-min-column*))
+       (assert (integerp *%window-bounding-box-min-col*))
        (with-line-start (cond
 
 			                    ;; the sprite is exactly the correct length
 			                    ((= ,%sprite-width *skald-window-width*)
-			                     *%window-bounding-box-min-column*)
+			                     *%window-bounding-box-min-col*)
 
 			                    ;; the sprite is narrower than the window
 			                    ;; so move it to the right to align
 			                    ((< ,%sprite-width
 			                        *skald-window-width*)
-			                     (+ *%window-bounding-box-min-column*
+			                     (+ *%window-bounding-box-min-col*
 			                        (let ((% (- *skald-window-width*
 					                                ,%sprite-width)))
 		       		                  (ecase *skald-window-horizontal-align*
@@ -1410,7 +1410,7 @@ Writes to the change buffer
 			                    ;; so move it to the left to align
 			                    ((> ,%sprite-width
 			                        *skald-window-width*)
-			                     (- *%window-bounding-box-min-column*
+			                     (- *%window-bounding-box-min-col*
 			                        (let ((% (- ,%sprite-width
 					                                *skald-window-width*)))
 				                        (ecase *skald-window-horizontal-align*
@@ -1440,7 +1440,7 @@ Writes to the change buffer
 	             (with-align
 		             (ecase *skald-window-horizontal-align*
 		               (:left
-		                (with-line-start *%window-bounding-box-min-column*
+		                (with-line-start *%window-bounding-box-min-col*
                       (setf *skald-row* *%window-bounding-box-min-row*
                             *skald-col* *%line-start-column*)
 			                (,%doit)))
@@ -1458,7 +1458,7 @@ Writes to the change buffer
 
 (defun %maybe-append-blank-lines ()
   (assert (boundp '*%window-bounding-box-max-row*))
-  (assert (boundp '*%window-bounding-box-min-column*))
+  (assert (boundp '*%window-bounding-box-min-col*))
   (assert (characterp *skald-fill-char*))
   (assert (integerp *skald-row*))
   (when (and *%window-bounding-box-max-row*
