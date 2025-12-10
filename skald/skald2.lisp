@@ -281,8 +281,8 @@
     (assert (keywordp name))
     (let ((% (gethash name *%emojis*)))
       (if %
-	  (code-char %)
-	  (error "SKALD: unknown emoji ~S" name))))
+	        (code-char %)
+	        (error "SKALD: unknown emoji ~S" name))))
 
   (def-emoji :grinning         #x1F600)
   (def-emoji :grinning-big     #x1F601)
@@ -723,7 +723,7 @@
 
 ;; setup: transparant & fill char
 
-(defmacro with-transparant-and-fill-char (&body body)
+(defmacro with-transparant-and-fill-char (&body body)Z
   `(let ((*skald-transparant-char* (getf plist :transparant-char *skald-transparant-char*))
 	       (*skald-fill-char* (getf plist :fill-char *skald-fill-char*)))
      (declare (special *skald-transparant-char*
@@ -784,6 +784,17 @@
 #|
 
 ;;;; SPECIFICATION: EMOJIS AS DOUBLE WIDTH CHARACTERS
+
+;; notes
+- emojis are treated as double width characters
+- double width characters only take up 1 char space in the read/change buffers,
+  but they should always be followed by #\ZERO_WIDTH_SPACE
+- #\ZERO_WIDTH_SPACE should otherwise never be written to a buffer
+- when a double width character is destructively chopped (eg: a window being written
+  on top of it or a window bounding box), then #\REPLACEMENT_CHARACTER is left behind
+- when EMIT-CHANGE-BUFFER encounters #\REPLACEMENT_CHARACTER, it writes
+  *UNRENDERABLE-CHAR-FILL-CHAR*, which defaults to #\SPACE
+- don't use double width characters as fill characters...
 
 ;; here is a key explaining how to read the specified cases below
   a b c d        sequence of characters in buffer
@@ -854,17 +865,6 @@ a b C+z   >   a X+z ?    ;; C+z chopped! leaving artifact
  a {B++z} d    >   a X+z d   ;; boring insert
 {a  B}+z  d    >   a ? ? d   ;; max artifacts! chaos!
 {A++z} c  d    >   ? ? c d   ;; max artifacts! chaos!
-
-;; notes
-- emojis are treated as double width characters
-- double width characters onlt take up 1 char space in the read/change buffers,
-  but they should always be followed by #\ZERO_WIDTH_SPACE
-- #\ZERO_WIDTH_SPACE should otherwise never be written to a buffer
-- when a double width character is destructively chopped (eg: a window being written
-  on top of it or a window bounding box), then #\REPLACEMENT_CHARACTER is left behind
-- when EMIT-CHANGE-BUFFER encounters #\REPLACEMENT_CHARACTER, it writes
-  *UNRENDERABLE-CHAR-FILL-CHAR*, which defaults to #\SPACE
-- don't use double width characters as fill characters...
 |#
 
 
@@ -1375,11 +1375,11 @@ Writes to the change buffer
 
 (defmacro with-window-grid-column (&body body)
   `(let ((*skald-window-width* (getf *%plist* :width *skald-window-width*))
-	 (*%grid-row-count* 0)       ;; resets to 0 with each column
-	 (*%window-row* *%window-row*))  ;; resets to what was set by WITH-WINDOW-GRID
+	       (*%grid-row-count* 0)       ;; resets to 0 with each column
+	       (*%window-row* *%window-row*))  ;; resets to what was set by WITH-WINDOW-GRID
      (declare (special *skald-window-width*
-		       *%grid-row-count*
-		       *%window-row*))
+		                   *%grid-row-count*
+		                   *%window-row*))
      ,@body))
 
 (defmacro with-adjusted-line-start/window (sprite-width &body body)
