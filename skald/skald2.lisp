@@ -107,11 +107,6 @@
 
 ;;;;; vars
 
-;; depricated
-
-(defvar *skald-row-origin*)
-(defvar *skald-column-origin*)
-
 ;; terminal size
 
 (defvar *skald-terminal-size* '(24 80))   ;; (MAX-ROW MAX-COLUMN)
