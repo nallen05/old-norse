@@ -309,8 +309,9 @@ test 4 ccc
                                                  (skald:skald-init)
                                                  (skald:skald-draw ()
                                                    (skald::with-window-bounding-box 2 5 2 5
-                                                     (skald::with-point-and-cbox-dimensions row col
-                                                       (skald::%render-span "abcd")))))
+                                                     (setf skald:*skald-row* row
+                                                           skald:*skald-col* col)
+                                                     (skald::%render-span "abcd"))))
                                                'list)))
                                    '((1 1)
                                      (2 1)
@@ -415,8 +416,9 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 3
-                                             (skald::with-point-and-cbox-dimensions 1 2
-                                               (skald::%render-span #\x))))))
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
+                                               (skald::%render-span #\x)))))
                                      'list))
 
           (shieldwall:shield "a {B++z  d}   =>   a x ? d"
@@ -433,8 +435,9 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 3
-                                             (skald::with-point-and-cbox-dimensions 1 2
-                                               (skald::%render-span #\x))))))
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
+                                             (skald::%render-span #\x)))))
                                      'list))
 
           (shieldwall:shield "a  B+{z  d}  > no op"
@@ -451,8 +454,9 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 3 2
-                                             (skald::with-point-and-cbox-dimensions 1 2
-                                               (skald::%render-span #\x))))))
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
+                                             (skald::%render-span #\x)))))
                                      'list))
 
           (shieldwall:shield "a  B++z {d}  -> no op"
@@ -469,8 +473,9 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 4 1
-                                             (skald::with-point-and-cbox-dimensions 1 2
-                                               (skald::%render-span #\x))))))
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
+                                             (skald::%render-span #\x)))))
                                      'list))
 
           (shieldwall:shield "a {B++z} d    =>   a x ? d"
@@ -487,8 +492,9 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 2
-                                             (skald::with-point-and-cbox-dimensions 1 2
-                                               (skald::%render-span #\x))))))
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
+                                             (skald::%render-span #\x)))))
                                      'list))
           
           (shieldwall:shield "{a  B}+z  d    >   a x ? d"
@@ -505,8 +511,9 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 1 2
-                                             (skald::with-point-and-cbox-dimensions 1 2
-                                               (skald::%render-span #\x))))))
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
+                                             (skald::%render-span #\x)))))
                                      'list))
           
           (shieldwall:shield "{A++z} c  d    >   ? x c d"
@@ -523,8 +530,9 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 1 2
-                                             (skald::with-point-and-cbox-dimensions 1 2
-                                               (skald::%render-span #\x))))))
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
+                                             (skald::%render-span #\x)))))
                                      'list))
           )
         )
@@ -550,8 +558,9 @@ test 4 ccc
                                                                          :debug-mode :human-readable)
                                                    (skald:skald-draw ()
                                                      (skald::with-window-bounding-box 1 2 column width
-                                                       (skald::with-point-and-cbox-dimensions 1 2
-                                                         (skald::%render-span #\grinning_face))))))
+                                                       (setf skald:*skald-row* 1
+                                                             skald:*skald-col* 2)
+                                                       (skald::%render-span #\grinning_face)))))
                                                'list)))
                                    '((1 4)
                                      (2 3)
@@ -576,8 +585,9 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 3
-                                           (skald::with-point-and-cbox-dimensions 1 2
-                                             (skald::%render-span #\grinning_face))))))
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
+                                           (skald::%render-span #\grinning_face)))))
                                    'list))
         
         (shieldwall:shield "a {B++z  d}   =>   a X+z d"
@@ -594,8 +604,9 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 3
-                                           (skald::with-point-and-cbox-dimensions 1 2
-                                             (skald::%render-span #\grinning_face))))))
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
+                                           (skald::%render-span #\grinning_face)))))
                                    'list))
 
         (shieldwall:shield "a B+{z  d}  => no op"
@@ -612,8 +623,9 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 3 2
-                                           (skald::with-point-and-cbox-dimensions 1 2
-                                             (skald::%render-span #\grinning_face))))))
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
+                                           (skald::%render-span #\grinning_face)))))
                                    'list))
 
 
@@ -631,8 +643,9 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 4 1
-                                           (skald::with-point-and-cbox-dimensions 1 2
-                                             (skald::%render-span #\grinning_face))))))
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
+                                           (skald::%render-span #\grinning_face)))))
                                    'list))
 
         (shieldwall:shield "a {B++z} d  >    a X++z d"
@@ -649,8 +662,9 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 2
-                                           (skald::with-point-and-cbox-dimensions 1 2
-                                             (skald::%render-span #\grinning_face))))))
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
+                                           (skald::%render-span #\grinning_face)))))
                                    'list))
 
         (shieldwall:shield "{a  b}+c  d    >   a ? ? d"
@@ -671,8 +685,9 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 1 2
-                                           (skald::with-point-and-cbox-dimensions 1 2
-                                             (skald::%render-span #\grinning_face))))))
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
+                                           (skald::%render-span #\grinning_face)))))
                                    'list))
 
         (shieldwall:shield "{a++b} c  d    >   ? x c d"
@@ -693,8 +708,9 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 1 2
-                                           (skald::with-point-and-cbox-dimensions 1 2
-                                             (skald::%render-span #\grinning_face))))))
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
+                                           (skald::%render-span #\grinning_face)))))
                                    'list))
         )
         )
