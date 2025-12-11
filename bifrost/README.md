@@ -7,12 +7,16 @@ Bifrost is a Common Lisp library for reading from & controlling the terminal. Pa
 
 Key features:
  - Two-way mapping between s-expressions & raw ASCII escape sequences
- - Low-level logic for XTERM mouse event tracking (this isn't officially part of the official ANSI standard but is widely adopted as defacto standard supported by most modern terminal emulators)
- - Low-level logic for defining clickable/hoverable regions of the screen (CBOXES)
+ - Low-level logic for XTERM mouse event tracking
+ - Low-level logic for defining clickable/hoverable regions of the screen (cboxes)
  - Raw IO handling for faster communication with the terminal
  - Debugging modes to troubleshoot terminal UI (TUI) applications within SLIME/EMACS REPL
 
-Bifrost is implementation-dependent on SBCL.
+Requirements
+- Unix-like terminal emulator that implements standard TTY interface (xterm, gnome-terminal, iTerm2, Mac OS X Terminal, TTYD, etc.)
+  - To use mouse tracking features, the terminal must support XTERM mouse tracking protocol. (This isn't officially part of the official ANSI standard but is widely adopted as defacto standard & supported by most modern terminal emulators.)
+  - If the terminal doesn't support SGR mode, grid size will be limited. (This may manifest as click regions not working past a certain quadrant of the screen, not a display issue.)
+- Bifrost is implementation-dependent on SBCL.
 
 
 # Quick start playbook
@@ -20,18 +24,6 @@ Bifrost is implementation-dependent on SBCL.
 Normally you would use BIFROST with FLOKKR & SKALD. The examples below are just to illustrate how BIFROST works under the hood.
 
 **Run these examples in the terminal, not SLIME/EMACS**
-
-Draw abcdef on the screen at the row/column position 5/10
-
-```lisp 
-(bifrost:with-bifrost
-  (bifrost:rune-write :clear)
-  (bifrost:rune-write `(:move-cursor 5 10))
-  (dolist (c '(#\a #\b #\c #\d #\e #\f))
-    (bifrost:rune-write c))
-  (bifrost:rune-write :move-cursor) ; move the cursor to upper left hand corner
-  (values))
-```
 
 Print keystrokes & mouse clicks
 ```lisp 
@@ -99,7 +91,7 @@ Quering the terminal size
 
 # Key concepts
 
-## Emportant setup form: WITH-BIFROST
+## Important setup form (WITH-BIFROST)
 
 Wrap your enture TUI application in WITH-BIFROST
 
@@ -471,9 +463,9 @@ If SGR mode was disabled, then button/row/column values would be encoded in a si
     ESC [ M 32 column row       (:MOUSE-CLICK-LEFT   row column)
     ESC [ M 33 column row       (:MOUSE-CLICK-MIDDLE row column)
     ESC [ M 34 column row       (:MOUSE-CLICK-RIGHT  row column)
-    ESC [ M 35 column row       (:MOUSE-DRAG-LEFT    row column)
-    ESC [ M 64 column row       (:MOUSE-DRAG-MIDDLE  row column)
-    ESC [ M 65 column row       (:MOUSE-DRAG-RIGHT   row column)
+    ESC [ M 35 column row       (:MOUSE-MOVE row column)  ;; MOUSE-DRAG-LEFT
+    ESC [ M 64 column row       (:MOUSE-MODE column)  ;; MOUSE-DRAG-MIDDLE
+    ESC [ M 65 column row       (:MOUSE-MOVE row column)  ;; MOUSE-DRAG-RIGHT
     ESC [ M 66 column row       (:MOUSE-MOVE         row column)
     ESC [ M 67 column row       (:MOUSE-RELEASE      row column)
 
