@@ -40,31 +40,23 @@
   execute-clauses   ;; (3) execute activated clauses & rescheduling logic
   compute-wait)     ;; (4) compute how long to wait
 
-(defun %extract-timer-names (clause &aux timer cooloff)
+(defun %extract-timer-name (clause &aux name)
   "clause -> stripped-clause, timer-name, cooloff-name
-     :TIMER-NAME -> supplied name or gensym
-     :COOLOFF-NAME -> supplied name or NIL"
+     :TIMER-NAME -> supplied name or gensym"
   (labels ((rfn (_)
              (when _
                (destructuring-bind (1st . rest) _
                  (case 1st
                    (:with-named-timer
-                       (if timer
+                       (if name
                            (error "FLOKKR: multiple :WITH-NAMED-TIMER forms seen in the same clause (~a)" clause)
                            (progn
-                             (setf timer (car rest))
-                             (rfn (cdr rest)))))
-                   (:with-named-cooloff
-                       (if cooloff
-                           (error "FLOKKR: multiple :WITH-NAMED-COOLOFF formed seen in the same clause (~a)" clause)
-                           (progn
-                             (setf cooloff (car rest))
+                             (setf name (car rest))
                              (rfn (cdr rest)))))
                    (otherwise (cons 1st (rfn rest))))))))
     (values (rfn clause)
-            (or timer
-                (gensym "flokkr-timer-"))
-            cooloff)))
+            (or name
+                (gensym "flokkr-timer-")))))
 
 (defun %extract-init-form (clause &aux (init-form 0) after-seen-p)
   "clause -> transformed-clause, init-form
@@ -102,27 +94,35 @@
     (values (replace-repeat (extract-init clause))
             init-form)))
 
-(defun %extract-enforce-cooloff (clause &aux enforce-cooloff-form enforce-cooloff-seen-p on-enforce)
+(defun %extract-enforce-cooloff (clause &aux seen-p name form on-enforce-hook)
   "clause -> stripped-clause, enforce-cooloff-form, enforce-cooloff-seen-p"
   (labels ((rfn (_)
              (when _
                (destructuring-bind (1st . rest) _
                  (case 1st
+                   (:with-named-cooloff
+                       (if name
+                           (error "FLOKKR: multiple :WITH-NAMED-COOLOFF formed seen in the same clause (~a)" clause)
+                           (progn
+                             (setf name (car rest))
+                             (rfn (cdr rest)))))
                    (:enforce-cooloff
-                     (if enforce-cooloff-seen-p
+                     (if seen-p
                          (error "FLOKKR: multiple :ENFORCE-COOLOFF forms seen in the same clause (~a)" clause)
                          (progn
-                           (setf enforce-cooloff-form (car rest)
-                                 enforce-cooloff-seen-p t)
+                           (setf form (car rest)
+                                 seen-p t)
                            (rfn (cdr rest)))))
                    (:on-enforce
-                    (setf on-enforce (car rest))
+                    (setf on-enforce-hook (car rest))
                     (rfn (cdr rest)))
                    (otherwise (cons 1st (rfn rest))))))))
     (values (rfn clause)
-            enforce-cooloff-form
-            enforce-cooloff-seen-p
-            on-enforce)))
+            (when seen-p
+              (or name
+                  (gensym "flokkr-enforce-cooloff-")))
+            form
+            on-enforce-hook)))
 
 (defun %extract-rescheduling-logic (clause &aux reschedule-form reschedule-type)
   "clause -> stripped-clause, reschedule-form, reschedule-type
@@ -169,9 +169,24 @@
                                 (rest c)))))
                       execute-body)
                  (setf reads-input-p t))
-        (:also (push `(when ,activated
-                        ,@(rest c))
-                     execute-body))
+        (:also
+         (multiple-value-bind (c cooloff cooloff-form on-enforce-form) (%extract-enforce-cooloff c)
+           (when cooloff
+             (push cooloff lexical-state)
+             (push `(when ,cooloff
+                      (decf ,cooloff *flokkr-step-seconds*)
+                      (when (plusp ,cooloff)
+                        (unless (>= ,global-delay-seconds ,cooloff)
+                          (setf ,global-delay-seconds ,cooloff
+                                ,on-enforce ,on-enforce-form))))
+                   advance-timers-body))
+           (push `(when ,activated
+                    ,@(rest c)
+                    ,@(when cooloff
+                        `((setf ,cooloff (let ((_ ,cooloff-form))
+                                           (when _
+                                             (+ _ (seconds-between-itu ,tick-start-itu (get-internal-real-time)))))))))
+                 execute-body)))
         (:subflokkr
           (destructuring-bind (form &key percolate)
               (rest c)
@@ -197,30 +212,28 @@
                          (setf ,next-wait ,subflokkr-ret)))
                     compute-wait-body))))
         (otherwise
-         (multiple-value-bind (%c timer cooloff) (%extract-timer-names c)
+         (multiple-value-bind (%c timer) (%extract-timer-name c)
            (multiple-value-bind (%c timer-init-form) (%extract-init-form %c)
-             (multiple-value-bind (%c cooloff-form cooloff-seen-p on-enforce-form)
-                 (%extract-enforce-cooloff %c)
+             (multiple-value-bind (%c cooloff cooloff-form on-enforce-form) (%extract-enforce-cooloff %c)
                (multiple-value-bind (%c scheduler-form scheduler-type) (%extract-rescheduling-logic %c)
                  (case (first %c)
                    (:do 
-                    (push `(,timer ,timer-init-form)
-                          lexical-state)
+                    (push `(,timer ,timer-init-form) lexical-state)
+                    (when cooloff
+                      (push cooloff lexical-state))
                     (when scheduler-type
                       (push (ecase scheduler-type
                               (:schedule
-                               (if cooloff-seen-p
-                                   `(progn
-                                      (when ,timer
-                                        (decf ,timer *flokkr-step-seconds*))
-                                      (when ,cooloff
-                                        (decf ,cooloff *flokkr-step-seconds*)
-                                        (when (and (plusp ,cooloff) ,timer (not (plusp ,timer)))
-                                          (unless (>= ,global-delay-seconds ,cooloff)
-                                            (setf ,global-delay-seconds ,cooloff
-                                                  ,on-enforce ,on-enforce-form)))))
-                                   `(when ,timer
-                                      (decf ,timer *flokkr-step-seconds*))))
+                               `(when ,timer
+                                  (decf ,timer *flokkr-step-seconds*)
+                                  ,@(when cooloff
+                                      `((when ,cooloff
+                                          (decf ,cooloff *flokkr-step-seconds*)
+                                          (when (and (plusp ,cooloff)
+                                                     (not (plusp ,timer)))
+                                            (unless (>= ,global-delay-seconds ,cooloff)
+                                              (setf ,global-delay-seconds ,cooloff
+                                                    ,on-enforce ,on-enforce-form))))))))
                               (:drift
                                `(when ,timer
                                   (decf ,timer *flokkr-step-seconds*))))
@@ -233,7 +246,6 @@
                               (setf ,activated t)
                               ,@(ecase scheduler-type
                                   (:schedule
-;;                                   `((setf ,timer ,scheduler-form)))
                                    (let ((next (gensym "flokkr-scheduler-next-")))
                                      `((let ((,next ,scheduler-form))
                                          (if ,next
@@ -244,9 +256,9 @@
                                            (let ((_ ,scheduler-form))
                                              (when _
                                                (+ _ (seconds-between-itu ,tick-start-itu (get-internal-real-time))))))))
-                                  (nil nil))
+                                  ((nil) nil))
                               ,@(when (and (eq scheduler-type :schedule)
-                                           cooloff-seen-p)
+                                           cooloff)
                                   `((setf ,cooloff (let ((_ ,cooloff-form))
                                                      (when _
                                                        (+ _ (seconds-between-itu ,tick-start-itu (get-internal-real-time)))))))))

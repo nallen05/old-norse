@@ -137,7 +137,7 @@ Tick N starts
 <----------- actual duration ------------->
                       .                   .
                       .                   .
-                      <--- interuptable -->
+                      <-- interruptible -->
 ```
 
 During the idle cooloff period, when not busy, the app may be interupted by user input (:INPUT).
@@ -161,10 +161,13 @@ If you use :DRIFT (instead of :SCHEDULE or :AFTER/:REPEAT), then *cooloff* is ke
 
 ```lisp
 (flokkr
-  (:do (fast-update) :schedule 0.1)
-  (:do (slow-update) :schedule 1)
+  (:do (update-game) :schedule 0.2)
+  (:do (update-scoreboard) :schedule 1)
   (:also (render-screen)
-   :enforce-cooloff 0.06)) ;; every frame should display for least 0.06 seconds before moving on to the next one
+    ;; every frame should display for least 0.16 seconds before starting the next
+   :enforce-cooloff 0.16 
+   ;; log slow frames for debugging
+   :on-enforce (lambda (delay-seconds) (log-frame-skip delay-seconds))))
 ```
 
 Like :DRIFT, :ENFORCE-COOLOFF enforces cooloff (not duration). But unlike :DRIFT it goes to great length to keep long running timers in sync with the global schedule. If :ENFORCE-COOLOFF sees it will be violated, it applies a global delay to *every other timer* in the flokkr form to put the global schedule back in sync. During this "global delay" period all timers are idle, but the app is still free to be interupted by user input.
@@ -189,7 +192,7 @@ Tick N starts                       Scheduled Tick N+1 start
 <------------------ actual duration -------------------->
                            .                            .
                            .                            .
-                           <--- interuptable by user --->
+                           <--- interruptible by user -->
 ```
 
 
@@ -247,7 +250,7 @@ Examples:
 :ALSO runs FORMS if a flokkr clause *above* it was activated in the same tick.
  - :ALSO is unaware of what happens below it.
  - :INPUT only triggers :ALSO when a the terminal input is actually matched. So if there is terminal input but :INPUT doesn’t match it, that *won’t* cause :ALSO to run.
- - :SUBFLOKKR activity doens't trigger :ALSO, *unless* :PERCOLATE is truthy.
+ - :SUBFLOKKR activity doesn't trigger :ALSO, *unless* :PERCOLATE is truthy.
 
 Example:
 ```lisp
@@ -257,19 +260,26 @@ Example:
   (:also (render-screen))) ;; whenever either of the above happens, render the screen
 ```
 
+You can use :ENFORCE-COOLOFF & ON-ENFORCE with :ALSO.
 
 ## enforcing cooloffs
 
 ```lisp
 (flokkr
-  (:do (fast-update) :schedule 0.1)
-  (:do (slow-update) :schedule 1)
+  (:do (update-game) :schedule 0.2)
+  (:do (update-scoreboard) :schedule 1)
   (:also (render-screen)
-    :enforce-cooloff 0.06
-    :on-enforce (lambda (delay) (log "~% slow animation (~a delay)" delay))))
-    )
+    ;; every frame should display for least 0.16 seconds before starting the next
+   :enforce-cooloff 0.16 
+   ;; log slow frames for debugging
+   :on-enforce (lambda (delay-seconds) (log-frame-skip delay-seconds))))
 ```
 
+:ENFORCE-COOLOFF can be used with normal timers (:SCHEDULE, :WAIT/:REPEAT) & :ALSO. It CANNOT be used with :DRIFT or :INPUT.
+
+When used with normal timers, :ENFORCE-COOLOFF only runs if the timer is on.
+
+:WITH-NAMED-COOLOFF is like :WITH-NAMED-TIMER but for enforced cooloffs. You can used it to dynamically increase/decrease the cooloff length or turn it off.
 
 ## background processing can drift
 ```lisp
@@ -278,6 +288,9 @@ Example:
   (:after 0.25 :do (background-task2) :repeat-drift)) ;; timer 2
 ```
 
+:DRIFT is like :SCHEDULE, except it rigidly enforces a cooloff duration instead of enforcing tick-start to tick-start duration.
+- The cooloff will never be shortened
+- The timer will drift away from the global schedule, based on the time it takes for the :DO forms to run.
 
 ## Named timers
 
@@ -299,7 +312,6 @@ Example:
                               nil
                               *timer*)))))
 ```
-
 
 :WITH-NAMED-COOLOFF is similar, but just for :ENFORCE-COOLOFF
 
@@ -332,7 +344,7 @@ if :PERCOLATE it truthy, then then timer/:INPUT activations within a subflokker 
 
 1. Dedicated to making interactive TUIs with Skald/Bifrost
 2. Speed: immediately respond to user input; correctly juggle multiple timers; avoid polling
-3. Precision & predictability: by default, all timers syncronize via a global schedule. So you can depend on them interesecting at recurring frequences.
+3. Precision & predictability: by default, all timers syncronize via a global schedule. So you can depend on them intersecting at recurring frequences.
 4. All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. (Encourages Old Norse "high locality" code structure)
 5. Enable composability: You can define widget behaviors separately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
 
@@ -347,7 +359,7 @@ Let's use the following terminology for consistency:
 - "frame": a tick becomes a frame if one of its activated clauses updates the TUI screen
 - "step" the time in between the current & most recent tick (which may have been caused by the same timer, or different timer, or user input)
 - "scheduled duration" the number of seconds beetween the start of the current tick & a subsequent tick when that specific timer is scheduled to run (which may not be the NEXT tick, there may be others in between)
-- "cooloff" the number of seconds beetween when a clause finishes executing & the start of the NEXT timer-activated tick. During this time, the app is free to be interupted by user iput
+- "cooloff" the number of seconds between when a clause finishes executing & the start of the NEXT timer-activated tick. During this time, the app is free to be interupted by user iput
 - "drift" when a timer gets out of sync with the other timers because it's timer logic is rigidly enforcing a cooloff duration, in a way that does not take into account the time it takes to execute (see :DRIFT)
 - "global delay" the amount of time that all timers are slowed down because of another timer using :ENFORCE-COOLOFF. When the app is globally delayed, it can still be interupted by user input.
 - "total elapsed time" the number of seconds between FLOKKR being started & the current tick.
