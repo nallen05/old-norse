@@ -13,9 +13,9 @@ Key features:
  - Debugging modes to troubleshoot terminal UI (TUI) applications within SLIME/EMACS REPL
 
 Requirements
-- Unix-like terminal emulator that implements standard TTY interface (xterm, gnome-terminal, iTerm2, Mac OS X Terminal, TTYD, etc.)
-  - To use mouse tracking features, the terminal must support XTERM mouse tracking protocol. (This isn't officially part of the official ANSI standard but is widely adopted as defacto standard & supported by most modern terminal emulators.)
-  - If the terminal doesn't support SGR mode, grid size will be limited. (This may manifest as click regions not working past a certain quadrant of the screen, not a display issue.)
+- Unix-like terminal emulator that implements standard TTY interface (xterm, gnome-terminal, iTerm2, Mac OS X Terminal, TTYD, etc).
+  - The terminal must support SGR mode (required for larger grid size).
+  - To use mouse tracking features, the terminal must support XTERM mouse tracking protocol. (This isn't part of the official ANSI standard but is widely adopted as defacto standard & supported by most modern terminal emulators.)
 - Bifrost is implementation-dependent on SBCL.
 
 
