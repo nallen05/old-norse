@@ -26,51 +26,54 @@ Form factor:
 ```lisp
 (let ((10hz 0)
       (4hz 0))
-  (format t "~%Elapsed 10hz 4hz~%")
+  (format t "~%Elapsed 10hz 4hz  Step~%")
   (flokkr:flokkr
     (:after 0.1 :do (incf 10hz) :repeat)
     (:after 0.25 :do (incf 4hz) :repeat)
-    (:also (format t "~&~7,3F ~4D ~3D"
+    (:also (format t "~&~7,2F ~4D ~3D ~4,2F"
                    flokkr:*flokkr-elapsed-seconds*
                    10hz
-                   4hz))))
+                   4hz
+                   flokkr:*flokkr-step-seconds*
+                   ))))
 ```
 
 Running the above will start endlessly printing a sequence like:
 ```
-Elapsed 10hz 4hz
-  0.101    1   0
-  0.201    2   0
-  0.254    2   1
-  0.301    3   1
-  0.401    4   1
-  0.501    5   2
-  0.601    6   2
-  0.701    7   2
-  0.751    7   3
-  0.802    8   3
-  0.902    9   3
-  1.003   10   4
-  1.104   11   4
-  1.200   12   4
-  1.252   12   5
-  1.300   13   5
-  1.401   14   5
-  1.502   15   6
-  1.602   16   6
-  1.702   17   6
-  1.755   17   7
-  1.802   18   7
-  1.902   19   7
-  2.001   20   8
+Elapsed 10hz 4hz  Step
+   0.10    1   0 0.10
+   0.20    2   0 0.10
+   0.25    2   1 0.05
+   0.30    3   1 0.05
+   0.41    4   1 0.10
+   0.50    5   2 0.10
+   0.61    6   2 0.10
+   0.70    7   2 0.10
+   0.75    7   3 0.05
+   0.80    8   3 0.05
+   0.90    9   3 0.10
+   1.00   10   4 0.10
+   1.10   11   4 0.10
+   1.20   12   4 0.10
+   1.25   12   5 0.05
+   1.30   13   5 0.05
+   1.40   14   5 0.10
+   1.51   15   6 0.10
+   1.61   16   6 0.10
+   1.70   17   6 0.10
+   1.75   17   7 0.05
+   1.80   18   7 0.05
+   1.90   19   7 0.10
+   2.00   20   8 0.10
 ```
 ...and so on, until you C-c to quit
  - "elapsed" is how many seconds have gone by since FLOKKR started running
  - "10hz" & "4hz" count cycles at that speed
  
-As you can see, the timers intersect cleanly at 0.5 seconds, 1 seconds, 1.5 seconds, 2 seconds, etc.
- 
-You may also notice some small jitter (eg: the 10hz timer firing at 0.254 seconds instead of 0.250 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the scheduler, so it does not compound/accumulate across multiple ticks.
+As you can see, the timers intersect cleanly at ~0.5 seconds, ~1 seconds, ~1.5 seconds, ~2 seconds, etc.
+
+You may also notice some small jitter (eg: the timers intersecting at 1.51 seconds instead of 1.5 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the scheduler, so it does not compound/accumulate across multiple ticks.
+
 
 
 # Example: timer + simultaneous user input processing

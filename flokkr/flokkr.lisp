@@ -296,64 +296,66 @@
                         ,next-wait)))))
 
 (defun %flokkr-run (flok &aux flok-start-itu last-tick-start-itu)
-  (loop do (let ((tick-start-itu (get-internal-real-time)))
-             (unless flok-start-itu
-               (setf flok-start-itu tick-start-itu
-                     last-tick-start-itu tick-start-itu))
+  (loop do
+    (progn
+      
+      ;; (0) does this flokkr look for input from the terminal?
+      (when (flokkr-reads-input-p flok)
+        (bifrost:rune-read-no-hang))
 
-             ;; (0) does this flokkr look for input from the terminal?
-             (when (flokkr-reads-input-p flok)
-               (bifrost:rune-read-no-hang))
+      ;; (1) start tick: update timers & compute any global delay
+      (let ((tick-start-itu (get-internal-real-time)))
+        (unless flok-start-itu
+          (setf flok-start-itu tick-start-itu
+                last-tick-start-itu tick-start-itu))
+        (let* ((*flokkr-elapsed-seconds* (seconds-between-itu tick-start-itu flok-start-itu))
+               (*flokkr-step-seconds* (seconds-between-itu tick-start-itu last-tick-start-itu))
+               (global-delay-seconds (if (plusp *flokkr-step-seconds*)
+                                         (funcall (flokkr-advance-timers flok))
+                                         0)))
+          (declare (special *flokkr-elapsed-seconds* *flokkr-step-seconds*))
 
-             ;; (1) start tick: update timers & compute any global delay
-             (let* ((*flokkr-elapsed-seconds* (seconds-between-itu tick-start-itu flok-start-itu))
-                    (*flokkr-step-seconds* (seconds-between-itu tick-start-itu last-tick-start-itu))
-                    (global-delay-seconds (if (plusp *flokkr-step-seconds*)
-                                              (funcall (flokkr-advance-timers flok))
-                                              0)))
-               (declare (special *flokkr-elapsed-seconds* *flokkr-step-seconds*))
+          ;; (2) apply global delay, if there is any
+          (when (plusp global-delay-seconds)
+            (funcall (flokkr-add-global-delay flok) global-delay-seconds))
 
-               ;; (2) apply global delay, if there is any
-               (when (plusp global-delay-seconds)
-                 (funcall (flokkr-add-global-delay flok) global-delay-seconds))
+          ;; (3) execute activated clauses & rescheduling logic
+          (let (*flokkr-tick-input-matched-p*)
+            (declare (special *flokkr-tick-input-matched-p*))
+            (funcall (flokkr-execute-clauses flok) tick-start-itu))
 
-               ;; (3) execute activated clauses & rescheduling logic
-               (let (*flokkr-tick-input-matched-p*)
-                 (declare (special *flokkr-tick-input-matched-p*))
-                 (funcall (flokkr-execute-clauses flok) tick-start-itu))
+          ;; (4) compute how long to wait
+          ;; (5) if appropriate, idle in an interuptable way
+          (setf last-tick-start-itu tick-start-itu)
+          (if (flokkr-reads-input-p flok)
 
-               ;; (4) compute how long to wait
-               ;; (5) if appropriate, idle in an interuptable way
-               (setf last-tick-start-itu tick-start-itu)
-               (if (flokkr-reads-input-p flok)
+              ;; this flokkr looks for input, so only wait if there is no input
+              (unless (bifrost:rune-listen)
+                (let ((wait (funcall (flokkr-compute-wait flok))))
+                  (assert (or (not wait)
+                              (numberp wait)))
+                  (if bifrost:*bifrost-tty-p*
+                      ;; we're inside a Unix-like terminal emulator, so we can react instantly
+                      ;; to user input
+                      (sb-sys:wait-until-fd-usable bifrost:*bifrost-tty-p* :input wait)
+                      
+                      ;; we're outside of a Unix-like terminal emulator, in read-debug mode
+                      ;; so fall back on inefficient polling :-(
+                      (if wait
+                          (let* ((now (get-internal-real-time))
+                                 (stop (+ now (floor (* wait internal-time-units-per-second)))))
+                            (loop until (or (bifrost:rune-listen)
+                                            (>= (get-internal-real-time) stop))
+                                  do (sleep 0.02)))
+                          (loop until (bifrost:rune-listen)
+                                do (sleep 0.02))))))
+              ;; this flokkr does not look for input, so just wait unconditionally
+              (let ((wait (funcall (flokkr-compute-wait flok))))
+                (if wait
+                    (sleep wait)
 
-                   ;; this flokkr looks for input, so only wait if there is no input
-                   (unless (bifrost:rune-listen)
-                     (let ((wait (funcall (flokkr-compute-wait flok))))
-                       (assert (or (not wait)
-                                   (numberp wait)))
-                       (if bifrost:*bifrost-tty-p*
-                           ;; we're inside a Unix-like terminal emulator, so we can react instantly
-                           ;; to user input
-                           (sb-sys:wait-until-fd-usable bifrost:*bifrost-tty-p* :input wait)
-                           
-                           ;; we're outside of a Unix-like terminal emulator, in read-debug mode
-                           ;; so fall back on inefficient polling :-(
-                           (if wait
-                               (let* ((now (get-internal-real-time))
-                                      (stop (+ now (floor (* wait internal-time-units-per-second)))))
-                                 (loop until (or (bifrost:rune-listen)
-                                                 (>= (get-internal-real-time) stop))
-                                       do (sleep 0.02)))
-                               (loop until (bifrost:rune-listen)
-                                     do (sleep 0.02))))))
-                   ;; this flokkr does not look for input, so just wait unconditionally
-                   (let ((wait (funcall (flokkr-compute-wait flok))))
-                     (if wait
-                         (sleep wait)
-
-                         ;; there are no timers & we're not waiting for input, so just exit
-                         (return-from %flokkr-run))))))))
+                    ;; there are no timers & we're not waiting for input, so just exit
+                    (return-from %flokkr-run)))))))))
 
 (defun flokkr-run (flok)
   (assert (flokkr-p flok))
