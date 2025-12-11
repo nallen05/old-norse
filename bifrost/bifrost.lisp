@@ -306,7 +306,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
 (defvar *rune-read-alternate-esc-character-for-debugging* nil)
 
-(defvar *rune-read-escape-sequence-max-hang* 0.1)
+(defvar *rune-read-escape-sequence-max-hang* 0.01)
 
 (defvar *%escape-sequence-encountered-characters*)
 
