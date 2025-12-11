@@ -598,8 +598,9 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 
       ;; MODE != *BIFROST-TERMINAL-MOUSE-EVENT-TRACKING-ENABLED*
       ;; disable the old one, then enable the new one
-      (t 
-       (%toggle-off)
+      (t
+       (when *bifrost-terminal-mouse-event-tracking-enabled*
+         (%toggle-off))
        (%toggle-on)
        (setf *bifrost-terminal-mouse-event-tracking-enabled* mode)))))
 
@@ -712,27 +713,21 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 ;;;; setup: turn on mouse tracking
 
 (defvar *bifrost-mouse-tracking-mode* nil)
-(defvar *bifrost-mouse-tracking-valid-events* nil)
 
-(defmacro with-mouse-tracking ((&optional (mode 1000) stream)
+(defmacro with-mouse-tracking ((&optional (mode 1000))
 				      &body body)
-  (let ((%m (gensym "mouse-tracking-mode"))
-	      (%s (gensym "stream")))
-    `(let ((,%m ,mode)
-	         (,%s (or ,stream *terminal-io*)))
-       (let ((*bifrost-mouse-tracking-mode* 1000)
-             (*bifrost-mouse-tracking-valid-events* (list :mouse-click-left
-                                                          :mouse-release)))
-         (declare (special *bifrost-mouse-tracking-mode*
-                           *bifrost-mouse-tracking-valid-events*))
+  (let ((%m (gensym "mouse-tracking-mode")))
+    `(let ((,%m ,mode))
+       (let ((*bifrost-mouse-tracking-mode* ,%m))
+         (declare (special *bifrost-mouse-tracking-mode*))
          (when ,%m
-	         (rune-write (list :mouse-reporting ,%m t) ,%s)
-	         (rune-write (list :sgr-mouse-reporting t) ,%s)
-	         (force-output ,%s))
+	         (rune-write (list :mouse-reporting ,%m t))
+	         (rune-write (list :sgr-mouse-reporting t))
+	         (force-output *bifrost-io*))
          (unwind-protect (progn ,@body)
 	         (when ,%m
-	           (rune-write (list :mouse-reporting ,%m nil) ,%s))
-	         (force-output ,%s))))))
+	           (rune-write (list :mouse-reporting ,%m nil)))
+	         (force-output *bifrost-io*))))))
 
 
 
@@ -835,7 +830,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
              (find-cbox row column)
            (when *pressed-cbox-container*
              (setf *rune* (if (equalp cbox *pressed-cbox*)
-                              :cbox-release-left
+                              :cbox-release
                               :cbox-unclick-left)
                    *rune-container*         (cons *rune* *rune-payload*)))
            (setf *pressed-cbox*           nil
