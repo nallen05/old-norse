@@ -184,9 +184,9 @@
                        (when (> ,subflokkr-ret ,global-delay-seconds )
                          (setf ,global-delay-seconds ,subflokkr-ret)))
                     advance-timers-body)
-              (push `(funcall (subflokkr-add-global-delay ,subflokkr) ,global-delay-seconds)
+              (push `(funcall (flokkr-add-global-delay ,subflokkr) ,global-delay-seconds)
                     add-global-delay-body)
-              (push `(let ((,subflokkr-ret (funcall (subflokkr-execute-clauses ,subflokkr))))
+              (push `(let ((,subflokkr-ret (funcall (flokkr-execute-clauses ,subflokkr ,tick-start-itu))))
                        (when ,percolate
                          (setf ,activated
                                (or ,subflokkr-ret ,activated))))
