@@ -569,15 +569,13 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
 	            (eq mode 1002)
 	            (eq mode 1003)))
   (flet ((%toggle-on ()
-	   (%send-escape-sequence stream
-				  #\Esc
-				  (format nil "[?~Ah"  mode)))
-	 (%toggle-off ()
-	   (%send-escape-sequence stream
-				  #\Esc
-				  (format nil
-					  "[?~Al"
-					  *bifrost-terminal-mouse-event-tracking-enabled*))))
+	         (%send-escape-sequence stream
+				                          #\Esc
+				                          (format nil "[?~Ah"  mode)))
+	       (%toggle-off ()
+	         (%send-escape-sequence stream
+				                          #\Esc
+				                          (format nil "[?~Al" mode))))
     (cond
 
       ;; disable *BIFROST-TERMINAL-MOUSE-EVENT-TRACKING-ENABLED*
@@ -599,7 +597,7 @@ Like %READ-CHAR-BURST-NO-HANG, it returns a second value T when a rune literal i
       ;; MODE != *BIFROST-TERMINAL-MOUSE-EVENT-TRACKING-ENABLED*
       ;; disable the old one, then enable the new one
       (t
-       (when *bifrost-terminal-mouse-event-tracking-enabled*
+       (when mode
          (%toggle-off))
        (%toggle-on)
        (setf *bifrost-terminal-mouse-event-tracking-enabled* mode)))))
