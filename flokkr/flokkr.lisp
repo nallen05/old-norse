@@ -201,12 +201,12 @@
                     advance-timers-body)
               (push `(funcall (flokkr-add-global-delay ,subflokkr) ,global-delay-seconds)
                     add-global-delay-body)
-              (push `(let ((,subflokkr-ret (funcall (flokkr-execute-clauses ,subflokkr ,tick-start-itu))))
+              (push `(let ((,subflokkr-ret (funcall (flokkr-execute-clauses ,subflokkr) ,tick-start-itu)))
                        (when ,percolate
                          (setf ,activated
                                (or ,subflokkr-ret ,activated))))
                     execute-body)
-              (push `(let ((,subflokkr-ret (funcall (flokkr-compute-next-wait ,subflokkr))))
+              (push `(let ((,subflokkr-ret (funcall (flokkr-compute-wait ,subflokkr))))
                        (when (or (not ,next-wait)
                                  (and ,next-wait ,subflokkr-ret (< ,subflokkr-ret ,next-wait)))
                          (setf ,next-wait ,subflokkr-ret)))
