@@ -9,9 +9,9 @@ Flokkr is a concurrency library for Common Lisp, purpose-built for building inte
 
 Features:
 - Manage multiple dynamic timing loops via a mini-DSL (inspired by the LOOP macro)
-- Responds immediatly to user input from the terminal
-- Emphasis on predictable syncronization for coordinating timers
-- Define behaviors seperately then compose via :SUBFLOKKR
+- Responds immediately to user input from the terminal
+- Emphasis on predictable synchronization for coordinating timers
+- Define behaviors separately then compose via :SUBFLOKKR
 
 Form factor:
 - Cooperative multitasking
@@ -70,7 +70,7 @@ Elapsed 10hz 4hz
  
 As you can see, the timers intersect cleanly at 0.5 seconds, 1 seconds, 1.5 seconds, 2 seconds, etc.
  
-You may also notice some small jitter (eg: the 10hz timer firing at 0.254 seconds instead of 0.250 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the schedular, so it does not compound/accumulate across multiple ticks.
+You may also notice some small jitter (eg: the 10hz timer firing at 0.254 seconds instead of 0.250 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the scheduler, so it does not compound/accumulate across multiple ticks.
 
 
 # Example: timer + simultaneous user input processing
@@ -252,8 +252,8 @@ Examples:
 Example:
 ```lisp
 (flokkr
-  (:do (update-state-machine-1) :reschedule 0.5)
-  (:do (update-state-machine-2) :reschedule 1)
+  (:do (update-state-machine-1) :schedule 0.5)
+  (:do (update-state-machine-2) :schedule 1)
   (:also (render-screen))) ;; whenever either of the above happens, render the screen
 ```
 
@@ -292,7 +292,7 @@ Example:
   ;; every 1 second, advance the stoppwatch & update the screen
   (:with-named-timer timer
    :after 1 :do (incf *stopwatch*) (render-stopwatch)
-   :reschedule 1)
+   :schedule 1)
   (:input
     ;; hit spacebar key to pause/unpause the timer
      (#\space (setf timer (if timer
@@ -317,8 +317,8 @@ Example:
 ```lisp
 (defun player-notifications-widget (user)
   (subflokkr
-    (:do (update-player-health-notifications user) :reschedule 0.1))
-    (:do (update-system-message-notifications user) :reschedule 1)))
+    (:do (update-player-health-notifications user) :schedule 0.1))
+    (:do (update-system-message-notifications user) :schedule 1)))
 
 (flokkr-main
   (:subflokkr (player-notifications-widget user) :percolate t)
@@ -334,7 +334,7 @@ if :PERCOLATE it truthy, then then timer/:INPUT activations within a subflokker 
 2. Speed: immediately respond to user input; correctly juggle multiple timers; avoid polling
 3. Precision & predictability: by default, all timers syncronize via a global schedule. So you can depend on them interesecting at recurring frequences.
 4. All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. (Encourages Old Norse "high locality" code structure)
-5. Enable composability: You can define widget behaviors seperately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
+5. Enable composability: You can define widget behaviors separately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
 
 # Recommended conventions
 

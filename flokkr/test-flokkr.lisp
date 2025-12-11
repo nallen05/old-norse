@@ -16,10 +16,11 @@
                      (let ((n 0)
                            accum)
                        (flokkr:flokkr
-                          (:do (push (incf n) accum)
+                         (:do (push (incf n) accum)
+                              (format t "~%~s" accum)
                                (when (>= n 5)
                                  (return-from flokkr:flokkr))
-                           :reschedule 0.001))
+                           :schedule 0.001))
                        (nreverse accum)))
 
   (shieldwall:shield "1 loop + also"
@@ -30,7 +31,7 @@
                          (:do (push (incf n) accum)
                               (when (>= n 5)
                                 (return-from flokkr:flokkr))
-                          :reschedule 0.0001)
+                          :schedule 0.0001)
                          (:also (push (format nil "~a" n) accum)))
                        (nreverse accum)))
                     
@@ -48,8 +49,8 @@
                            (b 0)
                            accum)
                        (flokkr:flokkr
-                         (:after 0.01 :do (incf b) :reschedule 0.01)
-                         (:do (incf a) :reschedule 0.002)
+                         (:after 0.01 :do (incf b) :schedule 0.01)
+                         (:do (incf a) :schedule 0.002)
                          (:also (push (cons a b) accum)
                                 (when (>= b  5)
                                   (return-from flokkr:flokkr))))
@@ -65,8 +66,8 @@
                            (b 0)
                            accum)
                        (flokkr:flokkr
-                         (:do (incf a) :reschedule 0.002)
-                         (:after 0.01 :do (incf b) :reschedule 0.01)
+                         (:do (incf a) :schedule 0.002)
+                         (:after 0.01 :do (incf b) :schedule 0.01)
                          (:also (push (cons a b) accum)
                                 (when (>= b  5)
                                   (return-from flokkr:flokkr))))
