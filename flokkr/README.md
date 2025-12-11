@@ -14,8 +14,7 @@ Features:
 - Define behaviors separately then compose via :SUBFLOKKR
 
 Form factor:
-- Cooperative multitasking
-  - (There is also a roadmap plan to add an additional lightweight async feature, based on SBCL threads, to handle slow DB queries & cloud API calls outside of the main loop)
+- Cooperative multitasking (but the plan is to also add an async feature to run slow DB queries & cloud API calls outside of the main loop)
 - Integrated with bifrost for processing events from the terminal
 - Implementation-depedent on SBCL
 
