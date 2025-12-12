@@ -46,7 +46,7 @@
 
            ;; initialization & other commands that don't interact with the change buffer
            :skald-init
-           :skald-check-size
+           :skald-check-terminal-size
            :skald-sync-buffer
            :skald-clear
            :*terminal-size*
@@ -590,10 +590,10 @@
 
 ;;;; main user API
 
-(defun skald-check-size ()
+(defun skald-check-terminal-size ()
   (let ((new-size (or *terminal-size-override*
                       (if bifrost:*bifrost-debug-mode*
-                          (error "SKALD-CHECK-SIZE called in debugging mode ~S without manually overriding the terminakl size. It won't work because it can't communicate with the terminal in this debugging mode. Set *TERMINAL-SIZE-OVERRIDE*"
+                          (error "SKALD-CHECK-TERMINAL-SIZE called in debugging mode ~S without manually overriding the terminakl size. It won't work because it can't communicate with the terminal in this debugging mode. Set *TERMINAL-SIZE-OVERRIDE*"
                                  bifrost:*bifrost-debug-mode*))
                       (with-skald-output *output*
                         (rest (bifrost:rune-write :query-terminal-size
@@ -621,7 +621,7 @@
 
 (defun skald-init (&key wait-hook)
   (with-skald-output *output*
-    (skald-check-size)
+    (skald-check-terminal-size)
     (bifrost:rune-write :reset
                         *output*)
     ;; set the color before clearing, otherwise the background may
