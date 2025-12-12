@@ -211,12 +211,12 @@
   (let ((%bg (gensym "bg-color"))
 	      (%fg (gensym "fg-color")))
     `(let* ((*skald-mask-mode-p* (getf *%plist* :mask))
-	          (,%bg (getf *%plist* :background))
+	          (,%bg (getf *%plist* :bg))
 	          (*%background-color-code* (if ,%bg
 					                                (lookup-color-code ,%bg)
 					                                *%background-color-code*))
 	          (*%mask-background-color-code* *%background-color-code*)
-	          (,%fg (getf *%plist* :foreground))
+	          (,%fg (getf *%plist* :fg))
 	          (*%foreground-color-code* (if ,%fg
 					                                (lookup-color-code ,%fg)
 					                                *%foreground-color-code*))
@@ -229,13 +229,13 @@
        ,@body)))
 
 (defun call-in-background (color-name thunk)
-  "used by :WITH-BACKGROUND"
+  "used by :BG"
   (let ((*%background-color-code* (lookup-color-code color-name)))
     (declare (special *%background-color-code*))
     (funcall thunk)))
 
 (defun call-in-foreground (color-name thunk)
-  "used by :WITH-FOREGROUND"
+  "used by :FG"
   (let ((*%foreground-color-code* (lookup-color-code color-name)))
     (declare (special *%foreground-color-code*))
     (funcall thunk)))
@@ -723,7 +723,7 @@
 
 ;; setup: transparant & fill char
 
-(defmacro with-transparant-and-fill-char (&body body)Z
+(defmacro with-transparant-and-fill-char (&body body)
   `(let ((*skald-transparant-char* (getf plist :transparant-char *skald-transparant-char*))
 	       (*skald-fill-char* (getf plist :fill-char *skald-fill-char*)))
      (declare (special *skald-transparant-char*
@@ -1051,13 +1051,13 @@ Writes to the change buffer
 	            (:span (map nil #'%render-span rest))
 	            (:sprite (error "SKALD: SPRITE can't be within a SPAN"))
 	            (:emoji (%render-span (lookup-emoji (first rest))))
-	            (:with-foreground
+	            (:fg
 		              (call-in-foreground (first rest)
 				                              (lambda ()
 				                                (map nil
 					                                   #'%render-span
 					                                   (rest rest)))))
-	            (:with-background
+	            (:bg
 		              (call-in-background (first rest)
 				                              (lambda ()
 					                              (map nil
@@ -1085,7 +1085,7 @@ Writes to the change buffer
 	            ((:call-with-point :nodisplay) nil)
 	            (:span (map nil #'%render-span/alignment-preview rest))
 	            (:sprite (error "SKALD: SPRITE can't be within a SPAN"))
-    	        ((:with-foreground :with-background)
+    	        ((:fg :bg)
 	             (map nil #'%render-span/alignment-preview (rest rest))))))))
 
 (defun %chop-string-by-newline (str &optional (start 0) accum)
@@ -1162,9 +1162,9 @@ Writes to the change buffer
 
 (defmacro span ((row column
 		             &rest kwd-args
-		             &key align background foreground mask fill-char transparant-char)
+		             &key align bg fg mask fill-char transparant-char)
 		            &body subsegments) 
-  (declare (ignore align background foreground background mask fill-char transparant-char))
+  (declare (ignore align bg fg mask fill-char transparant-char))
   `(span* ,row
 	        ,column
 	        (list ,@kwd-args)
@@ -1260,12 +1260,12 @@ Writes to the change buffer
 		              (%finish-sprite-line))
 		            (:sprite (map nil #'%render-sprite rest))
 		            (:emoji (%render-sprite (lookup-emoji (first rest))))
-		            (:with-foreground
+		            (:fg
 		                (call-in-foreground (first rest)
 				                                (lambda ()
 					                                (map nil #'%render-sprite
 					                                     (rest rest)))))
-		            (:with-background
+		            (:bg
 		                (call-in-background (first rest)
 					                              (lambda ()
 					                                (map nil #'%render-sprite
@@ -1303,7 +1303,7 @@ Writes to the change buffer
 		            (:sprite
 		                (map nil #'%render-sprite/alignment-preview rest))
 		            (:emoji (%render-sprite/alignment-preview (lookup-emoji (first rest))))
-    		        ((:with-foreground :with-background)
+    		        ((:fg :bg)
 		             (map nil #'%render-sprite/alignment-preview (rest rest)))))))))
 
 (defun sprite* (row column plist &rest sprites)
@@ -1335,9 +1335,9 @@ Writes to the change buffer
 
 (defmacro sprite ((row column
 		               &rest kwd-args
-		               &key align background foreground mask fill-char transparant-char)
+		               &key align bg fg mask fill-char transparant-char)
 		              &body subsegments)
-  (declare (ignore align foreground background mask fill-char transparant-char))
+  (declare (ignore align fg bg mask fill-char transparant-char))
   `(sprite* ,row
 	          ,column
 	          (list ,@kwd-args)
@@ -1355,8 +1355,8 @@ Writes to the change buffer
  	         (*%window-column* ,column)
 	         (*skald-window-border* (getf *%plist* :border *skald-window-border*))
 	         (*skald-window-border-chars* (getf *%plist* :border-chars *skald-window-border-chars*))  ;; 0=horizontal 1=vertical 2=intersect
-	         (,%bg (getf *%plist* :border-background))
-	         (,%fg (getf *%plist* :border-foreground)))
+	         (,%bg (getf *%plist* :border-bg))
+	         (,%fg (getf *%plist* :border-fg)))
        (declare (special *%grid-row-count*
  			                   *%grid-column-count*
 			                   *%window-row*
@@ -1537,13 +1537,13 @@ Writes to the change buffer
 
 (defmacro solo-window ((row column
                         &rest kwd-args
-		                    &key align background foreground mask transparant-char
+		                    &key align bg fg mask transparant-char
 		                      width height fill-char
-		                      border border-chars border-foreground border-background)
+		                      border border-chars border-fg border-bg)
                        &body sprites)
-  (declare (ignore align background foreground mask transparant-char
+  (declare (ignore align bg fg mask transparant-char
 		               width height fill-char
-		               border border-chars border-foreground border-background))
+		               border border-chars border-fg border-bg))
   `(solo-window* ,row
 	               ,column
 	               (list ,@kwd-args)
@@ -1575,10 +1575,10 @@ Writes to the change buffer
   (values))
 
 (defmacro window ((&rest kwd-args
-		                &key align background foreground mask transparant-char
+		                &key align bg fg mask transparant-char
 		                  height fill-char)
 		               &body sprites)
-  (declare (ignore align background foreground mask transparant-char
+  (declare (ignore align bg fg mask transparant-char
 		               height fill-char))
   `(window* (list ,@kwd-args)
 	           ,@sprites))
@@ -1601,11 +1601,11 @@ Writes to the change buffer
 (defmacro column ((&rest kwd-args
 		               &key width height align
 		                 mask fill-char transparant-char
-		                 foreground background)
+		                 fg bg)
 		              &body windows)
   (declare (ignore width height align mask
 		               fill-char transparant-char
-		               foreground background))
+		               fg bg))
   `(call-in-column* (list ,@kwd-args)
 		                (lambda ()
 		                  "COLUMN thunk"
@@ -1619,13 +1619,13 @@ Writes to the change buffer
 
 (defmacro grid ((y x
 		             &rest kwd-args
-		             &key transparant-char foreground background mask
+		             &key transparant-char fg bg mask
 		                  width height align fill-char
-		                  border border-chars border-foreground border-background)
+		                  border border-chars border-fg border-bg)
 		            &body columns-or-rows)
-  (declare (ignore transparant-char foreground background mask
+  (declare (ignore transparant-char fg bg mask
 		               width height align fill-char
-		               border border-chars border-foreground border-background))
+		               border border-chars border-fg border-bg))
   `(call-in-grid* ,y
 		              ,x
 		              (list ,@kwd-args)

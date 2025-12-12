@@ -54,15 +54,15 @@
           (skald:skald-init)
           (skald:skald-draw ()
             (skald:span (3 3)
-	            `(:with-background :yellow
+	            `(:bg :yellow
 	               "fo"
 	               "o"
-	               (:with-foreground  :red
+	               (:fg  :red
 	                 " bar")
-	               (:with-background :black
-	                 (:with-foreground  :cyan
+	               (:bg :black
+	                 (:fg  :cyan
 	                   " baz "))
-	               (:with-foreground  :cyan
+	               (:fg  :cyan
 	                 "buzz")))))
 
     
@@ -94,13 +94,13 @@
                                                    :output nil)
 		                         (skald:skald-draw (:force-overlay)
 		                           (skald:span (6 7)
-		                             `(:with-background :yellow
+		                             `(:bg :yellow
 			                              "foo"
-			                             (:with-foreground  :red
+			                             (:fg  :red
 			                               " bar")
-			                             (:with-foreground  :white
+			                             (:fg  :white
 			                               " baz")
-			                             (:with-foreground  :blue
+			                             (:fg  :blue
 			                               " buzz"))
 		                            " boof"))))
 
@@ -182,18 +182,18 @@
 	          ""
 	          '(:span
 	            "the "
-	            (:with-background :yellow
+	            (:bg :yellow
 	              "yellow sun")
 	            " shone on the")
 	          nil
 	          nil
-	          `(:with-foreground :green
+	          `(:fg :green
 	             ,(format nil "green~%green grass"))
 	          nil
 	          '(:span
 	            "above the "
-	            (:with-background :blue
-                (:with-foreground :cyan
+	            (:bg :blue
+                (:fg :cyan
 	                "earth"))
 	            "'s fertile top soil"))))
 
@@ -228,10 +228,10 @@
 		                       (skald:sprite (9 8)
 			                       "foo"
 			                       `(:span
-				                          (:with-foreground :red "bar")
-				                        (:with-foreground :green "baz")
+				                          (:fg :red "bar")
+				                        (:fg :green "baz")
 				                        "biz")
-			                       `(:with-background :green
+			                       `(:bg :green
 				                        ,(format nil "~%~%buz~%~%zzzzz"))
 			                       "not green"))))
 #+nil
@@ -284,9 +284,9 @@
 	            "red green in row 2???"
 	            "row 3"
 	            `(:span
-	                 (:with-foreground :red "red")
+	                 (:fg :red "red")
 	               " "
-	               (:with-foreground :green "green")
+	               (:fg :green "green")
 	               " "
 	               "in row 4")
 	            (format nil "row 5~%row 6")
@@ -316,12 +316,12 @@
 		                         (skald:solo-window (3 3 :width 10
 					                                           :height 10)
 			                         "foo"
-			                         `(:with-background :yellow
-			                            (:with-foreground  :red
+			                         `(:bg :yellow
+			                            (:fg  :red
 			                              "bar")
-			                            (:with-foreground  :white
+			                            (:fg  :white
 			                              "baz")
-			                            (:with-foreground  :blue
+			                            (:fg  :blue
 			                              "buzz"))
 			                         "boof"))))
 
@@ -334,12 +334,12 @@
 		                         (skald:solo-window (4 4 :width 10
 					                                           :height 10)
 			                         "foo"
-			                         `(:with-background :yellow
-			                            (:with-foreground  :red
+			                         `(:bg :yellow
+			                            (:fg  :red
 			                              "bar")
-			                            (:with-foreground  :white
+			                            (:fg  :white
 			                              "baz")
-			                            (:with-foreground  :blue
+			                            (:fg  :blue
 			                              "buzz"))
 			                         "boof"))))
 
@@ -367,12 +367,12 @@
 					                                           :height 10
 					                                           :fill-char #\~)
 			                         "foo"
-			                         `(:with-background :yellow
-				                          (:with-foreground  :red
+			                         `(:bg :yellow
+				                          (:fg  :red
 				                            "bar")
-				                          (:with-foreground  :white
+				                          (:fg  :white
 				                            "baz")
-				                          (:with-foreground  :blue
+				                          (:fg  :blue
 				                            "buzz"))
 			                         "boof"))))
       
@@ -399,12 +399,12 @@
 						                                         :fill-char #\~
 						                                         :align :right)
 				                       "foo"
-				                       `(:with-background :yellow
-				                          (:with-foreground  :red
+				                       `(:bg :yellow
+				                          (:fg  :red
 					                          "bar")
-				                          (:with-foreground  :white
+				                          (:fg  :white
 					                          "baz")
-				                          (:with-foreground  :blue
+				                          (:fg  :blue
 					                          "buzz"))
 				                       "boof"))))
 
@@ -419,12 +419,12 @@
 					                                           :height 10
 					                                           :fill-char #\~)
 			                         "foo"
-			                         `(:with-background :yellow
-			                            (:with-foreground  :red
+			                         `(:bg :yellow
+			                            (:fg  :red
 			                              "bar")
-			                            (:with-foreground  :white
+			                            (:fg  :white
 			                              "baz")
-			                            (:with-foreground  :blue
+			                            (:fg  :blue
 			                              "buzz"))
 			                         "boof"))))
       )
@@ -446,9 +446,9 @@
 		              "red green in row 2???"
 		              "row 3"
 		              `(:span
-		                   (:with-foreground :red "red")
+		                   (:fg :red "red")
 		                 " "
-		                 (:with-foreground :green "green")
+		                 (:fg :green "green")
 		                 " "
 		                 "in row 4")
 		              (format nil "row 5~%row 6")
@@ -498,9 +498,9 @@
 			                         "red green in row 2???"
 			                         "row 3"
 			                         `(:span
-				                            (:with-foreground :red "red")
+				                            (:fg :red "red")
 			                            " "
-			                            (:with-foreground :green "green")
+			                            (:fg :green "green")
 			                            " "
 			                            "in row 4")
 			                         (format nil "row 5~%row 6")
@@ -520,9 +520,9 @@
 			                         "red green in row 2???"
 			                         "row 3"
 			                         `(:span
-				                            (:with-foreground :red "red")
+				                            (:fg :red "red")
 			                            " "
-			                            (:with-foreground :green "green")
+			                            (:fg :green "green")
 			                            " "
 			                            "in row 4")
 			                         (format nil "row 5~%row 6")
@@ -546,9 +546,9 @@
 		              "red green in row 2???"
 		              "row 3"
 		              `(:span
-		                   (:with-foreground :red "red")
+		                   (:fg :red "red")
 		                 " "
-		                 (:with-foreground :green "green")
+		                 (:fg :green "green")
 		                 " "
 		                 "in row 4")
 		              (format nil "row 5~%row 6")
@@ -579,9 +579,9 @@
 			                         "red green in row 2???"
 			                         "row 3"
 			                         `(:span
-				                            (:with-foreground :red "red")
+				                            (:fg :red "red")
 			                            " "
-			                            (:with-foreground :green "green")
+			                            (:fg :green "green")
 			                            " "
 			                            "in row 4")
 			                         (format nil "row 5~%row 6")
@@ -610,9 +610,9 @@
 			                         "red green in row 2???"
 			                         "row 3"
 			                         `(:span
-				                            (:with-foreground :red "red")
+				                            (:fg :red "red")
 			                            " "
-			                            (:with-foreground :green "green")
+			                            (:fg :green "green")
 			                            " "
 			                            "in row 4")
 			                         (format nil "row 5~%row 6")
@@ -632,11 +632,11 @@
 	        (skald:solo-window (3 3
 			                          :width 6
 			                          :height 5
-			                          :foreground :yellow
-			                          :background :cyan
+			                          :fg :yellow
+			                          :bg :cyan
 			                          :border t
-			                          :border-foreground :red
-			                          :border-background :blue)
+			                          :border-fg :red
+			                          :border-bg :blue)
 	          (format nil "~%one~%two~%three~%"))))
 
 
@@ -650,11 +650,11 @@
 		                         (skald:solo-window (4 4
 				                                           :width 6
 				                                           :height 5
-				                                           :foreground :yellow
-				                                           :background :cyan
+				                                           :fg :yellow
+				                                           :bg :cyan
 				                                           :border t
-				                                           :border-foreground :red
-				                                           :border-background :blue)
+				                                           :border-fg :red
+				                                           :border-bg :blue)
 			                         (format nil "~%one~%two~%three~%")))))
         )
 
@@ -1394,11 +1394,11 @@
 			                                 :height 10
 			                                 :fill-char #\~
 			                                 :transparant-char transparant-char
-			                                 :foreground :cyan
-			                                 :background :blue
+			                                 :fg :cyan
+			                                 :bg :blue
 			                                 :border t
-			                                 :border-foreground :black
-			                                 :border-background :white
+			                                 :border-fg :black
+			                                 :border-bg :white
 			                                 :align :center-left)
 	                 (format nil "~%entertain~%three~%educated~%elephants~%"))))
           (skald:skald-init)
@@ -1423,11 +1423,11 @@
 				                                             :height 10
 				                                             :fill-char #\~
 				                                             :transparant-char transparant-char
-				                                             :foreground :yellow
-				                                             :background :cyan
+				                                             :fg :yellow
+				                                             :bg :cyan
 				                                             :border t
-				                                             :border-foreground :red
-				                                             :border-background :blue
+				                                             :border-fg :red
+				                                             :border-bg :blue
 				                                             :align :center-left)
 			                           (format nil "~%entertain~%three~%educated~%elephants~%"))))))
       
@@ -1443,11 +1443,11 @@
 				                                             :height 10
 				                                             :fill-char #\~
 				                                             :transparant-char transparant-char
-				                                             :foreground :yellow
-				                                             :background :cyan
+				                                             :fg :yellow
+				                                             :bg :cyan
 				                                             :border t
-				                                             :border-foreground :red
-				                                             :border-background :blue
+				                                             :border-fg :red
+				                                             :border-bg :blue
 				                                             :align :center-left)
 			                           (format nil "~%entertain~%three~%educated~%elephants~%"))))))
       )
@@ -1503,25 +1503,25 @@
     (skald:with-skald-test (:override-terminal-size '(24 80))
       (let ((xx '(:span
 		              "FOO"
-		              (:with-foreground :blue "BLUE")
+		              (:fg :blue "BLUE")
 		              #\&
-		              (:with-background :white
-		                (:with-foreground :red
+		              (:bg :white
+		                (:fg :red
 		                  "RED"))
 		              "BAR")))
         (skald:skald-init)
         (skald:skald-draw ()
 	        (skald:span (3 15 :align :center-left
-			                      :foreground :white
-			                      :background :black)
+			                      :fg :white
+			                      :bg :black)
 	          xx))
         (sleep 1)
         (skald:skald-draw (:force-overlay)
 	        (skald:span (3 15 :mask t
 		                        :fill-char #\x
 			                      :align :center-left
-			                      :foreground :cyan
-			                      :background :black)
+			                      :fg :cyan
+			                      :bg :black)
 	          xx))
         (sleep 1)))
 

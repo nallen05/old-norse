@@ -37,17 +37,17 @@
       (skald:skald-clear)
 	    (skald:skald-draw (:force-overlay)
 	      (skald:span (1 1)
-	        `(:with-background :green
+	        `(:bg :green
 	           "GREEN_SPAN")))
 	    (sleep 1)
 	    (skald:skald-draw (:force-overlay)
 	      (skald:span (2 12)
-	        `(:with-background :blue
+	        `(:bg :blue
 	           "BLUE_SPAN")))
 	    (sleep 1)
 	    (skald:skald-draw (:force-overlay)
 	      (skald:span (6 10)
-	        `(:with-background :red
+	        `(:bg :red
 	           "RED_SPAN"))))
 
     (shieldwall:with-shield-group ":FORCE-OVERLAY"
@@ -194,17 +194,17 @@
       (skald:skald-clear)
 	    (skald:skald-draw ()
 	      (skald:span (1 1)
-	        `(:with-background :green
+	        `(:bg :green
 	           "GREEN_SPAN")))
 	    (sleep 1)
 	    (skald:skald-draw ()
 	      (skald:span (2 12)
-	        `(:with-background :blue
+	        `(:bg :blue
 	           "BLUE_SPAN")))
 	    (sleep 1)
 	    (skald:skald-draw ()
 	      (skald:span (6 10)
-	        `(:with-background :red
+	        `(:bg :red
 	           "RED_SPAN"))))
 
     (shieldwall:with-shield-group ":DRAW"
