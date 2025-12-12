@@ -47,7 +47,7 @@
            ;; initialization & other commands that don't interact with the change buffer
            :skald-init
            :skald-check-terminal-size
-           :skald-sync-buffer
+           :skald-sync
            :skald-clear
            :*terminal-size*
            :*terminal-size-override* ;; user configurable          
@@ -653,7 +653,7 @@
     (finish-output *output*)
     (values)))
 
-(defun skald-sync-buffer ()
+(defun skald-sync ()
   (assert (and (listp *terminal-size*)
                (eql 2 (length *terminal-size*))
                (every #'integerp *terminal-size*)))
@@ -672,7 +672,7 @@
   (assert (find mode '(:draw :overlay :force-overlay :prep :null)))
 
   ;; make sure the buffers are the correct size & clean
-  (skald-sync-buffer)
+  (skald-sync)
   
   ;; setup output stream & style
   (with-skald-output *output*
