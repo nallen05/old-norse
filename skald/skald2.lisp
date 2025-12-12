@@ -49,42 +49,41 @@
            :skald-check-size
            :skald-sync-buffer
            :skald-clear
-           :*skald-terminal-size*
-           :*skald-terminal-size-override* ;; user configurable          
+           :*terminal-size*
+           :*terminal-size-override* ;; user configurable          
            
            ;; updating the screen via change buffer
-           :skald-draw               ;; :mode=draw,overlay,force-overlay,prep,null
-           :*skald-output*
-           :*skald-row*
-           :*skald-col*
+           :skald-draw                   ;; :mode=draw,overlay,force-overlay,prep,null
+           :*output*
+           :*row*
+           :*col*
 
 	         ;; writing to the change buffer
            :span
            :sprite
-;;	       :sprite-sixel              ;; not yet implemented
 
            ;; windows
            :solo-window
-           :*skald-window-border*
-           :*skald-window-border-chars*
-   	       :*skald-window-height*
-	         :*skald-window-horizontal-align*
-           :*skald-window-width*
+           :*window-border*
+           :*window-border-chars*
+   	       :*window-height*
+	         :*window-horizontal-align*
+           :*window-width*
            
 	         ;; organizing the terminal screen into windows/grids
 	         :grid
  	         :column
 	         :window
-;;	       :row                         ;; not yet implemented
+;;	       :row                 ;; not yet implemented
 
            ;; defining & referencing colors
 	         :def-color
            :lookup-color-code
-           :*skald-background-color*
-           :*skald-fill-char*
-           :*skald-foreground-color*
-           :*skald-mask-mode-p*
-   	       :*skald-transparant-char*
+           :*background-color*
+           :*fill-char*
+           :*foreground-color*
+           :*mask-mode-p*
+   	       :*transparant-char*
 
 	         ;; interpolation helpers
            :fixed-step-line
@@ -109,8 +108,8 @@
 
 ;; terminal size
 
-(defvar *skald-terminal-size* '(24 80))   ;; (MAX-ROW MAX-COLUMN)
-(defvar *skald-terminal-size-override* nil)
+(defvar *terminal-size* '(24 80))   ;; (MAX-ROW MAX-COLUMN)
+(defvar *terminal-size-override* nil)
 
 ;; buffers
 (defvar *%change-buffer* nil)
@@ -118,19 +117,19 @@
 
 ;; writing to the change buffer
 
-(defparameter *skald-output*         t)  ;; T -> *TERMINAL-IO*
-(defvar       *skald-row*            0)
-(defvar       *skald-col*         0)
+(defparameter *output*         t)  ;; T -> *TERMINAL-IO*
+(defvar       *row*            0)
+(defvar       *col*         0)
 (defvar       *%within-skald-output* nil)
 (defvar       *%within-skald-draw*   nil)
 
 ;; ASCII graphics library
 
-(defparameter *skald-foreground-color* :white)
-(defparameter *skald-background-color* :black)
-(defparameter *skald-fill-char*        #\space)
-(defparameter *skald-transparant-char* #\nul)
-(defparameter *skald-mask-mode-p*      nil)
+(defparameter *foreground-color* :white)
+(defparameter *background-color* :black)
+(defparameter *fill-char*        #\space)
+(defparameter *transparant-char* #\nul)
+(defparameter *mask-mode-p*      nil)
 (defvar *%color-codes* (make-hash-table))
 (defvar *%background-color-code*)
 (defvar *%foreground-color-code*)
@@ -149,16 +148,16 @@
 
 ;; organizing the terminal screen into windows/grids
 
-(defparameter *skald-window-border*       t)
-(defparameter *skald-window-border-chars* "-|+"
+(defparameter *window-border*       t)
+(defparameter *window-border-chars* "-|+"
   "if provided, should be 3 char string: 0=horizontal 1=vertical 2=intersect
   set to NIL for transparant border; set to NIL for transparant border")
 
-(defparameter *skald-window-height*       5)
-(defparameter *skald-window-horizontal-align* :left
+(defparameter *window-height*       5)
+(defparameter *window-horizontal-align* :left
   "valid alignments: :left, :right, :center-left, :center-right")
 
-(defparameter *skald-window-width*        10)
+(defparameter *window-width*        10)
 
 (defvar *%plist*)      ;; passed around by SOLO-WINDOW/WINDOW/COLUMN/GRID for inheritence
 
@@ -200,8 +199,8 @@
      ,@body))
 
 (defmacro with-default-style (&body body)
-  `(let ((*%background-color-code* (lookup-color-code *skald-background-color*))
-	       (*%foreground-color-code*  (lookup-color-code *skald-foreground-color*)))
+  `(let ((*%background-color-code* (lookup-color-code *background-color*))
+	       (*%foreground-color-code*  (lookup-color-code *foreground-color*)))
      (declare (special *%background-color-code*
 		                   *%foreground-color-code*))
      ,@body))
@@ -210,7 +209,7 @@
   "used by SPAN/SPRITE/SOLO-WINDOW/WINDOW"
   (let ((%bg (gensym "bg-color"))
 	      (%fg (gensym "fg-color")))
-    `(let* ((*skald-mask-mode-p* (getf *%plist* :mask))
+    `(let* ((*mask-mode-p* (getf *%plist* :mask))
 	          (,%bg (getf *%plist* :bg))
 	          (*%background-color-code* (if ,%bg
 					                                (lookup-color-code ,%bg)
@@ -221,7 +220,7 @@
 					                                (lookup-color-code ,%fg)
 					                                *%foreground-color-code*))
 	          (*%mask-foreground-color-code* *%foreground-color-code*))
-       (declare (special *skald-mask-mode-p*
+       (declare (special *mask-mode-p*
 			                   *%background-color-code*
 			                   *%foreground-color-code*
 			                   *%mask-background-color-code*
@@ -342,10 +341,10 @@
 ;; buffer arrays
 
 (defun %make-buffer-array (&optional initial-element element-type)
-  (assert (and (listp *skald-terminal-size*)
-               (eql 2 (length *skald-terminal-size*))
-               (every #'integerp *skald-terminal-size*)))
-  (make-array *skald-terminal-size*
+  (assert (and (listp *terminal-size*)
+               (eql 2 (length *terminal-size*))
+               (every #'integerp *terminal-size*)))
+  (make-array *terminal-size*
 	            :initial-element initial-element
 	            :element-type element-type))
 
@@ -380,24 +379,24 @@
   wiped-p)
 
 (defun make-buffer ()
-  (assert (and (listp *skald-terminal-size*)
-               (eql 2 (length *skald-terminal-size*))
-               (every #'integerp *skald-terminal-size*)))
+  (assert (and (listp *terminal-size*)
+               (eql 2 (length *terminal-size*))
+               (every #'integerp *terminal-size*)))
   (%make-buffer
-   :dimensions             *skald-terminal-size*
+   :dimensions             *terminal-size*
    :array                  (%make-buffer-array #\nul 'character)
-   :background-color-array (%make-buffer-array (lookup-color-code *skald-background-color*)
+   :background-color-array (%make-buffer-array (lookup-color-code *background-color*)
 					                                     '(unsigned-byte 8))
-   :foreground-color-array  (%make-buffer-array (lookup-color-code *skald-foreground-color*)
+   :foreground-color-array  (%make-buffer-array (lookup-color-code *foreground-color*)
 					                                      '(unsigned-byte 8))))
 
 (defun %valid-buffer-p (buffer)
-  (assert (and (listp *skald-terminal-size*)
-               (eql 2 (length *skald-terminal-size*))
-               (every #'integerp *skald-terminal-size*)))
+  (assert (and (listp *terminal-size*)
+               (eql 2 (length *terminal-size*))
+               (every #'integerp *terminal-size*)))
   (and (buffer-p buffer)
        (equal (buffer-dimensions buffer)
-	            *skald-terminal-size*)))
+	            *terminal-size*)))
 
 (defun %copy-buffer! (from to)
   (assert (buffer-p from))
@@ -429,9 +428,9 @@
   (%fill-array! (buffer-array buffer)
 		            #\nul)
   (%fill-array! (buffer-background-color-array buffer)
-		            (lookup-color-code *skald-background-color*))
+		            (lookup-color-code *background-color*))
   (%fill-array! (buffer-foreground-color-array buffer)
-		            (lookup-color-code *skald-foreground-color*))
+		            (lookup-color-code *foreground-color*))
   (setf (buffer-wiped-p buffer)
         nil)
   buffer)
@@ -448,12 +447,12 @@
 (defmacro with-skald-output (output &body body)
   (let ((%output (gensym "skald-output")))
     `(let* ((,%output ,output)
-            (*skald-output* (if (eql ,%output
+            (*output* (if (eql ,%output
                                      t)
                                 *terminal-io*
                                 ,%output))
             (*%within-skald-output* t))
-       (declare (special *skald-output*
+       (declare (special *output*
                          *%within-skald-output*))
        ,@body)))
 
@@ -461,18 +460,18 @@
   (assert *%within-skald-output*)
   (assert (buffer-p *%change-buffer*))
   (assert (buffer-p *%display-buffer*))
-  (assert (and (listp *skald-terminal-size*)
-               (eql 2 (length *skald-terminal-size*))
-               (every #'integerp *skald-terminal-size*)))
+  (assert (and (listp *terminal-size*)
+               (eql 2 (length *terminal-size*))
+               (every #'integerp *terminal-size*)))
   (assert (find mode '(:draw :overlay :force-overlay)))
-  (let* ((default-fg (lookup-color-code *skald-foreground-color*))
-         (default-bg (lookup-color-code *skald-background-color*))
+  (let* ((default-fg (lookup-color-code *foreground-color*))
+         (default-bg (lookup-color-code *background-color*))
          (last-write-fg default-fg)
          (last-write-bg default-bg)
 	       last-write-column
 	       last-write-row)
-    (dotimes (row (first *skald-terminal-size*))
-      (dotimes (column (second *skald-terminal-size*))
+    (dotimes (row (first *terminal-size*))
+      (dotimes (column (second *terminal-size*))
         (labels ((%access (array)
 		               (aref array row column)))
           (let ((c (%access (buffer-array *%change-buffer*)))
@@ -485,7 +484,7 @@
                         (when (eql mode :draw)
                           (let ((dc (%access (buffer-array *%display-buffer*))))
                             (or (and (not (eql dc #\nul))
-                                     (not (eql dc *skald-fill-char*)))
+                                     (not (eql dc *fill-char*)))
                                 (%different-color-p))))
                         (or (eql mode :force-overlay)
                             (not (char= c (%access (buffer-array *%display-buffer*))))
@@ -501,11 +500,11 @@
                               :human-readable)
 		                (unless (= bg last-write-bg)
                       (bifrost:rune-write `(:background ,bg)
-                                          *skald-output*)
+                                          *output*)
 		                  (setf last-write-bg bg))
 		                (unless (= fg last-write-fg)
                       (bifrost:rune-write `(:foreground ,fg)
-                                          *skald-output*)
+                                          *output*)
 		                  (setf last-write-fg fg)))
                   
 	                ;; if necessary, reposition the cursor before continuing
@@ -521,19 +520,19 @@
 			                             (> column (1+ last-write-column)))
 			                        (write-string (make-string (- column (1+ last-write-column))
 						                                             :initial-element #\space)
-					                                  *skald-output*)
+					                                  *output*)
 			                        (write-char #\newline
-				                                  *skald-output*)))
+				                                  *output*)))
                         (bifrost:rune-write `(:move-cursor ,row ,column)
-                                            *skald-output*)))
+                                            *output*)))
                   )
                   
 		            ;; write the char
 		            (write-char (case c
-                              (#\nul *skald-fill-char*)
+                              (#\nul *fill-char*)
                               (#\replacement_character *unrenderable-char-fill-char*)
                               (otherwise c))
-                            *skald-output*)
+                            *output*)
 		            (setf last-write-row row
 		                  last-write-column column)
 
@@ -553,10 +552,10 @@
     ;; to minimize chance of artifacts
     (unless (eql last-write-fg default-fg)
       (bifrost:rune-write `(:foreground ,default-fg)
-                          *skald-output*))
+                          *output*))
     (unless (eql last-write-bg default-bg)
 	    (bifrost:rune-write `(:background ,default-bg)
-                          *skald-output*))))
+                          *output*))))
 
 
 ;;;; debugging mode
@@ -572,11 +571,11 @@
         (let ((bifrost:*bifrost-debug-mode* (getf plist
                                                      :debug-mode
                                                      bifrost:*bifrost-debug-mode*))
-              (*skald-terminal-size-override* (getf plist
+              (*terminal-size-override* (getf plist
                                                     :override-terminal-size
-                                                    *skald-terminal-size-override*)))
+                                                    *terminal-size-override*)))
           (declare (special bifrost:*bifrost-debug-mode*
-                            *skald-terminal-size-override*))
+                            *terminal-size-override*))
           (with-skald-output output
             (funcall thunk))))))
 
@@ -592,13 +591,13 @@
 ;;;; main user API
 
 (defun skald-check-size ()
-  (let ((new-size (or *skald-terminal-size-override*
+  (let ((new-size (or *terminal-size-override*
                       (if bifrost:*bifrost-debug-mode*
-                          (error "SKALD-CHECK-SIZE called in debugging mode ~S without manually overriding the terminakl size. It won't work because it can't communicate with the terminal in this debugging mode. Set *SKALD-TERMINAL-SIZE-OVERRIDE*"
+                          (error "SKALD-CHECK-SIZE called in debugging mode ~S without manually overriding the terminakl size. It won't work because it can't communicate with the terminal in this debugging mode. Set *TERMINAL-SIZE-OVERRIDE*"
                                  bifrost:*bifrost-debug-mode*))
-                      (with-skald-output *skald-output*
+                      (with-skald-output *output*
                         (rest (bifrost:rune-write :query-terminal-size
-                                                  *skald-output*))))))
+                                                  *output*))))))
 
     ;; double check it's a valid size, then set
     (assert (and (listp new-size)
@@ -608,8 +607,8 @@
     ;; if it has changed, return the new size
     ;; otherwise return NIL
     (unless (equalp new-size
-                    *skald-terminal-size*)
-      (setf *skald-terminal-size*
+                    *terminal-size*)
+      (setf *terminal-size*
             new-size))))
 
 (defun %wipe-buffers! ()
@@ -621,43 +620,43 @@
           t)))
 
 (defun skald-init (&key wait-hook)
-  (with-skald-output *skald-output*
+  (with-skald-output *output*
     (skald-check-size)
     (bifrost:rune-write :reset
-                        *skald-output*)
+                        *output*)
     ;; set the color before clearing, otherwise the background may
     ;; be a random color
     (with-default-style
       (bifrost:rune-write `(:background ,*%background-color-code*)
-                          *skald-output*)
+                          *output*)
 	    (bifrost:rune-write `(:foreground  ,*%foreground-color-code*)
-                          *skald-output*))
+                          *output*))
     (bifrost:rune-write :clear
-                        *skald-output*)
+                        *output*)
     (bifrost:rune-write :hide-cursor
-                        *skald-output*)
+                        *output*)
     (%wipe-buffers!)
     (when wait-hook
-      (force-output *skald-output*)
+      (force-output *output*)
       (funcall (coerce wait-hook 'function)))
-    (finish-output *skald-output*)
+    (finish-output *output*)
     (values)))
 
 (defun skald-clear (&key wait-hook)
-  (with-skald-output *skald-output*
+  (with-skald-output *output*
     (bifrost:rune-write :clear
-                        *skald-output*)
+                        *output*)
     (%wipe-buffers!)
     (when wait-hook
-      (force-output *skald-output*)
+      (force-output *output*)
       (funcall (coerce wait-hook 'function)))
-    (finish-output *skald-output*)
+    (finish-output *output*)
     (values)))
 
 (defun skald-sync-buffer ()
-  (assert (and (listp *skald-terminal-size*)
-               (eql 2 (length *skald-terminal-size*))
-               (every #'integerp *skald-terminal-size*)))
+  (assert (and (listp *terminal-size*)
+               (eql 2 (length *terminal-size*))
+               (every #'integerp *terminal-size*)))
 
   ;; change buffer
   (setf *%change-buffer*
@@ -676,7 +675,7 @@
   (skald-sync-buffer)
   
   ;; setup output stream & style
-  (with-skald-output *skald-output*
+  (with-skald-output *output*
     (with-default-style
 
       ;; write to the change buffer
@@ -692,7 +691,7 @@
          (when (eq bifrost:*bifrost-debug-mode*
                    :human-readable)
 	         (write-char #\newline
-                       *skald-output*))))
+                       *output*))))
 
       ;; maybe rotate & wipe the change buffer
       (ecase mode
@@ -706,9 +705,9 @@
 
       ;; finish output
       (when wait-hook
-        (force-output *skald-output*)
+        (force-output *output*)
         (funcall (coerce wait-hook 'function)))
-      (finish-output *skald-output*)
+      (finish-output *output*)
       (values))))
 
 (defmacro skald-draw ((&optional (mode :draw) wait-hook) &body body)
@@ -724,10 +723,10 @@
 ;; setup: transparant & fill char
 
 (defmacro with-transparant-and-fill-char (&body body)
-  `(let ((*skald-transparant-char* (getf plist :transparant-char *skald-transparant-char*))
-	       (*skald-fill-char* (getf plist :fill-char *skald-fill-char*)))
-     (declare (special *skald-transparant-char*
-		                   *skald-fill-char*))   
+  `(let ((*transparant-char* (getf plist :transparant-char *transparant-char*))
+	       (*fill-char* (getf plist :fill-char *fill-char*)))
+     (declare (special *transparant-char*
+		                   *fill-char*))   
      ,@body))
 
 
@@ -753,20 +752,20 @@
 
 ;; write to change buffer respecting bounding boxes & transparant/fill chars
 
-(defun outside-terminal-dimensions-p (&key (row *skald-row*)
-                                           (column *skald-col*))
-  (assert (and (listp *skald-terminal-size*)
-               (eql 2 (length *skald-terminal-size*))
-               (every #'integerp *skald-terminal-size*)))
+(defun outside-terminal-dimensions-p (&key (row *row*)
+                                           (column *col*))
+  (assert (and (listp *terminal-size*)
+               (eql 2 (length *terminal-size*))
+               (every #'integerp *terminal-size*)))
   (destructuring-bind (max-row max-column)
-      *skald-terminal-size*
+      *terminal-size*
     (or (< row 1)
         (>= row max-row)
         (< column 1)
         (>= column max-column))))
 
-(defun outside-window-bounding-box-p (&key (row *skald-row*)
-                                           (column *skald-col*))
+(defun outside-window-bounding-box-p (&key (row *row*)
+                                           (column *col*))
   (assert (boundp '*%window-bounding-box-min-col*))
   (assert (boundp '*%window-bounding-box-max-col*))
   (assert (boundp '*%window-bounding-box-min-row*))
@@ -805,7 +804,7 @@
 
 ;; updating buffer to insert single width char "x" at position 2
 ;; potential conflict with bounding box edges
-;; unless no op, incf *SKALD-COL* by 1
+;; unless no op, incf *COL* by 1
 {a b c d}   >   a x c d    ;; boring insert
  a{b c d}   >   a x c d    ;; boring insert
  a b{c d}                  ;; no op
@@ -815,7 +814,7 @@
 
 ;; updating buffer to insert double width char "X+z" at position 2
 ;; potential conflict with bounding box edges
-;; unless no op, incf *SKALD-COL* by 2
+;; unless no op, incf *COL* by 2
 {a b c d}   >   a X+z d    ;; boring insert
  a{b c d}   >   a X+z d    ;; boring insert
  a b{c d}                  ;; no op
@@ -825,7 +824,7 @@
 
 ;; updating buffer to insert single width char "x" at position 2
 ;; potential conflict with double width char already in buffer
-;; always incf *SKALD-COL* by 1
+;; always incf *COL* by 1
 a b c d   >   a x c d    ;; boring insert
 A+z c d   >   ? x c d    ;; A+z chopped! leaving artifact
 a B+z d   >   a x ? d    ;; B+z chopped! leaving artifact
@@ -834,7 +833,7 @@ a b C+z   >   a x X+z    ;; boring insert
 
 ;; updating buffer to insert double width char "X+z" at position 2
 ;; potential conflict with other double width char in buffer
-;; always incf *SKALD-COL* by 2
+;; always incf *COL* by 2
 a b c d   >   a X+z d    ;; boring insert
 A+z c d   >   ? X+z d    ;; A+z chopped! leaving artifact
 a B+z d   >   a X+z d    ;; boring insert
@@ -843,7 +842,7 @@ a b C+z   >   a X+z ?    ;; C+z chopped! leaving artifact
 
 ;; updating buffer to insert single width char "x" at position 2
 ;; potential conflict with BOTH doublel width char & bounding box edges
-;; unless no op, incf *SKALD-COL* by 1
+;; unless no op, incf *COL* by 1
  A+{z  c  d}   >   ? x c d   ;; A+z chopped! leaving artifact
  a {B++z  d}   >   a x ? d   ;; B+z chopped! leaving artifact
  A++z {c  d}                 ;; no op
@@ -856,7 +855,7 @@ a b C+z   >   a X+z ?    ;; C+z chopped! leaving artifact
 
 ;; updating buffer to insert double width char "X+z" at position 2
 ;; potential conflict with BOTH double width char & bounding box edges
-;; unless no op, incf *SKALD-COL* by 2
+;; unless no op, incf *COL* by 2
  A+{z  c  d}   >   ? X+z d   ;; A+z chopped! leaving artifact
  a {B++z  d}   >   a X+z d   ;; boring insert
  A++z {c  d}                 ;; no op
@@ -871,63 +870,63 @@ a b C+z   >   a X+z ?    ;; C+z chopped! leaving artifact
 (defun %%write-single-width-character-to-change-buffer-low-level (c ignore-preceding ignore-following)
   "
 Writes to the change buffer
-- Blindly does it without checking anything but *SKALD-MASK-MODE-P*
-- Does NOT update *SKALD-COL* or CBOX
+- Blindly does it without checking anything but *MASK-MODE-P*
+- Does NOT update *COL* or CBOX
 - IGNORE-PRECEDING & IGNORE-FOLLOWING can be used to supress cleanup of chopped double width chars
 "
   (setf ;; bg
         (aref (buffer-background-color-array *%change-buffer*)
-              *skald-row*
-              *skald-col*)
-	      (if *skald-mask-mode-p*
+              *row*
+              *col*)
+	      (if *mask-mode-p*
 	          *%mask-background-color-code*
 	          *%background-color-code*)
 
         ;; fg
 	      (aref (buffer-foreground-color-array *%change-buffer*)
-              *skald-row*
-              *skald-col*)
-	      (if *skald-mask-mode-p*
+              *row*
+              *col*)
+	      (if *mask-mode-p*
 	          *%mask-foreground-color-code*
 	          *%foreground-color-code*)
 
         ;; char
 	      (aref (buffer-array *%change-buffer*)
-              *skald-row*
-              *skald-col*)
-	      (if *skald-mask-mode-p*
-	          *skald-fill-char*
+              *row*
+              *col*)
+	      (if *mask-mode-p*
+	          *fill-char*
 	          c))
 
   ;; if this single width character chopped a double width character,
   ;; then insert artifacts
   (unless (or ignore-preceding
-              (outside-terminal-dimensions-p :column (1- *skald-col*)))
+              (outside-terminal-dimensions-p :column (1- *col*)))
     (when (double-width-character-p (aref (buffer-array *%change-buffer*)
-                                          *skald-row*
-                                          (1- *skald-col*)))
+                                          *row*
+                                          (1- *col*)))
       (setf (aref (buffer-array *%change-buffer*)
-                  *skald-row*
-                  (1- *skald-col*))
+                  *row*
+                  (1- *col*))
             #\replacement_character)))
   (unless (or ignore-following
-              (outside-terminal-dimensions-p :column (1+ *skald-col*)))
+              (outside-terminal-dimensions-p :column (1+ *col*)))
     (when (eql (aref (buffer-array *%change-buffer*)
-                     *skald-row*
-                     (1+ *skald-col*))
+                     *row*
+                     (1+ *col*))
                #\zero_width_space)
       (setf (aref (buffer-array *%change-buffer*)
-                  *skald-row*
-                  (1+ *skald-col*))
+                  *row*
+                  (1+ *col*))
             #\replacement_character))))
 
 (defun %write-single-width-character-to-change-buffer (c ignore-window-bounding-box)
   (unless (or (outside-terminal-dimensions-p)
               (and (not ignore-window-bounding-box)
                    (outside-window-bounding-box-p)))
-    (unless (char= c *skald-transparant-char*)
+    (unless (char= c *transparant-char*)
       (%%write-single-width-character-to-change-buffer-low-level c nil nil)))
-  (incf *skald-col*))
+  (incf *col*))
 
 ;; <<<>> THIS IS WHERE THE EMOJI BUG IS
 ;;    look at how %%WRITE-SINGLE-WIDTH.... is called
@@ -935,39 +934,39 @@ Writes to the change buffer
 (defun %write-double-width-character-to-change-buffer (c)
   (if (or (outside-terminal-dimensions-p)
           (outside-window-bounding-box-p))
-      (incf *skald-col*
+      (incf *col*
             2)
-      (if (or (outside-terminal-dimensions-p :column (1+ *skald-col*))
-              (outside-window-bounding-box-p :column (1+ *skald-col*)))
+      (if (or (outside-terminal-dimensions-p :column (1+ *col*))
+              (outside-window-bounding-box-p :column (1+ *col*)))
 
           ;; not enough room to fit a double width character,
           ;; write an artifact instead
           (progn
-            (unless (char= c *skald-transparant-char*)
+            (unless (char= c *transparant-char*)
               (%%write-single-width-character-to-change-buffer-low-level #\replacement_character
                                                                          nil
                                                                          nil))
-            (incf *skald-col*
+            (incf *col*
                   2))
 
           ;; insert the double width character & also a #\ZERO_WIDTH_SPACE after it
           (progn
-            (unless (char= c *skald-transparant-char*)
+            (unless (char= c *transparant-char*)
               (%%write-single-width-character-to-change-buffer-low-level c
                                                                          nil
                                                                          t))
-            (incf *skald-col*)
-            (unless (char= c *skald-transparant-char*)
+            (incf *col*)
+            (unless (char= c *transparant-char*)
               (%%write-single-width-character-to-change-buffer-low-level #\zero_width_space
                                                                          t
                                                                          nil))
-            (incf *skald-col*)))))
+            (incf *col*)))))
 
 
 (defun write-to-change-buffer (c &optional ignore-window-bounding-box)
   (assert *%within-skald-output*)
-  (assert (numberp *skald-row*))
-  (assert (numberp *skald-col*))
+  (assert (numberp *row*))
+  (assert (numberp *col*))
   (cond
     ((eql c #\zero_width_space)
      nil)
@@ -984,37 +983,37 @@ Writes to the change buffer
 
 ;; (defun write-to-change-buffer (c &optional ignore-window-bounding-box)
 ;;   (assert *%within-skald-output*)
-;;   (assert (numberp *skald-row*))
-;;   (assert (numberp *skald-col*))
+;;   (assert (numberp *row*))
+;;   (assert (numberp *col*))
 ;;   (unless (and (outside-window-bounding-box-p)
 ;;                (not ignore-window-bounding-box))
 ;;     (unless (or (outside-terminal-dimensions-p)              
-;;                 (char= c *skald-transparant-char*))   
+;;                 (char= c *transparant-char*))   
 ;;       (setf ;; bg
 ;;             (aref (buffer-background-color-array *%change-buffer*)
-;;              *skald-row*
-;;              *skald-col*)
-;; 	          (if *skald-mask-mode-p*
+;;              *row*
+;;              *col*)
+;; 	          (if *mask-mode-p*
 ;; 	              *%mask-background-color-code*
 ;; 	              *%background-color-code*)
 
 ;;             ;; fg
 ;; 	          (aref (buffer-foreground-color-array *%change-buffer*)
-;;                   *skald-row*
-;;                   *skald-col*)
-;; 	          (if *skald-mask-mode-p*
+;;                   *row*
+;;                   *col*)
+;; 	          (if *mask-mode-p*
 ;; 	              *%mask-foreground-color-code*
 ;; 	              *%foreground-color-code*)
 
 ;;             ;; char
 ;; 	          (aref (buffer-array *%change-buffer*)
-;;                   *skald-row*
-;;                   *skald-col*)
-;; 	          (if *skald-mask-mode-p*
-;; 	              *skald-fill-char*
+;;                   *row*
+;;                   *col*)
+;; 	          (if *mask-mode-p*
+;; 	              *fill-char*
 ;; 	              c)))
 ;;     (update-cbox-bounding-box!))  
-;;   (incf *skald-col*)
+;;   (incf *col*)
 ;;   c)
 
 
@@ -1025,8 +1024,8 @@ Writes to the change buffer
 ;; spans of ASCII text (all on the same line)
 
 (defun %render-span (form)
-  (assert *skald-row*)
-  (assert *skald-col*)
+  (assert *row*)
+  (assert *col*)
   (etypecase form
     (null nil)
     (symbol (if (eql form
@@ -1045,8 +1044,8 @@ Writes to the change buffer
 	          (ecase 1st
 	            (:call-with-point (funcall (coerce (first rest)
 						                                     'function)
-					                               *skald-row*
-					                               *skald-col*))
+					                               *row*
+					                               *col*))
 	            (:nodisplay nil)
 	            (:span (map nil #'%render-span rest))
 	            (:sprite (error "SKALD: SPRITE can't be within a SPAN"))
@@ -1074,8 +1073,8 @@ Writes to the change buffer
     (character
      (unless (or (char= form #\newline)
 		             (char= form #\return)
-		             (char= form *skald-transparant-char*))
-       (write-char form *skald-output*)))
+		             (char= form *transparant-char*))
+       (write-char form *output*)))
     (string (map nil
 		             #'%render-span/alignment-preview
 		             form))
@@ -1105,8 +1104,8 @@ Writes to the change buffer
 			                      accum))))))
 
 (defmacro with-align (&body body)
-  `(let ((*skald-window-horizontal-align* (getf *%plist* :align *skald-window-horizontal-align*)))
-     (declare (special *skald-window-horizontal-align*))
+  `(let ((*window-horizontal-align* (getf *%plist* :align *window-horizontal-align*)))
+     (declare (special *window-horizontal-align*))
      ,@body))
 
 (defmacro with-line-start (column &body body)
@@ -1120,7 +1119,7 @@ Writes to the change buffer
 	      (%width (gensym "width")))
     `(let ((,%column ,column)
 	         (,%width ,width))
-       (with-line-start (ecase *skald-window-horizontal-align*
+       (with-line-start (ecase *window-horizontal-align*
 			                    (:left ,%column)
 			                    (:center-left (+ (- ,%column (ceiling (/ ,%width 2)))
 					                                 (if (oddp ,%width)
@@ -1141,22 +1140,22 @@ Writes to the change buffer
       (with-transparant-and-fill-char
 	      (with-window-bounding-box nil nil nil nil
 	        (with-align
-	          (ecase *skald-window-horizontal-align*
+	          (ecase *window-horizontal-align*
 	            (:left
 	             (with-line-start column
-                 (setf *skald-row* row
-                       *skald-col* column)
+                 (setf *row* row
+                       *col* column)
 		             (map nil #'%render-span subsegments)))
 	            ((:right :center-left :center-right)
-	             (let* ((preview (with-output-to-string (*skald-output*)
-				                         (declare (special *skald-output*))
+	             (let* ((preview (with-output-to-string (*output*)
+				                         (declare (special *output*))
 				                         (map nil #'%render-sprite/alignment-preview subsegments)))
 		                  (span-length (apply #'max
 					                                (mapcar #'length
 						                                      (skald::%chop-string-by-newline preview)))))
 		             (with-adjusted-line-start/simple column span-length
-                   (setf *skald-row* row
-                         *skald-col* *%line-start-column*)
+                   (setf *row* row
+                         *col* *%line-start-column*)
 		               (map nil #'%render-span subsegments)))))
 	          (values)))))))
 
@@ -1175,53 +1174,53 @@ Writes to the change buffer
 
 (defun %begin-sprite-line ()
   (assert (boundp '*%window-bounding-box-min-col*))
-  (assert (characterp *skald-fill-char*))
+  (assert (characterp *fill-char*))
   (assert (integerp *%line-start-column*))
-  (assert (integerp *skald-row*))
+  (assert (integerp *row*))
 
   ;; move to the sprite's starting column
-  (setf *skald-col* *%line-start-column*)
+  (setf *col* *%line-start-column*)
 
   ;; if we're to the right of the bounding box
   ;; add left fill until we reach it
   (when (and *%window-bounding-box-min-col*
-	           (> *skald-col* *%window-bounding-box-min-col*)
-	           (not (eql *skald-fill-char*
-		                   *skald-transparant-char*)))
-    (let ((filler-length (- *skald-col* *%window-bounding-box-min-col*)))
-      (setf *skald-col* *%window-bounding-box-min-col*)
+	           (> *col* *%window-bounding-box-min-col*)
+	           (not (eql *fill-char*
+		                   *transparant-char*)))
+    (let ((filler-length (- *col* *%window-bounding-box-min-col*)))
+      (setf *col* *%window-bounding-box-min-col*)
       (dotimes (% filler-length)
-	      (write-to-change-buffer *skald-fill-char*)))))
+	      (write-to-change-buffer *fill-char*)))))
 
 (defun %finish-sprite-line ()
   (assert (boundp '*%window-bounding-box-min-col*))
   (assert (boundp '*%window-bounding-box-max-col*))
-  (assert (characterp *skald-fill-char*))
+  (assert (characterp *fill-char*))
   (assert (integerp *%line-start-column*))
-  (assert (integerp *skald-col*))
-  (assert (integerp *skald-row*))
+  (assert (integerp *col*))
+  (assert (integerp *row*))
 
   ;; if we're in a window & the line ended to the left of the window right bounds
   ;; then add right fill
   (when (and *%window-bounding-box-max-col*
-	           (< *skald-col* *%window-bounding-box-max-col*)
-	           (not (eql *skald-fill-char*
-		                   *skald-transparant-char*)))
+	           (< *col* *%window-bounding-box-max-col*)
+	           (not (eql *fill-char*
+		                   *transparant-char*)))
 
     ;; but of course, don't write to the left of the window left bounds
     ;; in the off chance the line ended before reaching the visible part of the bounding box
     (when (and *%window-bounding-box-min-col*
-	             (< *skald-col* *%window-bounding-box-min-col*))
-      (setf *skald-col* *%window-bounding-box-min-col*))
-    (let ((filler-length (- *%window-bounding-box-max-col* *skald-col*)))
+	             (< *col* *%window-bounding-box-min-col*))
+      (setf *col* *%window-bounding-box-min-col*))
+    (let ((filler-length (- *%window-bounding-box-max-col* *col*)))
       (dotimes (% filler-length)
-	      (write-to-change-buffer *skald-fill-char*))))
-  (incf *skald-row*)
-  (setf *skald-col* *%line-start-column*))
+	      (write-to-change-buffer *fill-char*))))
+  (incf *row*)
+  (setf *col* *%line-start-column*))
 
 (defun %render-sprite (xx)
-  (assert (integerp *skald-col*))
-  (assert (integerp *skald-row*))
+  (assert (integerp *col*))
+  (assert (integerp *row*))
   (flet ((%maybe-write-char (c)
 	         (cond
 	           ((or (char= c #\newline)
@@ -1251,8 +1250,8 @@ Writes to the change buffer
 		            xx
 	            (ecase 1st
 		            (:call-with-point (funcall (first rest)
-					                                 *skald-col*
-					                                 *skald-row*))
+					                                 *col*
+					                                 *row*))
 		            (:nodisplay nil)
 		            (:span
 		                (%begin-sprite-line)
@@ -1273,7 +1272,7 @@ Writes to the change buffer
 
 (defun %render-sprite/alignment-preview (form)
   (flet ((%nl ()
-	         (write-char #\newline *skald-output*)))
+	         (write-char #\newline *output*)))
     (etypecase form
       (null (%nl))
       (symbol
@@ -1282,15 +1281,15 @@ Writes to the change buffer
 	         nil
 	         (error "SKALD: invalid span form ~S" form)))
       (character
-       (unless (char= form *skald-transparant-char*)
+       (unless (char= form *transparant-char*)
 	       (%nl)
-	       (write-char form *skald-output*)))
+	       (write-char form *output*)))
       (string
        (%nl)
        (map nil
 	          (lambda (c)
-	            (unless (char= c *skald-transparant-char*)
-		            (write-char c *skald-output*)))
+	            (unless (char= c *transparant-char*)
+		            (write-char c *output*)))
 	          form))
       (list (destructuring-bind (1st . rest)
 		            form
@@ -1314,22 +1313,22 @@ Writes to the change buffer
       (with-transparant-and-fill-char
 	      (with-window-bounding-box nil nil nil nil
 	        (with-align
-	          (ecase *skald-window-horizontal-align*
+	          (ecase *window-horizontal-align*
 	            (:left
 	             (with-line-start column
-                 (setf *skald-row* row
-                       *skald-col* column)
+                 (setf *row* row
+                       *col* column)
 		             (map nil #'%render-sprite sprites)))
 	            ((:right :center-left :center-right)
-	             (let* ((preview (with-output-to-string (*skald-output*)
-				                         (declare (special *skald-output*))
+	             (let* ((preview (with-output-to-string (*output*)
+				                         (declare (special *output*))
 				                         (map nil #'%render-sprite/alignment-preview sprites)))
 		                  (span-length (apply #'max
 					                                (mapcar #'length
 						                                      (%chop-string-by-newline preview)))))
 		             (with-adjusted-line-start/simple column span-length
-                   (setf *skald-row* row
-                         *skald-col* *%line-start-column*)
+                   (setf *row* row
+                         *col* *%line-start-column*)
 		               (map nil #'%render-sprite sprites)))))
 	          (values)))))))
 
@@ -1353,16 +1352,16 @@ Writes to the change buffer
  	         (*%grid-column-count* 0)
 	         (*%window-row* ,row)
  	         (*%window-column* ,column)
-	         (*skald-window-border* (getf *%plist* :border *skald-window-border*))
-	         (*skald-window-border-chars* (getf *%plist* :border-chars *skald-window-border-chars*))  ;; 0=horizontal 1=vertical 2=intersect
+	         (*window-border* (getf *%plist* :border *window-border*))
+	         (*window-border-chars* (getf *%plist* :border-chars *window-border-chars*))  ;; 0=horizontal 1=vertical 2=intersect
 	         (,%bg (getf *%plist* :border-bg))
 	         (,%fg (getf *%plist* :border-fg)))
        (declare (special *%grid-row-count*
  			                   *%grid-column-count*
 			                   *%window-row*
 			                   *%window-column*
-			                   *skald-window-border*
-			                   *skald-window-border-chars*))
+			                   *window-border*
+			                   *window-border-chars*))
        (let ((*%window-border-background-color-code* (if ,%bg
 							                                           (lookup-color-code ,%bg)
 							                                           *%background-color-code*))
@@ -1374,10 +1373,10 @@ Writes to the change buffer
 	       ,@body))))
 
 (defmacro with-window-grid-column (&body body)
-  `(let ((*skald-window-width* (getf *%plist* :width *skald-window-width*))
+  `(let ((*window-width* (getf *%plist* :width *window-width*))
 	       (*%grid-row-count* 0)       ;; resets to 0 with each column
 	       (*%window-row* *%window-row*))  ;; resets to what was set by WITH-WINDOW-GRID
-     (declare (special *skald-window-width*
+     (declare (special *window-width*
 		                   *%grid-row-count*
 		                   *%window-row*))
      ,@body))
@@ -1385,23 +1384,23 @@ Writes to the change buffer
 (defmacro with-adjusted-line-start/window (sprite-width &body body)
   (let ((%sprite-width (gensym "width")))
     `(let ((,%sprite-width ,sprite-width))
-       (assert (keywordp *skald-window-horizontal-align*))
-       (assert (integerp *skald-window-width*))
+       (assert (keywordp *window-horizontal-align*))
+       (assert (integerp *window-width*))
        (assert (integerp *%window-bounding-box-min-col*))
        (with-line-start (cond
 
 			                    ;; the sprite is exactly the correct length
-			                    ((= ,%sprite-width *skald-window-width*)
+			                    ((= ,%sprite-width *window-width*)
 			                     *%window-bounding-box-min-col*)
 
 			                    ;; the sprite is narrower than the window
 			                    ;; so move it to the right to align
 			                    ((< ,%sprite-width
-			                        *skald-window-width*)
+			                        *window-width*)
 			                     (+ *%window-bounding-box-min-col*
-			                        (let ((% (- *skald-window-width*
+			                        (let ((% (- *window-width*
 					                                ,%sprite-width)))
-		       		                  (ecase *skald-window-horizontal-align*
+		       		                  (ecase *window-horizontal-align*
 				                          (:right %)
 				                          (:center-left (floor (/ % 2)))							  
 				                          (:center-right (ceiling (/ % 2)))))))
@@ -1409,11 +1408,11 @@ Writes to the change buffer
 			                    ;; the sprite is wider than the window
 			                    ;; so move it to the left to align
 			                    ((> ,%sprite-width
-			                        *skald-window-width*)
+			                        *window-width*)
 			                     (- *%window-bounding-box-min-col*
 			                        (let ((% (- ,%sprite-width
-					                                *skald-window-width*)))
-				                        (ecase *skald-window-horizontal-align*
+					                                *window-width*)))
+				                        (ecase *window-horizontal-align*
 				                          (:right %)
 				                          (:center-left (ceiling (/ % 2)))
 				                          (:center-right (floor (/ % 2))))))))
@@ -1421,97 +1420,97 @@ Writes to the change buffer
 
 (defmacro with-window (&body body)
   (let ((%doit (gensym "window-body")))
-    `(let ((*skald-window-height* (getf *%plist* :height *skald-window-height*)))
-       (declare (special *skald-window-height*))
+    `(let ((*window-height* (getf *%plist* :height *window-height*)))
+       (declare (special *window-height*))
        (flet ((,%doit ()
 		            ,@body))
 	       (with-extend-style
 	         (with-transparant-and-fill-char
 	           (with-window-bounding-box (+ *%window-row*
-				                                  (if *skald-window-border*
+				                                  (if *window-border*
 				                                      1
 				                                      0))
-				         *skald-window-height*
+				         *window-height*
 				         (+ *%window-column*
-				            (if *skald-window-border*
+				            (if *window-border*
 				                1
 				                0))
-				         *skald-window-width*
+				         *window-width*
 	             (with-align
-		             (ecase *skald-window-horizontal-align*
+		             (ecase *window-horizontal-align*
 		               (:left
 		                (with-line-start *%window-bounding-box-min-col*
-                      (setf *skald-row* *%window-bounding-box-min-row*
-                            *skald-col* *%line-start-column*)
+                      (setf *row* *%window-bounding-box-min-row*
+                            *col* *%line-start-column*)
 			                (,%doit)))
 		               ((:right :center-left :center-right)
-		                (let* ((preview (with-output-to-string (*skald-output*)
-				                              (declare (special *skald-output*))
+		                (let* ((preview (with-output-to-string (*output*)
+				                              (declare (special *output*))
 				                              (map nil #'%render-sprite/alignment-preview sprites)))
 			                     (longest-line (apply #'max
 						                                    (mapcar #'length
 							                                          (%chop-string-by-newline preview)))))
 		                  (with-adjusted-line-start/window longest-line
-                        (setf *skald-row* *%window-bounding-box-min-row*
-                              *skald-col* *%line-start-column*)
+                        (setf *row* *%window-bounding-box-min-row*
+                              *col* *%line-start-column*)
 			                  (,%doit)))))))))))))
 
 (defun %maybe-append-blank-lines ()
   (assert (boundp '*%window-bounding-box-max-row*))
   (assert (boundp '*%window-bounding-box-min-col*))
-  (assert (characterp *skald-fill-char*))
-  (assert (integerp *skald-row*))
+  (assert (characterp *fill-char*))
+  (assert (integerp *row*))
   (when (and *%window-bounding-box-max-row*
-	           (< *skald-row*
+	           (< *row*
                 *%window-bounding-box-max-row*))
-    (loop until (>= *skald-row*
+    (loop until (>= *row*
                     *%window-bounding-box-max-row*)
 	        do (%begin-sprite-line)
 	           (%finish-sprite-line))))
 
 (defun %maybe-render-window-ascii-border ()
-  (assert (boundp '*skald-window-border-chars*))
+  (assert (boundp '*window-border-chars*))
   (assert (boundp '*%window-border-foreground-color-code*))
   (assert (boundp '*%window-border-background-color-code*))
   (assert *%grid-column-count*)
   (assert *%grid-row-count*)
   (assert *%window-column*)
   (assert *%window-row*)
-  (when (and *skald-window-border*
-	           *skald-window-border-chars*)
-    (let ((h (char *skald-window-border-chars* 0))
-	        (v (char *skald-window-border-chars* 1))
-	        (i (char *skald-window-border-chars* 2))
+  (when (and *window-border*
+	           *window-border-chars*)
+    (let ((h (char *window-border-chars* 0))
+	        (v (char *window-border-chars* 1))
+	        (i (char *window-border-chars* 2))
 	        (*%background-color-code* *%window-border-background-color-code*)
 	        (*%foreground-color-code* *%window-border-foreground-color-code*))
       (declare (special *%background-color-code* *%foreground-color-code*))
       (flet ((hline (y)
-	             (setf *skald-row* y
-		                 *skald-col* *%window-column*)
+	             (setf *row* y
+		                 *col* *%window-column*)
 	             (if (zerop *%grid-column-count*)
 		               (write-to-change-buffer i t)
-		               (incf *skald-col*))
-	             (dotimes (% *skald-window-width*)
+		               (incf *col*))
+	             (dotimes (% *window-width*)
 		             (write-to-change-buffer h t))
 	             (write-to-change-buffer i t))
 	           (vline (y)
 	             (when (zerop *%grid-column-count*)
-		             (setf *skald-col* *%window-column*
-		                   *skald-row* y)
+		             (setf *col* *%window-column*
+		                   *row* y)
 		             (write-to-change-buffer v t))
-	             (setf *skald-col* (+ *%window-column*
-				                                      *skald-window-width*
+	             (setf *col* (+ *%window-column*
+				                                      *window-width*
 				                                      1)
-		                 *skald-row* y)
+		                 *row* y)
 	             (write-to-change-buffer v t)))
 	      (hline *%window-row*)
-	      (dotimes (i *skald-window-height*)
+	      (dotimes (i *window-height*)
 	        (let ((y (+ *%window-row*
 		                  i
 		                  1)))
 	          (vline y)))
 	      (hline (+ *%window-row*
-		              *skald-window-height*
+		              *window-height*
 		              1))))))
 
 (defun %render-window (&rest sprites)
@@ -1560,7 +1559,7 @@ Writes to the change buffer
 (defun window* (plist &rest sprites)
   (unless *%within-skald-draw*
     (error "WINDOW called outside of SKALD-DRAW: ~S" sprites))
-  (assert (boundp '*skald-window-border*))
+  (assert (boundp '*window-border*))
   (assert (boundp '*%plist*))
   (assert *%grid-row-count*)
   (assert *%window-row*)
@@ -1568,8 +1567,8 @@ Writes to the change buffer
     (with-window
       (apply #'%render-window sprites)
       (incf *%window-row*
-	          *skald-window-height*)
-      (when *skald-window-border*
+	          *window-height*)
+      (when *window-border*
 	      (incf *%window-row*))
       (incf *%grid-row-count*)))
   (values))
@@ -1584,7 +1583,7 @@ Writes to the change buffer
 	           ,@sprites))
 
 (defun call-in-column* (plist thunk)
-  (assert (boundp '*skald-window-border*))
+  (assert (boundp '*window-border*))
   (assert (boundp '*%plist*))
   (assert *%window-column*)
   (assert *%grid-column-count*)
@@ -1592,8 +1591,8 @@ Writes to the change buffer
     (with-window-grid-column
 	    (funcall thunk)
       (incf *%window-column*
-	          *skald-window-width*)
-      (when *skald-window-border*
+	          *window-width*)
+      (when *window-border*
 	      (incf *%window-column*))
       (incf *%grid-column-count*)))
   (values))

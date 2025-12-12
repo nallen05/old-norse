@@ -12,7 +12,7 @@
 ;;;; clickaround test for CBOX integration
 #+nil
 (bifrost:with-bypass-terminal-read-buffer
-  (setf skald:*skald-terminal-size-override* '(24 80))
+  (setf skald:*terminal-size-override* '(24 80))
   (bifrost:flush-rune-read-buffer)
   (bifrost:with-bifrost-mouse-tracking ()
     (bifrost:with-cbox t

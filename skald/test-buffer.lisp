@@ -309,8 +309,8 @@ test 4 ccc
                                                  (skald:skald-init)
                                                  (skald:skald-draw ()
                                                    (skald::with-window-bounding-box 2 5 2 5
-                                                     (setf skald:*skald-row* row
-                                                           skald:*skald-col* col)
+                                                     (setf skald:*row* row
+                                                           skald:*col* col)
                                                      (skald::%render-span "abcd"))))
                                                'list)))
                                    '((1 1)
@@ -416,8 +416,8 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 3
-                                             (setf skald:*skald-row* 1
-                                                   skald:*skald-col* 2)
+                                             (setf skald:*row* 1
+                                                   skald:*col* 2)
                                                (skald::%render-span #\x)))))
                                      'list))
 
@@ -435,8 +435,8 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 3
-                                             (setf skald:*skald-row* 1
-                                                   skald:*skald-col* 2)
+                                             (setf skald:*row* 1
+                                                   skald:*col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
 
@@ -454,8 +454,8 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 3 2
-                                             (setf skald:*skald-row* 1
-                                                   skald:*skald-col* 2)
+                                             (setf skald:*row* 1
+                                                   skald:*col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
 
@@ -473,8 +473,8 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 4 1
-                                             (setf skald:*skald-row* 1
-                                                   skald:*skald-col* 2)
+                                             (setf skald:*row* 1
+                                                   skald:*col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
 
@@ -492,8 +492,8 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 2
-                                             (setf skald:*skald-row* 1
-                                                   skald:*skald-col* 2)
+                                             (setf skald:*row* 1
+                                                   skald:*col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
           
@@ -511,8 +511,8 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 1 2
-                                             (setf skald:*skald-row* 1
-                                                   skald:*skald-col* 2)
+                                             (setf skald:*row* 1
+                                                   skald:*col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
           
@@ -530,8 +530,8 @@ test 4 ccc
                                                                :debug-mode :human-readable)
                                          (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 1 2
-                                             (setf skald:*skald-row* 1
-                                                   skald:*skald-col* 2)
+                                             (setf skald:*row* 1
+                                                   skald:*col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
           )
@@ -558,8 +558,8 @@ test 4 ccc
                                                                          :debug-mode :human-readable)
                                                    (skald:skald-draw ()
                                                      (skald::with-window-bounding-box 1 2 column width
-                                                       (setf skald:*skald-row* 1
-                                                             skald:*skald-col* 2)
+                                                       (setf skald:*row* 1
+                                                             skald:*col* 2)
                                                        (skald::%render-span #\grinning_face)))))
                                                'list)))
                                    '((1 4)
@@ -585,8 +585,8 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 3
-                                           (setf skald:*skald-row* 1
-                                                 skald:*skald-col* 2)
+                                           (setf skald:*row* 1
+                                                 skald:*col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
         
@@ -604,8 +604,8 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 3
-                                           (setf skald:*skald-row* 1
-                                                 skald:*skald-col* 2)
+                                           (setf skald:*row* 1
+                                                 skald:*col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -623,8 +623,8 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 3 2
-                                           (setf skald:*skald-row* 1
-                                                 skald:*skald-col* 2)
+                                           (setf skald:*row* 1
+                                                 skald:*col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -643,8 +643,8 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 4 1
-                                           (setf skald:*skald-row* 1
-                                                 skald:*skald-col* 2)
+                                           (setf skald:*row* 1
+                                                 skald:*col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -662,8 +662,8 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 2
-                                           (setf skald:*skald-row* 1
-                                                 skald:*skald-col* 2)
+                                           (setf skald:*row* 1
+                                                 skald:*col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -685,8 +685,8 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 1 2
-                                           (setf skald:*skald-row* 1
-                                                 skald:*skald-col* 2)
+                                           (setf skald:*row* 1
+                                                 skald:*col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -708,8 +708,8 @@ test 4 ccc
                                                              :debug-mode :human-readable)
                                        (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 1 2
-                                           (setf skald:*skald-row* 1
-                                                 skald:*skald-col* 2)
+                                           (setf skald:*row* 1
+                                                 skald:*col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
         )
