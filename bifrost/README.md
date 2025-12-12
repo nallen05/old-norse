@@ -17,6 +17,8 @@ Requirements
   - The terminal must support SGR mode (required for larger grid size).
   - To use mouse tracking features, the terminal must support XTERM mouse tracking protocol. (This isn't part of the official ANSI standard but is widely adopted as defacto standard & supported by most modern terminal emulators.)
 - Bifrost is implementation-dependent on SBCL.
+- Bifrost requires the following Quicklisp-available libraries:
+  - TRIVIAL-RAW-IO - Used to put the terminal into raw mode, bypassing line buffering so that individual keystrokes and escape sequences can be read immediately
 
 
 # Quick start playbook
@@ -103,6 +105,7 @@ Terminal emulators use ESCAPE SEQUENCES, which are special multi-character seque
 
 RUNE-READ/RUNE-WRITE map between escape sequences & simple s-expressions in order to make it easier to interact with the terminal emulator from lisp.
 
+
 ## Runes
 
 RUNE-READ/RUNE-WRITE are like READ-CHAR/WRITE-CHAR except that they read/write "runes", which can be either of the following:
@@ -114,22 +117,29 @@ RUNE-READ sets `*RUNE*, *RUNE-PAYLOAD*, *RUNE-CONTAINER*` with each call.
 RUNE-READ-NO-HANG is like RUNE-READ except that it returns immediatly. If nothing was read, it sets `*RUNE*, *RUNE-PAYLOAD*, *RUNE-CONTAINER*` all to NIL.
 
    
-## Cboxes & cbox layers
+## Cboxes (clickable boxes)
 
-If you define a click region with `REGISTER-CBOX!`, then raw mouse events such as `(:MOUSE-CLICK-LEFT row column)` are transformed into CBOX events such as `(:CBOX-CLICK-LEFT row column)` 
+Cboxes let you define clickable regions of the screen. Instead of handling raw  mouse coordinates, you can register rectangular regions to send named events when clicked/hovered.
+
+Without cboxes, you receive runes like (:MOUSE-CLICK-LEFT 5 12), & must manually check the coordinates.
+
+With cbox:
+ 1. setup with `(register-cbox! :my-button 5 10 7 20)`
+ 2. Then, if you receive a rune like `(:CBOX-CLICK-LEFT 5 12)` or `(:CBOX-HOVER 5 12) `
+ 3. You can check if `*PRESSED-CBOX*` or `*HOVER-CBOX*` is set to `:MY-BUTTON`
+
+When a mouse release occurs, Bifrost uses CL:EQUALP to compare the cbox under the cursor with the cbox that was originally clicked.
+- Simple identifiers like keywords work: `:ok-button`, `:cancel-button`
+- Structured identifiers also work: `(list :enemy enemy-id :attack attack-id)`, `(cons :menu item-name)`
+
 
 The CBOX related runes are:
 - `:CBOX-CLICK-LEFT, :CBOX-CLICK-MIDDLE, :CBOX-CLICK-RIGHT` - A button is left clicked, but not yet released.
 - `:CBOX-RELEASE` - comes after left/middle/right click
-- `:CBOX-UNCLICK-LEFT` - When the user clicks, then moves off of the button region before releasing in order to abort the click
+- `:CBOX-UNCLICK` - When the user left clicks, then moves off of the button region before releasing in order to abort the click
 - `:CBOX-HOVER` - like `:MOUSE-HOVER`, but over a CBOX
 
-When CBOXES are interacted with, RUNE-READ sets the following: 
-- `*HOVER-CBOX*, *HOVER-CBOX-CONTAINER*` - a CBOX currently being hovered over
-- `*PRESSED-CBOX*, *PRESSED-CBOX-container*` - a CBOX currently being held down by a left click
-
-
-Use WITH-CBOX-LAYER to accumulate & discard cbox registrations.
+CBOXES are accumulated in layers with WITH-CBOX-LAYER. Once you exit WITH-CBOX-LAYER all the registered cboxes will be discarded & need to be re-registered.
 
 
 ## Mouse events
@@ -216,12 +226,30 @@ WITH-BIFROST sets these variables:
   - NOTE: `RUNE-READ-NO-HANG` actually sometimes does do a very small amount of hanging: when processing escape sequences (see `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` for more info)
 
 `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*`
-  - the only way to tell the difference between an escape sequence & the user hitting ESC is to both (1) see if the characters that come next match a known escape sequence & (2) track the delay between characters (escape sequences should send all the characters at once). This parameter controls how many seconds to wait between characters before deciding that a sequence of valid escape sequence characters was sent too slowly to be an escape sequence
-  - it is used by both `RUNE-READ` & `RUNE-READ-NO-HANG` to process escape sequences
-  - if you set `*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*` to NIL, then you can enter escape sequences character-by-character by hand for testing/debugging purposes
-  - it defaults to 0.01
-    - if you are using local connection you could turn this down (eg: 0.05)
-    - if you are on a very high latency remote connection (eg SSH or TTYD) you might want to turn this up (eg: 0.15-0.2)
+  - the only way to tell the difference between an escape sequence & the user hitting ESC is to both (1) see if the characters that come next match a known escape sequence & (2) track how much time has elapsed before an escape sequence is identified (escape sequences are typically sent all at once, but there could be small delay). This parameter controls how many seconds `RUNE-READ` & `RUNE-READ-NO-HANG` wait between characters before deciding that a sequence of valid escape sequence characters was sent too slowly to be an escape sequence
+  - default: 0.01 (10 milliseconds)
+  - adjustment guidelines:
+    - Local terminal: 0.005-0.01 is safe
+    - SSH over good connection: 0.01-0.02 
+    - High-latency connections (satellite, distant TTYD): 0.05-0.1
+    - Set to NIL to disable timeout entirely (useful for manual debugging, you can type escape sequences character by character)
+  - Higher values = more tolerant of network jitter, but ESC key feels sluggish
+  - Lower values = snappier ESC response, but may break escape sequences on slow links
+
+`*RUNE-READ-ESCAPE-SEQUENCE-MAX-HANG*`
+  - Controls the maximum delay (in seconds) between characters when reading 
+    an escape sequence
+  - Escape sequences from the terminal arrive as rapid bursts; manual ESC key 
+    presses are followed by a pause
+  - Default: 0.01 (10 milliseconds)
+  - Adjustment guidelines:
+    - Local terminal: 0.005-0.01 is safe
+    - SSH over good connection: 0.01-0.02 
+    - High-latency connections (satellite, distant TTYD): 0.05-0.1
+    - Set to NIL to disable timeout entirely (useful for manual debugging -- 
+      you can type escape sequences character by character)
+  - Higher values = more tolerant of network jitter, but ESC key feels sluggish
+  - Lower values = snappier ESC response, but may break escape sequences on slow links
 
 
 Tracking mouse events
@@ -303,26 +331,31 @@ RUNE-WRITE treats keywords as one-element lists as equivalent. So, for example, 
 
 ## COLORS
 
+Set foreground and background colors with:
+
+     (:FOREGROUND color-code)
+     (:BACKGROUND color-code)
+
+where `color-code` is the ANSI color digit (0-9):
+
+     COLOR-CODE   COLOR
+     -----------------------
+     0            Black
+     1            Red
+     2            Green
+     3            Yellow
+     4            Blue
+     5            Magenta
+     6            Cyan
+     7            White
+     9            Default (terminal's default color)
+
+These produce sequences like the following:
+
     ESCAPE SEQ           RUNE-TOKEN
     --------------------------------------
     ESC [ 3 color m      (:FORGROUND color)
     ESC [ 4 color m      (:BACKGROUND color)
-
-These are the understood colors:
-
-    COLOR        FG      BG
-    ------------------------
-    Black        30      40
-    Red          31      41
-    Green        32      42
-    Yellow       33      43
-    Blue         34      44
-    Magenta      35      45
-    Cyan         36      46
-    White        37      47
-    Default      39      49
-    Reset        0       0
-
 
 
 ## CURSOR MOVEMENT & VISIBILITY
