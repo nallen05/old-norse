@@ -619,7 +619,7 @@
     (setf (buffer-wiped-p *%display-buffer*)
           t)))
 
-(defun skald-init (&key wait-hook)
+(defun skald-init ()
   (with-skald-output *output*
     (skald-check-terminal-size)
     (bifrost:rune-write :reset
@@ -636,20 +636,14 @@
     (bifrost:rune-write :hide-cursor
                         *output*)
     (%wipe-buffers!)
-    (when wait-hook
-      (force-output *output*)
-      (funcall (coerce wait-hook 'function)))
     (finish-output *output*)
     (values)))
 
-(defun skald-clear (&key wait-hook)
+(defun skald-clear ()
   (with-skald-output *output*
     (bifrost:rune-write :clear
                         *output*)
     (%wipe-buffers!)
-    (when wait-hook
-      (force-output *output*)
-      (funcall (coerce wait-hook 'function)))
     (finish-output *output*)
     (values)))
 
@@ -668,7 +662,7 @@
         (ensure-valid-buffer *%display-buffer*))
   (clear-if-wiped! *%display-buffer*))
 
-(defun call-in-skald-draw (mode wait-hook thunk)
+(defun call-in-skald-draw (mode thunk)
   (assert (find mode '(:draw :overlay :force-overlay :prep :null)))
 
   ;; make sure the buffers are the correct size & clean
@@ -704,15 +698,11 @@
                t)))
 
       ;; finish output
-      (when wait-hook
-        (force-output *output*)
-        (funcall (coerce wait-hook 'function)))
       (finish-output *output*)
       (values))))
 
-(defmacro skald ((&optional (mode :draw) wait-hook) &body body)
+(defmacro skald ((&optional (mode :draw)) &body body)
   `(call-in-skald-draw ,mode
-                       ,wait-hook
                        (lambda ()
                          "SKALD-DRAW thunk"
                          ,@body)))
