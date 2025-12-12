@@ -53,7 +53,7 @@
            :*terminal-size-override* ;; user configurable          
            
            ;; updating the screen via change buffer
-           :skald-draw                   ;; :mode=draw,overlay,force-overlay,prep,null
+           :skald                    ;; :mode=draw,overlay,force-overlay,prep,null
            :*output*
            :*row*
            :*col*
@@ -74,7 +74,7 @@
 	         :grid
  	         :column
 	         :window
-;;	       :row                 ;; not yet implemented
+;;	       :row                    ;; not yet implemented
 
            ;; defining & referencing colors
 	         :def-color
@@ -710,7 +710,7 @@
       (finish-output *output*)
       (values))))
 
-(defmacro skald-draw ((&optional (mode :draw) wait-hook) &body body)
+(defmacro skald ((&optional (mode :draw) wait-hook) &body body)
   `(call-in-skald-draw ,mode
                        ,wait-hook
                        (lambda ()
@@ -718,7 +718,7 @@
                          ,@body)))
 
 
-;;;; forms used within SKALD-DRAW
+;;;; forms used within SKALD
 
 ;; setup: transparant & fill char
 
@@ -1134,7 +1134,7 @@ Writes to the change buffer
 
 (defun span* (row column plist &rest subsegments)
   (unless *%within-skald-draw*
-    (error "SPAN called outside of SKALD-DRAW: ~S ~S ~S" row column subsegments))
+    (error "SPAN called outside of SKALD: ~S ~S ~S" row column subsegments))
   (with-plist plist
     (with-extend-style
       (with-transparant-and-fill-char
@@ -1307,7 +1307,7 @@ Writes to the change buffer
 
 (defun sprite* (row column plist &rest sprites)
   (unless *%within-skald-draw*
-    (error "SPRITE called outside of SKALD-DRAW: ~S ~S ~S" row column sprites))
+    (error "SPRITE called outside of SKALD: ~S ~S ~S" row column sprites))
   (with-plist plist
     (with-extend-style
       (with-transparant-and-fill-char
@@ -1526,7 +1526,7 @@ Writes to the change buffer
 
 (defun solo-window* (row column plist &rest sprites)
   (unless *%within-skald-draw*
-    (error "WINDOW called outside of SKALD-DRAW: ~S ~S ~S" row column sprites))
+    (error "WINDOW called outside of SKALD: ~S ~S ~S" row column sprites))
   (with-plist plist
     (with-window-grid row column
       (with-window-grid-column
@@ -1558,7 +1558,7 @@ Writes to the change buffer
 
 (defun window* (plist &rest sprites)
   (unless *%within-skald-draw*
-    (error "WINDOW called outside of SKALD-DRAW: ~S" sprites))
+    (error "WINDOW called outside of SKALD: ~S" sprites))
   (assert (boundp '*window-border*))
   (assert (boundp '*%plist*))
   (assert *%grid-row-count*)
