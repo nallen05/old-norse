@@ -21,12 +21,12 @@
     #+nil
     (skald:with-skald-test (:override-terminal-size '(24 80))
       (skald:skald-clear)
-      (skald:skald (:force-overlay)
+      (skald:skald-draw (:force-overlay)
 	      (skald:span (1 1) "foo")
 	      (skald:span (3 6) "bar")
 	      (skald:span (6 12) "baz"))
       (sleep 1)
-      (skald:skald (:force-overlay)
+      (skald:skald-draw (:force-overlay)
 	      (skald:span (2 1) "FOO")
 	      (skald:span (4 6) "BAR")
 	      (skald:span (7 12) "BAZ"))
@@ -35,17 +35,17 @@
     #+nil
     (skald:with-skald-test (:override-terminal-size '(24 80))
       (skald:skald-clear)
-	    (skald:skald (:force-overlay)
+	    (skald:skald-draw (:force-overlay)
 	      (skald:span (1 1)
 	        `(:bg :green
 	           "GREEN_SPAN")))
 	    (sleep 1)
-	    (skald:skald (:force-overlay)
+	    (skald:skald-draw (:force-overlay)
 	      (skald:span (2 12)
 	        `(:bg :blue
 	           "BLUE_SPAN")))
 	    (sleep 1)
-	    (skald:skald (:force-overlay)
+	    (skald:skald-draw (:force-overlay)
 	      (skald:span (6 10)
 	        `(:bg :red
 	           "RED_SPAN"))))
@@ -56,7 +56,7 @@
 		                     (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
                                                  :output nil)
-                           (skald:skald (:force-overlay)
+                           (skald:skald-draw (:force-overlay)
 			                       (skald:span (2 2) "test1 aaa"))))
 
       (shieldwall:shield ":FORCE-OVERLAY in :HUMAN-READABLE mode"
@@ -65,7 +65,7 @@
 		                     (skald:with-skald-test (:override-terminal-size '(24 80)
                                                    :debug-mode :human-readable
                                                  :output nil)
-                           (skald:skald (:force-overlay)
+                           (skald:skald-draw (:force-overlay)
 			                       (skald:span (2 2) "test1 aaa"))))
 
       
@@ -79,13 +79,13 @@
                            
 		                       (list
                             (skald:with-skald-test (:output nil)
-                              (skald:skald (:force-overlay)
+                              (skald:skald-draw (:force-overlay)
 		                            (skald:span (2 2) "test2 aaa")))
                             (skald:with-skald-test (:output nil)
-                              (skald:skald (:force-overlay)
+                              (skald:skald-draw (:force-overlay)
 		                            (skald:span (2 2) "test2 bbb")))
                             (skald:with-skald-test (:output nil)
-                              (skald:skald (:force-overlay)
+                              (skald:skald-draw (:force-overlay)
 		                            (skald:span (2 2) "test2 ccc"))))))
 
       (shieldwall:shield "slightly more complex :FORCE-OVERLAY in :HUMAN-READABLE mode"
@@ -102,13 +102,13 @@
                            
 		                       (list
                             (skald:with-skald-test (:output nil)
-                              (skald:skald (:force-overlay)
+                              (skald:skald-draw (:force-overlay)
 		                            (skald:span (2 2) "test2 aaa")))
                             (skald:with-skald-test (:output nil)
-                              (skald:skald (:force-overlay)
+                              (skald:skald-draw (:force-overlay)
 		                            (skald:span (2 2) "test2 bbb")))
                             (skald:with-skald-test (:output nil)
-                              (skald:skald (:force-overlay)
+                              (skald:skald-draw (:force-overlay)
 		                            (skald:span (2 2) "test2 ccc"))))))
 
 
@@ -119,7 +119,7 @@
                                                  :debug-mode :machine-readable
                                                  :output nil)
                            (skald:skald-init)
-		                       (skald:skald (:force-overlay)
+		                       (skald:skald-draw (:force-overlay)
 		                         (skald:span (3 3) "test2 aaa"))))))
 
       
@@ -130,7 +130,7 @@
                                                  :debug-mode :machine-readable
                                                  :output nil)
                            (skald:skald-init)
-		                       (skald:skald (:overlay)
+		                       (skald:skald-draw (:overlay)
 		                         (skald:span (3 3) "test2 aaa"))))
 
       (shieldwall:shield "slightly more complex :OVERLAY in :MACHINE-READABLE mode"
@@ -143,13 +143,13 @@
                            (list (skald:with-skald-test (:output nil)
                                    (skald:skald-init))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald (:overlay)
+                                   (skald:skald-draw (:overlay)
 		                                 (skald:span (3 3) "test2 aaa")))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald (:overlay)
+                                   (skald:skald-draw (:overlay)
 		                                 (skald:span (3 3) "test2 aaa")))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald (:overlay)
+                                   (skald:skald-draw (:overlay)
 		                                 (skald:span (3 3) "test2 bbb"))))))
       
       (shieldwall:shield ":OVERLAY in :HUMAN-READABLE mode"
@@ -166,24 +166,24 @@
                            (list (skald:with-skald-test (:output nil)
                                    (skald:skald-init))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald (:overlay)
+                                   (skald:skald-draw (:overlay)
 		                                 (skald:span (3 3) "test2 aaa")))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald (:overlay)
+                                   (skald:skald-draw (:overlay)
 		                                 (skald:span (3 3) "test2 aaa")))                               
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald (:overlay)
+                                   (skald:skald-draw (:overlay)
 		                                 (skald:span (3 3) "test2 bbb"))))))
       )
     #+nil
     (skald:with-skald-test (:override-terminal-size '(24 80))
       (skald:skald-clear)
-      (skald:skald ()
+      (skald:skald-draw ()
 	      (skald:span (1 1) "foo")
 	      (skald:span (3 6) "bar")
 	      (skald:span (6 12) "baz"))
       (sleep 1)
-      (skald:skald ()
+      (skald:skald-draw ()
 	      (skald:span (2 1) "FOO")
 	      (skald:span (4 6) "BAR")
 	      (skald:span (7 12) "BAZ"))
@@ -192,17 +192,17 @@
     #+nil
     (skald:with-skald-test (:override-terminal-size '(24 80))
       (skald:skald-clear)
-	    (skald:skald ()
+	    (skald:skald-draw ()
 	      (skald:span (1 1)
 	        `(:bg :green
 	           "GREEN_SPAN")))
 	    (sleep 1)
-	    (skald:skald ()
+	    (skald:skald-draw ()
 	      (skald:span (2 12)
 	        `(:bg :blue
 	           "BLUE_SPAN")))
 	    (sleep 1)
-	    (skald:skald ()
+	    (skald:skald-draw ()
 	      (skald:span (6 10)
 	        `(:bg :red
 	           "RED_SPAN"))))
@@ -218,15 +218,15 @@
 		                       (list (skald:with-skald-test (:output nil)
                                    (skald:skald-init))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald ()
+                                   (skald:skald-draw ()
                                      (skald:span (2 2)
                                        "test 4 aaa")))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald ()
+                                   (skald:skald-draw ()
                                      (skald:span (2 2)
                                        "test 4 bbb")))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald ()
+                                   (skald:skald-draw ()
                                      (skald:span (3 3)
                                        "test 4 ccc"))))))
   
@@ -245,15 +245,15 @@ test 4 ccc
 		                       (list (skald:with-skald-test (:output nil)
                                    (skald:skald-init))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald ()
+                                   (skald:skald-draw ()
                                      (skald:span (2 2)
                                        "test 4 aaa")))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald ()
+                                   (skald:skald-draw ()
                                      (skald:span (2 2)
                                        "test 4 bbb")))
                                  (skald:with-skald-test (:output nil)
-                                   (skald:skald ()
+                                   (skald:skald-draw ()
                                      (skald:span (3 3)
                                        "test 4 ccc"))))))
       )
@@ -268,12 +268,12 @@ test 4 ccc
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
-                                       (skald:skald (:prep)
+                                       (skald:skald-draw (:prep)
                                          (skald:span (1 1)
                                            "abcd")))
                                      (skald:with-skald-test (:output nil
                                                              :debug-mode :human-readable)
-                                       (skald:skald ()
+                                       (skald:skald-draw ()
                                          (skald:span (1 2)
                                            #\x))))
                                    'list))
@@ -284,7 +284,7 @@ test 4 ccc
                                                            :output nil
                                                            :debug-mode :human-readable)
                                      (skald:skald-init)
-                                     (skald:skald ()
+                                     (skald:skald-draw ()
                                        (skald:span (1 0)  #\a)
                                        (skald:span (2 1)  #\b)
                                        (skald:span (3 79) #\c)
@@ -307,10 +307,10 @@ test 4 ccc
                                                                        :output nil
                                                                        :debug-mode :human-readable)
                                                  (skald:skald-init)
-                                                 (skald:skald ()
+                                                 (skald:skald-draw ()
                                                    (skald::with-window-bounding-box 2 5 2 5
-                                                     (setf skald:*row* row
-                                                           skald:*col* col)
+                                                     (setf skald:*skald-row* row
+                                                           skald:*skald-col* col)
                                                      (skald::%render-span "abcd"))))
                                                'list)))
                                    '((1 1)
@@ -333,12 +333,12 @@ test 4 ccc
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
-                                       (skald:skald (:prep)
+                                       (skald:skald-draw (:prep)
                                          (skald:span (1 1)
                                            "abcd")))
                                      (skald:with-skald-test (:output nil
                                                              :debug-mode :human-readable)
-                                       (skald:skald ()
+                                       (skald:skald-draw ()
                                          (skald:span (1 2)
                                            #\grinning_face))))
                                    'list))
@@ -349,13 +349,13 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              #\grinning_face
                                              "cd")))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald:span (1 2)
                                              #\x))))
                                      'list))
@@ -365,14 +365,14 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              #\a
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald:span (1 2)
                                              #\x))))
                                      'list))
@@ -382,13 +382,13 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              "ab"
                                              #\grinning_face)))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald:span (1 2)
                                              #\x))))
                                      'list))
@@ -407,17 +407,17 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              #\grinning_face
                                              #\c
                                              #\d)))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 3
-                                             (setf skald:*row* 1
-                                                   skald:*col* 2)
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
                                                (skald::%render-span #\x)))))
                                      'list))
 
@@ -426,17 +426,17 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              #\a
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 3
-                                             (setf skald:*row* 1
-                                                   skald:*col* 2)
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
 
@@ -445,17 +445,17 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              #\a
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 3 2
-                                             (setf skald:*row* 1
-                                                   skald:*col* 2)
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
 
@@ -464,17 +464,17 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              #\a
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 4 1
-                                             (setf skald:*row* 1
-                                                   skald:*col* 2)
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
 
@@ -483,17 +483,17 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              #\a
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 2 2
-                                             (setf skald:*row* 1
-                                                   skald:*col* 2)
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
           
@@ -502,17 +502,17 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              #\a
                                              #\grinning_face
                                              #\d)))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 1 2
-                                             (setf skald:*row* 1
-                                                   skald:*col* 2)
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
           
@@ -521,17 +521,17 @@ test 4 ccc
                              (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                        (skald:with-skald-test (:output nil)
                                          (skald:skald-init)
-                                         (skald:skald (:prep)
+                                         (skald:skald-draw (:prep)
                                            (skald:span (1 1)
                                              #\grinning_face
                                              #\c
                                              #\d)))
                                        (skald:with-skald-test (:output nil
                                                                :debug-mode :human-readable)
-                                         (skald:skald ()
+                                         (skald:skald-draw ()
                                            (skald::with-window-bounding-box 1 3 1 2
-                                             (setf skald:*row* 1
-                                                   skald:*col* 2)
+                                             (setf skald:*skald-row* 1
+                                                   skald:*skald-col* 2)
                                              (skald::%render-span #\x)))))
                                      'list))
           )
@@ -551,15 +551,15 @@ test 4 ccc
                                        (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                                  (skald:with-skald-test (:output nil)
                                                    (skald:skald-init)
-                                                   (skald:skald (:prep)
+                                                   (skald:skald-draw (:prep)
                                                      (skald:span (1 1)
                                                        "abcd")))
                                                  (skald:with-skald-test (:output nil
                                                                          :debug-mode :human-readable)
-                                                   (skald:skald ()
+                                                   (skald:skald-draw ()
                                                      (skald::with-window-bounding-box 1 2 column width
-                                                       (setf skald:*row* 1
-                                                             skald:*col* 2)
+                                                       (setf skald:*skald-row* 1
+                                                             skald:*skald-col* 2)
                                                        (skald::%render-span #\grinning_face)))))
                                                'list)))
                                    '((1 4)
@@ -576,17 +576,17 @@ test 4 ccc
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
-                                       (skald:skald (:prep)
+                                       (skald:skald-draw (:prep)
                                          (skald:span (1 1)
                                            #\grinning_face
                                            #\c
                                            #\d)))
                                      (skald:with-skald-test (:output nil
                                                              :debug-mode :human-readable)
-                                       (skald:skald ()
+                                       (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 3
-                                           (setf skald:*row* 1
-                                                 skald:*col* 2)
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
         
@@ -595,17 +595,17 @@ test 4 ccc
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
-                                       (skald:skald (:prep)
+                                       (skald:skald-draw (:prep)
                                          (skald:span (1 1)
                                            #\a
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
                                                              :debug-mode :human-readable)
-                                       (skald:skald ()
+                                       (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 3
-                                           (setf skald:*row* 1
-                                                 skald:*col* 2)
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -614,17 +614,17 @@ test 4 ccc
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
-                                       (skald:skald (:prep)
+                                       (skald:skald-draw (:prep)
                                          (skald:span (1 1)
                                            #\a
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
                                                              :debug-mode :human-readable)
-                                       (skald:skald ()
+                                       (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 3 2
-                                           (setf skald:*row* 1
-                                                 skald:*col* 2)
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -634,17 +634,17 @@ test 4 ccc
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
-                                       (skald:skald (:prep)
+                                       (skald:skald-draw (:prep)
                                          (skald:span (1 1)
                                            #\a
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
                                                              :debug-mode :human-readable)
-                                       (skald:skald ()
+                                       (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 4 1
-                                           (setf skald:*row* 1
-                                                 skald:*col* 2)
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -653,17 +653,17 @@ test 4 ccc
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
-                                       (skald:skald (:prep)
+                                       (skald:skald-draw (:prep)
                                          (skald:span (1 1)
                                            #\a
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
                                                              :debug-mode :human-readable)
-                                       (skald:skald ()
+                                       (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 2 2
-                                           (setf skald:*row* 1
-                                                 skald:*col* 2)
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -676,17 +676,17 @@ test 4 ccc
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
-                                       (skald:skald (:prep)
+                                       (skald:skald-draw (:prep)
                                          (skald:span (1 1)
                                            #\a
                                            #\neutral_face
                                            #\d)))
                                      (skald:with-skald-test (:output nil
                                                              :debug-mode :human-readable)
-                                       (skald:skald ()
+                                       (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 1 2
-                                           (setf skald:*row* 1
-                                                 skald:*col* 2)
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
 
@@ -699,17 +699,17 @@ test 4 ccc
                            (coerce (skald:with-skald-test (:override-terminal-size '(24 80))
                                      (skald:with-skald-test (:output nil)
                                        (skald:skald-init)
-                                       (skald:skald (:prep)
+                                       (skald:skald-draw (:prep)
                                          (skald:span (1 1)
                                            #\neutral_face
                                            #\c
                                            #\d)))
                                      (skald:with-skald-test (:output nil
                                                              :debug-mode :human-readable)
-                                       (skald:skald ()
+                                       (skald:skald-draw ()
                                          (skald::with-window-bounding-box 1 3 1 2
-                                           (setf skald:*row* 1
-                                                 skald:*col* 2)
+                                           (setf skald:*skald-row* 1
+                                                 skald:*skald-col* 2)
                                            (skald::%render-span #\grinning_face)))))
                                    'list))
         )

@@ -155,7 +155,7 @@
 		                       (skald:span (8 9) "|"))))
 #+nil
     (shieldwall:shield "INVESTIGATE THIS TEST"
-                       '(2 4 3 13)
+                       '(4 3 13)
                        (progn
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
@@ -164,10 +164,9 @@
                              (skald:span (2 4)
                                "123456"
                                "789")))
-                         (list bifrost:*cbox-min-row*
-                               bifrost:*cbox-min-column*
-                               bifrost:*cbox-max-row*
-                               bifrost:*cbox-max-column*)))
+                         (list skald:*extant-min-col*
+                               skald:*row*
+                               skald:*extant-max-col*)))
     )
 
   (shieldwall:with-shield-group "SPRITE/:SPRITE tests"
@@ -236,7 +235,7 @@
 			                       "not green"))))
 #+nil
     (shieldwall:shield "INVESTIGATE THIS TEST"
-                       '(2 4 3 13)
+                       '(4 3 13)
                        (progn
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
@@ -244,13 +243,12 @@
                            (skald:skald (:force-overlay)
                              (skald:sprite (2 4)
                                "123456789")))
-                         (list bifrost:*cbox-min-row*
-                               bifrost:*cbox-min-column*
-                               bifrost:*cbox-max-row*
-                               bifrost:*cbox-max-column*)))
+                         (list skald:*extant-min-col*
+                               skald:*row*
+                               skald:*extant-max-col*)))
 #+nil
     (shieldwall:shield "INVESTIGATE THIS TEST"
-                       '(2 4 5 11)
+                       '(4 5 11)
                        (progn
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
@@ -260,10 +258,9 @@
                                "0"
                                "1234567"
                                "89")))
-                         (list bifrost:*cbox-min-row*
-                               bifrost:*cbox-min-column*
-                               bifrost:*cbox-max-row*
-                               bifrost:*cbox-max-column*)))
+                         (list skald:*extant-min-col*
+                               skald:*row*
+                               skald:*extant-max-col*)))
     )
   
   (shieldwall:with-shield-group "SOLO-WINDOW tests"
@@ -660,7 +657,7 @@
 
 #+nil
       (shieldwall:shield "INVESTIGATE THIS TEST"
-                         '(2 4 7 9)
+                         '(4 7 9)
                          (progn
                            (skald:with-skald-test (:override-terminal-size '(24 80)
                                                    :debug-mode :machine-readable
@@ -677,13 +674,12 @@
                                  "123456789123456789123456789"
                                  "123456789123456789123456789"
                                  "123456789123456789123456789")))
-                           (list bifrost:*cbox-min-row*
-                                 bifrost:*cbox-min-column*
-                                 bifrost:*cbox-max-row*
-                                 bifrost:*cbox-max-column*)))
+                           (list skald:*extant-min-col*
+                                 skald:*row*
+                                 skald:*extant-max-col*)))
 #+nil
       (shieldwall:shield "INVESTIGATE THIS TEST"
-                         '(2 4 9 11)
+                         '(4 9 11)
                          (progn
                            (skald:with-skald-test (:override-terminal-size '(24 80)
                                                    :debug-mode :machine-readable
@@ -700,10 +696,9 @@
                                  "123456789123456789123456789"
                                  "123456789123456789123456789"
                                  "123456789123456789123456789")))
-                           (list bifrost:*cbox-min-row*
-                                 bifrost:*cbox-min-column*
-                                 bifrost:*cbox-max-row*
-                                 bifrost:*cbox-max-column*)))
+                           (list skald:*extant-min-col*
+                                 skald:*row*
+                                 skald:*extant-max-col*)))
     )
 
 
