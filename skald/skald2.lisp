@@ -53,8 +53,9 @@
            :*terminal-size-override* ;; user configurable          
            
            ;; updating the screen via change buffer
-           :skald                    ;; :mode=draw,overlay,force-overlay,prep,null
-           :*output*
+           :skald
+           :skald-overlay
+           :*override-skald-drawmode*  ;; :draw,:overlay,:force-overlay,:prep,:null
            :*row*
            :*col*
 
@@ -124,12 +125,12 @@
 (defvar *%display-buffer* nil)
 
 ;; writing to the change buffer
-
-(defparameter *output*         t)  ;; T -> *TERMINAL-IO*
-(defvar       *row*            0)
-(defvar       *col*         0)
-(defvar       *%within-skald-output* nil)
-(defvar       *%within-skald-draw*   nil)
+(defparameter *override-skald-drawmode* nil) ;; :draw, :overlay, :force-overlay, :prep, :null
+(defparameter *output*                  t)  ;; T -> *TERMINAL-IO*
+(defvar       *row*                     0)
+(defvar       *col*                     0)
+(defvar       *%within-skald-output*    nil)
+(defvar       *%within-skald-draw*      nil)
 
 ;; ASCII graphics library
 
@@ -568,31 +569,38 @@
 
 ;;;; debugging mode
 
-(defun call-in-skald-test (thunk &rest plist)
-  (let ((output (getf plist :output t)))
-    (if (null output)
-        (with-output-to-string (s)
-          (apply #'call-in-skald-test
-                 thunk
-                 :output s
-                 plist))
-        (let ((bifrost:*bifrost-debug-mode* (getf plist
-                                                     :debug-mode
-                                                     bifrost:*bifrost-debug-mode*))
-              (*terminal-size-override* (getf plist
-                                                    :override-terminal-size
-                                                    *terminal-size-override*)))
-          (declare (special bifrost:*bifrost-debug-mode*
-                            *terminal-size-override*))
-          (with-skald-output output
-            (funcall thunk))))))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun %parse-keywords (keywords)
+    (when keywords
+      (destructuring-bind (1st 2nd . rest) keywords
+        (assert (keywordp 1st))
+        (cons (list 1st
+                    (gensym (format nil "~a-" 1st))
+                    2nd)
+              (%parse-keywords rest))))))
+              
 
-(defmacro with-skald-test ((&rest kwd-args &key debug-mode output override-terminal-size) &body body)
-  (declare (ignore debug-mode output override-terminal-size))
-  `(call-in-skald-test (lambda ()
-                         "WITH-SKALD-DEBUG thunk"
-                         ,@body)
-                       ,@kwd-args))
+(defmacro with-skald-test ((&rest kwd-args &key debug-mode override-drawmode override-terminal-size)
+                           &body body)
+  (declare (ignore debug-mode override-drawmode override-terminal-size))
+  (let ((output (gensym "skald-test-string-output-stream-"))
+        (parsed (%parse-keywords kwd-args)))
+    `(let ,(mapcar #'cdr parsed)        
+       (let ((bifrost:*bifrost-debug-mode* (or ,(second (assoc :debug-mode parsed))
+                                               :machine-readable))
+             (*terminal-size-override* (or ,(second (assoc :override-terminal-size parsed))
+                                           *terminal-size-override*
+                                           '(24 80)))
+             (*override-skald-drawmode* (or ,(second (assoc :override-drawmode parsed))
+                                            :force-overlay)))
+         (declare (special bifrost:*bifrost-debug-mode*
+                           *terminal-size-override*
+                           *override-skald-drawmode*))
+         (with-output-to-string (,output)
+           (with-skald-output ,output
+             ,@body))))))
+
+
 
 
 
@@ -709,10 +717,16 @@
       (finish-output *output*)
       (values))))
 
-(defmacro skald ((&optional (mode :draw)) &body body)
-  `(call-in-skald-draw ,mode
+(defmacro skald (&body body)
+  `(call-in-skald-draw (or *override-skald-drawmode* :draw)
                        (lambda ()
-                         "SKALD-DRAW thunk"
+                         "SKALD draw thunk"
+                         ,@body)))
+
+(defmacro skald-overlay (&body body)
+  `(call-in-skald-draw (or *override-skald-drawmode* :overlay)
+                       (lambda ()
+                         "SKALD-OVERLAY draw thunk"
                          ,@body)))
 
 
@@ -1284,8 +1298,7 @@ Writes to the change buffer
       (list (destructuring-bind (1st . rest)
 		            form
 	            (ecase 1st
-		            (:nodisplay)
-		             nil)
+		            (:nodisplay nil)
 		            (:span
 		                (%nl)
 		              (map nil #'%render-span/alignment-preview rest))

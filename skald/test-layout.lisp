@@ -66,33 +66,27 @@
 	                 "buzz")))))
 
     
-         ;;;; unit tests
+    ;;;; unit tests
     (shieldwall:shield "span as strings"
                        "\\x1B[6;7Hfoobarbaz"
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
-		                         (skald:skald (:force-overlay)
-		                           (skald:span (6 7)
-		                             "foo"
-		                             "bar"
-		                             "baz"))))
+                       (skald:with-skald-test ()
+		                     (skald:skald
+		                       (skald:span (6 7)
+		                         "foo"
+		                         "bar"
+		                         "baz"))))
 
     (shieldwall:shield "span as newlines"
                        "\\x1B[6;7Honetwothree"
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                               :debug-mode :machine-readable
-                                               :output nil)
-		                     (skald:skald (:force-overlay)
+                       (skald:with-skald-test ()
+		                     (skald:skald
 		                       (skald:span (6 7)
 		                         (format nil "~%one~%two~%three~%")))))
 
     (shieldwall:shield "span with colors"
                        "\\x1B[43m\\x1B[6;7Hfoo\\x1B[31m bar\\x1B[37m baz\\x1B[34m buzz\\x1B[40m\\x1B[37m boof"
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
-		                         (skald:skald (:force-overlay)
+                       (skald:with-skald-test ()
+		                         (skald:skald
 		                           (skald:span (6 7)
 		                             `(:bg :yellow
 			                              "foo"
@@ -130,10 +124,8 @@
 
     (shieldwall:shield "span alignment (even width)"
                        "\\x1B[3;9H|\\x1B[4;9H|VEN_NUM\\x1B[5;5HEVEN|NUM\\x1B[6;6HEVE|_NUM\\x1B[7;2HEVEN_NU|\\x1B[8;9H|"
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                               :debug-mode :machine-readable
-                                               :output nil)
-		                     (skald:skald (:force-overlay)
+                       (skald:with-skald-test ()
+		                     (skald:skald
 		                       (skald:span (3 9) "|")
 		                       (skald:span (4 9 :align :left) "|VEN_NUM")
 		                       (skald:span (5 9 :align :center-left) "EVEN|NUM")
@@ -143,10 +135,8 @@
 
     (shieldwall:shield "span alignment (odd width)"
                        "\\x1B[3;9H|\\x1B[4;9H|DD_NUM\\x1B[5;5HODD_|UM\\x1B[6;5HODD_|UM\\x1B[7;3HODD_NU|\\x1B[8;9H|"
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :machine-readable
-                                               :output nil)
-		                     (skald:skald (:force-overlay)
+                       (skald:with-skald-test ()
+		                     (skald:skald
 		                       (skald:span (3 9) "|")
 		                       (skald:span (4 9 :align :left) "|DD_NUM")
 		                       (skald:span (5 9 :align :center-left) "ODD_|UM")
@@ -160,7 +150,7 @@
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
                                                  :output nil)
-                           (skald:skald (:force-overlay)
+                           (skald:skald
                              (skald:span (2 4)
                                "123456"
                                "789")))
@@ -200,10 +190,8 @@
         ;;;; unit tests   
     (shieldwall:shield "sprite as strings"
                        "\\x1B[6;7Hfoo\\x1B[7;7Hbar\\x1B[8;7Hbaz"
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :machine-readable
-                                               :output nil)
-		                       (skald:skald (:force-overlay)
+                       (skald:with-skald-test ()
+		                       (skald:skald
 		                         (skald:sprite (6 7)
 		                           "foo"
 		                           "bar"
@@ -211,19 +199,15 @@
 
     (shieldwall:shield "sprite as newlines"
      "\\x1B[7;7Hone\\x1B[8;7Htwo\\x1B[9;7Hthree"
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                               :debug-mode :machine-readable
-                                               :output nil)
-		                     (skald:skald (:force-overlay)
+                       (skald:with-skald-test ()
+		                     (skald:skald
 		                       (skald:sprite (6 7)
 		                         (format nil "~%one~%two~%three~%")))))
     
     (shieldwall:shield "sprite with colors"
                        "\\x1B[9;8Hfoo\\x1B[31m\\x1B[10;8Hbar\\x1B[32mbaz\\x1B[37mbiz\\x1B[42m\\x1B[13;8Hbuz\\x1B[15;8Hzzzzz\\x1B[40m\\x1B[16;8Hnot green"
-                       (skald:with-skald-test (:override-terminal-size '(24 80)
-                                               :debug-mode :machine-readable
-                                               :output nil)
-		                     (skald:skald (:force-overlay)
+                       (skald:with-skald-test ()
+		                     (skald:skald
 		                       (skald:sprite (9 8)
 			                       "foo"
 			                       `(:span
@@ -240,7 +224,7 @@
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
                                                  :output nil)
-                           (skald:skald (:force-overlay)
+                           (skald:skald
                              (skald:sprite (2 4)
                                "123456789")))
                          (list skald:*extant-min-col*
@@ -253,7 +237,7 @@
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
                                                  :output nil)
-                           (skald:skald (:force-overlay)
+                           (skald:skald
                              (skald:sprite (2 4)
                                "0"
                                "1234567"
@@ -306,10 +290,8 @@
 |          |
 +----------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :human-readable
-                                                 :output nil)
-		                       (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :human-readable)
+		                       (skald:skald
 		                         (skald:solo-window (3 3 :width 10
 					                                           :height 10)
 			                         "foo"
@@ -324,10 +306,8 @@
 
       (shieldwall:shield "SOLO-WINDOW :MACHINE-READABLE"
                          "\\x1B[4;4H+----------+\\x1B[5;4H|foo       |\\x1B[6;4H|\\x1B[43m\\x1B[31mbar       \\x1B[40m\\x1B[37m|\\x1B[7;4H|\\x1B[43mbaz       \\x1B[40m|\\x1B[8;4H|\\x1B[43m\\x1B[34mbuzz      \\x1B[40m\\x1B[37m|\\x1B[9;4H|boof      |\\x1B[10;4H|          |\\x1B[11;4H|          |\\x1B[12;4H|          |\\x1B[13;4H|          |\\x1B[14;4H|          |\\x1B[15;4H+----------+"
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :machine-readable
-                                                 :output nil)
-		                       (skald:skald (:force-overlay)
+                         (skald:with-skald-test ()
+		                       (skald:skald
 		                         (skald:solo-window (4 4 :width 10
 					                                           :height 10)
 			                         "foo"
@@ -356,10 +336,8 @@
 |~~~~~~~~~~|
 +----------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :human-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :human-readable)
+                           (skald:skald
 			                       (skald:solo-window (4 4 :width 10
 					                                           :height 10
 					                                           :fill-char #\~)
@@ -387,10 +365,8 @@
 |~~~~~~~~~~|
 +----------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :human-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :human-readable)
+                           (skald:skald
 				                     (skald:solo-window (4 4 :width 10
 						                                         :height 10
 						                                         :fill-char #\~
@@ -408,10 +384,8 @@
 
       (shieldwall:shield ":FILL-CHAR window :MACHINE-READABLE"
                          "\\x1B[4;4H+----------+\\x1B[5;4H|foo~~~~~~~|\\x1B[6;4H|\\x1B[43m\\x1B[31mbar~~~~~~~\\x1B[40m\\x1B[37m|\\x1B[7;4H|\\x1B[43mbaz~~~~~~~\\x1B[40m|\\x1B[8;4H|\\x1B[43m\\x1B[34mbuzz~~~~~~\\x1B[40m\\x1B[37m|\\x1B[9;4H|boof~~~~~~|\\x1B[10;4H|~~~~~~~~~~|\\x1B[11;4H|~~~~~~~~~~|\\x1B[12;4H|~~~~~~~~~~|\\x1B[13;4H|~~~~~~~~~~|\\x1B[14;4H|~~~~~~~~~~|\\x1B[15;4H+----------+"
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :machine-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :machine-readable)
+                           (skald:skald
 		                         (skald:solo-window (4 4 :width 10
 					                                           :height 10
 					                                           :fill-char #\~)
@@ -461,10 +435,8 @@
 |          |
 +----------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :human-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :human-readable)
+                           (skald:skald
 			                       (skald:solo-window (2 2 :align :right)
 			                         "foo"
 			                         "baar"
@@ -483,10 +455,8 @@
 |   7: there's a border  |
 +------------------------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :human-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :human-readable)
+                           (skald:skald
 			                       (skald:solo-window (4 4 :width 24
 					                                           :height 7
 					                                           :border t
@@ -505,10 +475,8 @@
 
 	    (shieldwall:shield "widow right alignment :MACHINE-READABLE"
                          "\\x1B[4;4H+------------------------+\\x1B[5;4H|   THERE ARE 7 ROWS     |\\x1B[6;4H|   red green in row 2???|\\x1B[7;4H|   row 3                |\\x1B[8;4H|   \\x1B[31mred\\x1B[37m \\x1B[32mgreen\\x1B[37m in row 4   |\\x1B[9;4H|   row 5                |\\x1B[10;4H|   row 6                |\\x1B[11;4H|   7: there's a border  |\\x1B[12;4H+------------------------+"
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :machine-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test ()
+                           (skald:skald
 			                       (skald:solo-window (4 4 :width 24
 					                                           :height 7
 					                                           :border t
@@ -564,10 +532,8 @@
 |    7: there's a border       |
 +------------------------------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :human-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :human-readable)
+                           (skald:skald
 			                       (skald:solo-window (4 4 :width 30
 					                                           :height 7
 					                                           :border t
@@ -595,10 +561,8 @@
 |ere's a bord|
 +------------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :human-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :human-readable)
+                           (skald:skald
 			                       (skald:solo-window (4 4 :width 12
 					                                           :height 7
 					                                           :border t
@@ -640,10 +604,8 @@
       ;;;; unit test
         (shieldwall:shield "window colors 1"
                            "\\x1B[44m\\x1B[31m\\x1B[4;4H+------+\\x1B[5;4H|\\x1B[46m\\x1B[33m      \\x1B[44m\\x1B[31m|\\x1B[6;4H|\\x1B[46m\\x1B[33mone   \\x1B[44m\\x1B[31m|\\x1B[7;4H|\\x1B[46m\\x1B[33mtwo   \\x1B[44m\\x1B[31m|\\x1B[8;4H|\\x1B[46m\\x1B[33mthree \\x1B[44m\\x1B[31m|\\x1B[9;4H|\\x1B[46m\\x1B[33m      \\x1B[44m\\x1B[31m|\\x1B[10;4H+------+\\x1B[37m\\x1B[40m"
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :machine-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test ()
+                           (skald:skald
 		                         (skald:solo-window (4 4
 				                                           :width 6
 				                                           :height 5
@@ -662,7 +624,7 @@
                            (skald:with-skald-test (:override-terminal-size '(24 80)
                                                    :debug-mode :machine-readable
                                                    :output nil)
-                             (skald:skald (:force-overlay)
+                             (skald:skald
 		                           (skald:solo-window (2 4
 				                                             :width 5
 				                                             :height 5
@@ -684,7 +646,7 @@
                            (skald:with-skald-test (:override-terminal-size '(24 80)
                                                    :debug-mode :machine-readable
                                                    :output nil)
-                             (skald:skald (:force-overlay)
+                             (skald:skald
 		                           (skald:solo-window (2 4
 				                                             :width 5
 				                                             :height 5
@@ -770,10 +732,8 @@
 |    |
 +----+
 "
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :human-readable
-                                                     :output nil)
-                               (skald:skald (:force-overlay)
+                             (skald:with-skald-test (:debug-mode :human-readable)
+                               (skald:skald
 		                             (skald:grid (3 3 :width 4
 				                                          :height 3)
 			                             (skald:column ()
@@ -789,10 +749,8 @@
 |    |    |    |
 +----+----+----+
 "
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :human-readable
-                                                     :output nil)
-                               (skald:skald (:force-overlay)
+                             (skald:with-skald-test (:debug-mode :human-readable)
+                               (skald:skald
 		                             (skald:grid (3 3 :width 4 :height 3)
 			                             (skald:column ()
 			                               (skald:window () "1"))
@@ -816,10 +774,8 @@
 |    |    |    |
 +----+----+----+
 "
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :human-readable
-                                                     :output nil)
-                               (skald:skald (:force-overlay)
+                             (skald:with-skald-test (:debug-mode :human-readable)
+                               (skald:skald
 		                             (skald:grid (5 5 :width 4 :height 3)
 			                             (skald:column ()
 			                               (skald:window () "1")
@@ -848,10 +804,8 @@
               
               
 "
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :human-readable
-                                                     :output nil)
-                               (skald:skald (:force-overlay)
+                             (skald:with-skald-test (:debug-mode :human-readable)
+                               (skald:skald
 		                             (skald:grid (5 5 :width 4
 				                                          :height 3
 				                                          :border t
@@ -883,10 +837,8 @@
             
             
 "
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :human-readable
-                                                     :output nil)
-                               (skald:skald (:force-overlay)
+                             (skald:with-skald-test (:debug-mode :human-readable)
+                               (skald:skald
 		                             (skald:grid (5 5 :width 4
 				                                          :height 3
 				                                          :border nil)
@@ -910,29 +862,23 @@
 
         (shieldwall:shield "span :NODISPLAY"
                            ""
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
-		                         (skald:skald (:force-overlay)
+                           (skald:with-skald-test ()
+		                         (skald:skald
 		                           (skald:span (3 4)
 				                         :nodisplay))))
 
           
         (shieldwall:shield "span :NODISPLAY with args 1"
                            ""
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :machine-readable
-                                                   :output nil)
-		                           (skald:skald (:force-overlay)
+                           (skald:with-skald-test ()
+		                           (skald:skald
 		                             (skald:span (3 4)
 				                           '(:nodisplay "foo")))))
 
         (shieldwall:shield "span :NODISPLAY with args 2)"
                            "\\x1B[4;5Hfoobuz"
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :machine-readable
-                                                     :output nil)
-		                           (skald:skald (:force-overlay)
+                             (skald:with-skald-test ()
+		                           (skald:skald
 		                             (skald:span (4 5)
 			                             "foo"
 			                             '(:nodisplay "bar" (:span "baz"))
@@ -940,28 +886,22 @@
 
         (shieldwall:shield "sprite :NODISPLAY"
                            ""
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
-		                         (skald:skald (:force-overlay)
+                           (skald:with-skald-test ()
+		                         (skald:skald
 		                           (skald:sprite (3 4)
 				                         :nodisplay))))
           
         (shieldwall:shield "sprite :NODISPLAY with args 1"
                            ""
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
-		                         (skald:skald (:force-overlay)
+                           (skald:with-skald-test ()
+		                         (skald:skald
 		                           (skald:sprite (3 4)
 				                         '(:nodisplay "foo")))))
 
         (shieldwall:shield ":NODISPLAY mixe"
                            "\\x1B[4;5Hfoobuz"
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
-		                         (skald:skald (:force-overlay)
+                           (skald:with-skald-test ()
+		                         (skald:skald
 		                           (skald:span (4 5)
 			                           "foo"
 			                           '(:nodisplay "bar" (:span "baz"))
@@ -971,34 +911,43 @@
       (shieldwall:with-shield-group ":CALL-WITH-POINT"
 
 
-        (shieldwall:shield ":CALL-WITH-POINT in span"
-                           '(6 . 6)
+        (shieldwall:shield ":CALL-WITH-POINT within a window :SPAN"
+                           '("+----------+
+|foo       |
+|bar       |
+|baz       |
+|          |
+|          |
+|          |
+|          |
+|          |
+|          |
+|          |
++----------+
+"
+                             (14 . 15))
 		                       (let (point)
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :human-readable
-                                                     :output nil)
-                               (skald:skald (:force-overlay)
-			                           (skald:solo-window (3 3
-					                                             :width 10
-					                                             :height 10)
-			                             "foo"
-			                             "bar"
-			                             `(:span "ba"
-			                                (:call-with-point ,(lambda (x y)
-						                                               (setf point (cons x y))
-						                                               :nodisplay))
-			                                "z"))))
-		                         point))
+                             (list (skald:with-skald-test (:debug-mode :human-readable)
+                                     (skald:skald
+			                                 (skald:solo-window (3 3
+					                                                   :width 10
+					                                                   :height 10)
+			                                   "foo"
+			                                   `(:span "ba"
+                                            (:call-with-point (lambda (row col)
+                                                                (setf point (cons *row* *col*))
+                                                                :no-display))
+			                                      "r")
+                                         "baz")))
+		                               point)))
       
         (shieldwall:shield ":CALL-WITH-POINT in grid"
                            '((2 . 2) (2 . 4) (2 . 6) (9 . 2) (9 . 4) (9 . 6) (16 . 2) (16 . 4) (16 . 6))
 		                     (let (accum)
 		                       (flet ((fn (y x)
 			                              (push (cons y x) accum)))
-                             (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                     :debug-mode :human-readable
-                                                     :output nil)
-                               (skald:skald (:force-overlay)
+                             (skald:with-skald-test (:debug-mode :human-readable)
+                               (skald:skald
 			                           (skald:grid (1 1
 					                                      :width 6
 					                                      :height 1
@@ -1040,10 +989,8 @@
 |      |      |
 +-------------+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :human-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test (:debug-mode :human-readable)
+                             (skald:skald
 		                           (skald:span (1 1) "window=15 sprite=7")
 		                           (skald:grid (2 1 :width 13 :height 1)
 			                           (skald:column ()
@@ -1070,10 +1017,8 @@
 |   |   |
 +-------+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :human-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test (:debug-mode :human-readable)
+                             (skald:skald
 		                           (skald:span (1 1) "window=7 sprite=7")
 		                           (skald:grid (2 1 :width 7 :height 1)
 			                           (skald:column ()
@@ -1100,10 +1045,8 @@
 |  |  |
 +-----+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :human-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test (:debug-mode :human-readable)
+                             (skald:skald
 		                           (skald:span (1 1) "window=5 sprite=7")
 		                           (skald:grid (2 1 :width 5 :height 1)
 			                           (skald:column ()
@@ -1133,10 +1076,8 @@
 |       |      |
 +--------------+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :human-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test (:debug-mode :human-readable)
+                             (skald:skald
 		                           (skald:span (1 1) "window=14 sprite=7")
 		                           (skald:grid (2 1 :width 14 :height 1)
 			                           (skald:column ()
@@ -1166,10 +1107,8 @@
 |  | |
 +----+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :human-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test (:debug-mode :human-readable)
+                             (skald:skald
 		                           (skald:span (1 1) "window=4 sprite=7")
 		                           (skald:grid (2 1 :width 4 :height 1)
 			                           (skald:column ()
@@ -1199,10 +1138,8 @@
 |        |       |
 +----------------+
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :human-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :human-readable)
+                           (skald:skald
 		                         (skald:span (1 1) "window=16 sprite=8")
 		                         (skald:grid (2 1 :width 16 :height 1)
 			                         (skald:column ()
@@ -1230,10 +1167,8 @@
 |   |    |
 +--------+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :human-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test (:debug-mode :human-readable)
+                             (skald:skald
 		                           (skald:span (1 1) "window=8 sprite=8")
 		                           (skald:grid (2 1 :width 8 :height 1)
 			                           (skald:column ()
@@ -1262,10 +1197,8 @@
 |  | |
 +----+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :human-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test (:debug-mode :human-readable)
+                             (skald:skald
 		                           (skald:span (1 1) "window=4 sprite=8")
 		                           (skald:grid (2 1 :width 4 :height 1)
 			                           (skald:column ()
@@ -1296,10 +1229,8 @@
 |         |       |
 +-----------------+
 "
-                          (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                  :debug-mode :human-readable
-                                                  :output nil)
-                            (skald:skald (:force-overlay)
+                          (skald:with-skald-test (:debug-mode :human-readable)
+                            (skald:skald
 		                          (skald:grid (2 1 :width 17 :height 1)
 			                          (skald:column ()
 			                            (skald:window (:align :left)         "       |")
@@ -1327,10 +1258,8 @@
 |  |  |
 +-----+
 "
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :human-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test (:debug-mode :human-readable)
+                             (skald:skald
 		                           (skald:span (1 1) "window=5 sprite=8")
 		                           (skald:grid (2 1 :width 5 :height 1)
 			                           (skald:column ()
@@ -1409,10 +1338,8 @@
       (shieldwall:shield "WINDOW :TRANSPARANT-CHAR 1"
                          "\\x1B[44m\\x1B[31m\\x1B[5;5H+----------------+\\x1B[6;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[7;5H|\\x1B[46m\\x1B[33m~~~~\\x1B[7;11Hnt\\x1B[7;14Hrtain~~~\\x1B[44m\\x1B[31m|\\x1B[8;5H|\\x1B[46m\\x1B[33m~~~~thr\\x1B[8;15H~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[9;5H|\\x1B[46m\\x1B[33m~~~~\\x1B[9;11Hducat\\x1B[9;17Hd~~~~\\x1B[44m\\x1B[31m|\\x1B[10;5H|\\x1B[46m\\x1B[33m~~~~\\x1B[10;11Hl\\x1B[10;13Hphants~~~\\x1B[44m\\x1B[31m|\\x1B[11;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[12;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[13;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[14;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[15;5H|\\x1B[46m\\x1B[33m~~~~~~~~~~~~~~~~\\x1B[44m\\x1B[31m|\\x1B[16;5H+----------------+\\x1B[37m\\x1B[40m"
 		                     (let ((transparant-char #\e))
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test ()
+                             (skald:skald
 		                           (skald:solo-window (5 5
 				                                             :width 16
 				                                             :height 10
@@ -1429,10 +1356,8 @@
       (shieldwall:shield "WINDOW :TRANSPARANT-CHAR 2"
                          "\\x1B[44m\\x1B[31m\\x1B[5;5H+----------------+\\x1B[6;5H|\\x1B[6;22H|\\x1B[7;5H|\\x1B[46m\\x1B[33m\\x1B[7;9Hentertain\\x1B[44m\\x1B[31m\\x1B[7;22H|\\x1B[8;5H|\\x1B[46m\\x1B[33m\\x1B[8;9Hthree\\x1B[44m\\x1B[31m\\x1B[8;22H|\\x1B[9;5H|\\x1B[46m\\x1B[33m\\x1B[9;9Heducated\\x1B[44m\\x1B[31m\\x1B[9;22H|\\x1B[10;5H|\\x1B[46m\\x1B[33m\\x1B[10;9Helephants\\x1B[44m\\x1B[31m\\x1B[10;22H|\\x1B[11;5H|\\x1B[11;22H|\\x1B[12;5H|\\x1B[12;22H|\\x1B[13;5H|\\x1B[13;22H|\\x1B[14;5H|\\x1B[14;22H|\\x1B[15;5H|\\x1B[15;22H|\\x1B[16;5H+----------------+\\x1B[37m\\x1B[40m"
 		                     (let ((transparant-char #\~))
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
-                             (skald:skald (:force-overlay)
+                           (skald:with-skald-test ()
+                             (skald:skald
 		                           (skald:solo-window (5 5
 				                                             :width 16
 				                                             :height 10
@@ -1511,7 +1436,7 @@
 			                      :bg :black)
 	          xx))
         (sleep 1)
-        (skald:skald (:force-overlay)
+        (skald:skald
 	        (skald:span (3 15 :mask t
 		                        :fill-char #\x
 			                      :align :center-left
@@ -1527,10 +1452,8 @@
       (shieldwall:shield ":MASK"
                          "xxx
 "
-                         (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                 :debug-mode :human-readable
-                                                 :output nil)
-                           (skald:skald (:force-overlay)
+                         (skald:with-skald-test (:debug-mode :human-readable)
+                           (skald:skald
 			                       (skald:span (1 1 :mask t :fill-char #\x)
 			                         "foo"))))
       )
