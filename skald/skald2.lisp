@@ -76,6 +76,14 @@
 	         :window
 ;;	       :row                    ;; not yet implemented
 
+;; making it easier to draw the screen, top down left right
+;;         :*extant-min-row*       ;; not yet implemented
+;;         :*extant-max-row*       ;; not yet implemented
+;;         :*extant-min-col*       ;; not yet implemented
+;;         :*extant-max-col*       ;; not yet implemented
+;;         :*extant-height*        ;; not yet implemented
+;;         :*extant-width*         ;; not yet implemented
+           
            ;; defining & referencing colors
 	         :def-color
            :lookup-color-code
