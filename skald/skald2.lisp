@@ -50,7 +50,7 @@
            :skald-sync
            :skald-clear
            :*terminal-size*
-           :*terminal-size-override* ;; user configurable          
+           :*override-terminal-size* ;; user configurable          
            
            ;; updating the screen via change buffer
            :skald
@@ -118,7 +118,7 @@
 ;; terminal size
 
 (defvar *terminal-size* '(24 80))   ;; (MAX-ROW MAX-COLUMN)
-(defvar *terminal-size-override* nil)
+(defvar *override-terminal-size* nil)
 
 ;; buffers
 (defvar *%change-buffer* nil)
@@ -588,13 +588,13 @@
     `(let ,(mapcar #'cdr parsed)        
        (let ((bifrost:*bifrost-debug-mode* (or ,(second (assoc :debug-mode parsed))
                                                :machine-readable))
-             (*terminal-size-override* (or ,(second (assoc :override-terminal-size parsed))
-                                           *terminal-size-override*
+             (*override-terminal-size* (or ,(second (assoc :override-terminal-size parsed))
+                                           *override-terminal-size*
                                            '(24 80)))
              (*override-skald-drawmode* (or ,(second (assoc :override-drawmode parsed))
                                             :unoptimized)))
          (declare (special bifrost:*bifrost-debug-mode*
-                           *terminal-size-override*
+                           *override-terminal-size*
                            *override-skald-drawmode*))
          (with-output-to-string (,output)
            (with-skald-output ,output
@@ -607,9 +607,9 @@
 ;;;; main user API
 
 (defun skald-check-terminal-size ()
-  (let ((new-size (or *terminal-size-override*
+  (let ((new-size (or *override-terminal-size*
                       (if bifrost:*bifrost-debug-mode*
-                          (error "SKALD-CHECK-TERMINAL-SIZE called in debugging mode ~S without manually overriding the terminakl size. It won't work because it can't communicate with the terminal in this debugging mode. Set *TERMINAL-SIZE-OVERRIDE*"
+                          (error "SKALD-CHECK-TERMINAL-SIZE called in debugging mode ~S without manually overriding the terminakl size. It won't work because it can't communicate with the terminal in this debugging mode. Set *OVERRIDE-TERMINAL-SIZE*"
                                  bifrost:*bifrost-debug-mode*))
                       (with-skald-output *output*
                         (rest (bifrost:rune-write :query-terminal-size
