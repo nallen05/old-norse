@@ -55,7 +55,7 @@
            ;; updating the screen via change buffer
            :skald
            :skald-overlay
-           :*override-skald-drawmode*  ;; :draw,:overlay,:force-overlay,:prep,:null
+           :*override-skald-drawmode*  ;; :draw,:overlay,:unoptimized,:prep,:null
            :*row*
            :*col*
 
@@ -125,7 +125,7 @@
 (defvar *%display-buffer* nil)
 
 ;; writing to the change buffer
-(defparameter *override-skald-drawmode* nil) ;; :draw, :overlay, :force-overlay, :prep, :null
+(defparameter *override-skald-drawmode* nil) ;; :draw, :overlay, :unoptimized, :prep, :null
 (defparameter *output*                  t)  ;; T -> *TERMINAL-IO*
 (defvar       *row*                     0)
 (defvar       *col*                     0)
@@ -472,7 +472,7 @@
   (assert (and (listp *terminal-size*)
                (eql 2 (length *terminal-size*))
                (every #'integerp *terminal-size*)))
-  (assert (find mode '(:draw :overlay :force-overlay)))
+  (assert (find mode '(:draw :overlay :unoptimized)))
   (let* ((default-fg (lookup-color-code *foreground-color*))
          (default-bg (lookup-color-code *background-color*))
          (last-write-fg default-fg)
@@ -495,7 +495,7 @@
                             (or (and (not (eql dc #\nul))
                                      (not (eql dc *fill-char*)))
                                 (%different-color-p))))
-                        (or (eql mode :force-overlay)
+                        (or (eql mode :unoptimized)
                             (not (char= c (%access (buffer-array *%display-buffer*))))
                             (%different-color-p)))
 
@@ -547,7 +547,7 @@
 
 		            ;; if in an overlay mode, update the display buffer to reflect
                 (when (or (eql mode :overlay)
-                          (eql mode :force-overlay))
+                          (eql mode :unoptimized))
 		              (setf (aref (buffer-array *%display-buffer*) row column)
 			                  c
 			                      
@@ -592,7 +592,7 @@
                                            *terminal-size-override*
                                            '(24 80)))
              (*override-skald-drawmode* (or ,(second (assoc :override-drawmode parsed))
-                                            :force-overlay)))
+                                            :unoptimized)))
          (declare (special bifrost:*bifrost-debug-mode*
                            *terminal-size-override*
                            *override-skald-drawmode*))
@@ -679,7 +679,7 @@
   (clear-if-wiped! *%display-buffer*))
 
 (defun call-in-skald-draw (mode thunk)
-  (assert (find mode '(:draw :overlay :force-overlay :prep :null)))
+  (assert (find mode '(:draw :overlay :unoptimized :prep :null)))
 
   ;; make sure the buffers are the correct size & clean
   (skald-sync)
@@ -696,7 +696,7 @@
       ;; maybe propogate changes to the screen & display buffer
       (ecase mode
         ((:null :prep) nil)
-        ((:draw :overlay :force-overlay)
+        ((:draw :overlay :unoptimized)
          (emit-change-buffer mode)
          (when (eq bifrost:*bifrost-debug-mode*
                    :human-readable)
@@ -706,7 +706,7 @@
       ;; maybe rotate & wipe the change buffer
       (ecase mode
         (:prep nil)
-        ((:draw :overlay :force-overlay :null)
+        ((:draw :overlay :unoptimized :null)
          (when (eql mode :draw)
            (rotatef *%change-buffer*
                     *%display-buffer*))

@@ -29,7 +29,7 @@
           (nil (sleep 0.1))
           ((#\q #\Q) (return :done))
           (otherwise
-           (skald:skald (:force-overlay)
+           (skald:skald (:unoptimized)
              (skald:solo-window (8 2 :width 40
                                      :height 20
                                      :border nil)

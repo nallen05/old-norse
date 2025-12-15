@@ -21,12 +21,12 @@
     #+nil
     (skald:with-skald-test (:override-terminal-size '(24 80))
       (skald:skald-clear)
-      (skald:skald-draw (:force-overlay)
+      (skald:skald-draw (:unoptimized)
 	      (skald:span (1 1) "foo")
 	      (skald:span (3 6) "bar")
 	      (skald:span (6 12) "baz"))
       (sleep 1)
-      (skald:skald-draw (:force-overlay)
+      (skald:skald-draw (:unoptimized)
 	      (skald:span (2 1) "FOO")
 	      (skald:span (4 6) "BAR")
 	      (skald:span (7 12) "BAZ"))
@@ -35,29 +35,29 @@
     #+nil
     (skald:with-skald-test (:override-terminal-size '(24 80))
       (skald:skald-clear)
-	    (skald:skald-draw (:force-overlay)
+	    (skald:skald-draw (:unoptimized)
 	      (skald:span (1 1)
 	        `(:bg :green
 	           "GREEN_SPAN")))
 	    (sleep 1)
-	    (skald:skald-draw (:force-overlay)
+	    (skald:skald-draw (:unoptimized)
 	      (skald:span (2 12)
 	        `(:bg :blue
 	           "BLUE_SPAN")))
 	    (sleep 1)
-	    (skald:skald-draw (:force-overlay)
+	    (skald:skald-draw (:unoptimized)
 	      (skald:span (6 10)
 	        `(:bg :red
 	           "RED_SPAN"))))
 
-    (shieldwall:with-shield-group ":FORCE-OVERLAY"
-      (shieldwall:shield ":FORCE-OVERLAY in :MACHINE-READABLE mode"
+    (shieldwall:with-shield-group ":UNOPTIMIZED"
+      (shieldwall:shield ":UNOPTIMIZED in :MACHINE-READABLE mode"
                          "\\x1B[2;2Htest1 aaa"
 		                     (skald:with-skald-test ()
                            (skald:skald
 			                       (skald:span (2 2) "test1 aaa"))))
 
-      (shieldwall:shield ":FORCE-OVERLAY in :HUMAN-READABLE mode"
+      (shieldwall:shield ":UNOPTIMIZED in :HUMAN-READABLE mode"
                          "test1 aaa
 "
 		                     (skald:with-skald-test (:debug-mode :human-readable)
@@ -66,7 +66,7 @@
 
       
       
-      (shieldwall:shield "slightly more complex :FORCE-OVERLAY in :MACHINE-READABLE mode"
+      (shieldwall:shield "slightly more complex :UNOPTIMIZED in :MACHINE-READABLE mode"
                          '("\\x1B[2;2Htest2 aaa"
                            "\\x1B[2;2Htest2 bbb"
                            "\\x1B[2;2Htest2 ccc")                           
@@ -81,7 +81,7 @@
                             (skald:skald
 		                          (skald:span (2 2) "test2 ccc")))))
 
-      (shieldwall:shield "slightly more complex :FORCE-OVERLAY in :HUMAN-READABLE mode"
+      (shieldwall:shield "slightly more complex :UNOPTIMIZED in :HUMAN-READABLE mode"
                          '(
                            "test2 aaa
 "
@@ -102,7 +102,7 @@
 		                          (skald:span (2 2) "test2 ccc")))))
 
 
-      (shieldwall:with-shield-group ":FORCE-OVERLAY SKALD-INIT"
+      (shieldwall:with-shield-group ":UNOPTIMIZED SKALD-INIT"
         (shieldwall:shield "SKALD-INIT in :MACHINE-READABLE mode"
                            "\\x1B[0m\\x1B[40m\\x1B[37m\\x1B[2J\\x1B[?25l\\x1B[3;3Htest2 aaa"
                            (skald:with-skald-test ()
