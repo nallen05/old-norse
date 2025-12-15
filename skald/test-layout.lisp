@@ -1367,6 +1367,262 @@
       )
 
 
+
+
+    (shieldwall:with-shield-group "EMOJI EDGE CASES"
+
+  ;;; Notation reminder:
+  ;;;   A+z = double-width character A followed by #\ZERO_WIDTH_SPACE
+  ;;;   { } = bounding box boundaries
+  ;;;   ?   = #\REPLACEMENT_CHARACTER (renders as *unrenderable-char-fill-char*)
+  ;;;   X+z = the double-width character we're trying to INSERT
+
+  
+  (shieldwall:with-shield-group "double-width char at buffer start, single-width insert"
+    
+    ;; This should chop the emoji, leaving artifact at position 1
+    (shieldwall:shield "A+z c d > ? x c d"
+                       `(,skald:*unrenderable-char-fill-char* #\x #\c #\d #\newline)
+                       (coerce (progn
+                                 (skald:with-skald-test (:override-drawmode :prep)
+                                   (skald:skald-init)
+                                   (skald:skald
+                                     (skald:span (1 1)
+                                       #\grinning_face  ;; positions 1-2 (char + zwsp)
+                                       #\c              ;; position 3
+                                       #\d)))           ;; position 4
+                                 (skald:with-skald-test (:debug-mode :human-readable)
+                                   (skald:skald
+                                     ;; No bounding box, just raw write at position 2
+                                     (skald::with-window-bounding-box nil nil nil nil
+                                       (setf skald:*row* 1
+                                             skald:*col* 2)
+                                       (skald::%render-span #\x)))))
+                               'list))
+    
+    ;; This shouldn't affect the emoji at positions 3-4
+    (shieldwall:shield "a b C+z > a x C+z"
+                       '(#\a #\x #\grinning_face #\newline)
+                       (coerce (progn
+                                 (skald:with-skald-test (:override-drawmode :prep)
+                                   (skald:skald-init)
+                                   (skald:skald
+                                     (skald:span (1 1)
+                                       #\a              ;; position 1
+                                       #\b              ;; position 2  
+                                       #\grinning_face))) ;; positions 3-4
+                                 (skald:with-skald-test (:debug-mode :human-readable)
+                                   (skald:skald
+                                     (skald::with-window-bounding-box nil nil nil nil
+                                       (setf skald:*row* 1
+                                             skald:*col* 2)
+                                       (skald::%render-span #\x)))))
+                               'list))
+  )
+
+  (shieldwall:with-shield-group "double-width char at buffer start, double-width insert"
+    
+    ;; Old emoji gets chopped (position 1 becomes artifact), new emoji at 2-3
+    (shieldwall:shield "A+z c d > ? X+z d"
+                       `(,skald:*unrenderable-char-fill-char* 
+                         #\neutral_face 
+                         #\d 
+                         #\newline)
+                       (coerce (progn
+                                 (skald:with-skald-test (:override-drawmode :prep)
+                                   (skald:skald-init)
+                                   (skald:skald
+                                     (skald:span (1 1)
+                                       #\grinning_face  ;; positions 1-2
+                                       #\c              ;; position 3
+                                       #\d)))           ;; position 4
+                                 (skald:with-skald-test (:debug-mode :human-readable)
+                                   (skald:skald
+                                     (skald::with-window-bounding-box nil nil nil nil
+                                       (setf skald:*row* 1
+                                             skald:*col* 2)
+                                       (skald::%render-span #\neutral_face)))))
+                               'list))
+    
+    ;; New emoji occupies 2-3, which chops the old emoji's first cell
+    (shieldwall:shield "a b C+z > a X+z ?"
+                       `(#\a 
+                         #\neutral_face 
+                         ,skald:*unrenderable-char-fill-char*
+                         #\newline)
+                       (coerce (progn
+                                 (skald:with-skald-test (:override-drawmode :prep)
+                                   (skald:skald-init)
+                                   (skald:skald
+                                     (skald:span (1 1)
+                                       #\a              ;; position 1
+                                       #\b              ;; position 2
+                                       #\grinning_face))) ;; positions 3-4
+                                 (skald:with-skald-test (:debug-mode :human-readable)
+                                   (skald:skald
+                                     (skald::with-window-bounding-box nil nil nil nil
+                                       (setf skald:*row* 1
+                                             skald:*col* 2)
+                                       (skald::%render-span #\neutral_face)))))
+                               'list))
+  )
+
+  (shieldwall:with-shield-group "emoji before bounding box - no op cases"
+
+    (shieldwall:shield "A++z {c d} single-width insert > no op"
+                       '(#\grinning_face #\c #\d #\newline)
+                       (coerce (progn
+                                 (skald:with-skald-test (:override-drawmode :prep)
+                                   (skald:skald-init)
+                                   (skald:skald
+                                     (skald:span (1 1)
+                                       #\grinning_face  ;; positions 1-2
+                                       #\c              ;; position 3
+                                       #\d)))           ;; position 4
+                                 (skald:with-skald-test (:debug-mode :human-readable)
+                                   (skald:skald
+                                     ;; Bounding box: row 1, height 3, column 3, width 2 (cols 3-4)
+                                     (skald::with-window-bounding-box 1 3 3 2
+                                       (setf skald:*row* 1
+                                             skald:*col* 2)
+                                       (skald::%render-span #\x)))))
+                               'list))
+    
+    (shieldwall:shield "A++z {c d} double-width insert > no op"
+                       '(#\grinning_face #\c #\d #\newline)
+                       (coerce (progn
+                                 (skald:with-skald-test (:override-drawmode :prep)
+                                   (skald:skald-init)
+                                   (skald:skald
+                                     (skald:span (1 1)
+                                       #\grinning_face
+                                       #\c
+                                       #\d)))
+                                 (skald:with-skald-test (:debug-mode :human-readable)
+                                   (skald:skald
+                                     (skald::with-window-bounding-box 1 3 3 2
+                                       (setf skald:*row* 1
+                                             skald:*col* 2)
+                                       (skald::%render-span #\neutral_face)))))
+                               'list))
+  )
+
+      (shieldwall:with-shield-group "emoji at terminal edge"
+    
+        (shieldwall:shield "emoji at right edge of terminal becomes artifact"
+                           `(#\a #\b ,skald:*unrenderable-char-fill-char* #\newline)
+                           (coerce (skald:with-skald-test (:debug-mode :human-readable
+                                                           :override-terminal-size '(3 4))
+                                     ;; Terminal is 3 rows x 4 cols (indices 0-3, usable 1-3)
+                                     (skald:skald-init)
+                                     (skald:skald
+                                       (skald:span (1 1)
+                                         #\a    ;; position 1
+                                         #\b    ;; position 2
+                                         #\grinning_face)))  ;; position 3, but needs 3-4, col 4 is out
+                                   'list))
+  )
+
+  
+  (shieldwall:with-shield-group "consecutive emojis"
+
+    (shieldwall:shield "two consecutive emojis render correctly"
+                       '(#\grinning_face #\neutral_face #\newline)
+                       (coerce (skald:with-skald-test (:debug-mode :human-readable)
+                                 (skald:skald-init)
+                                 (skald:skald
+                                   (skald:span (1 1)
+                                     #\grinning_face
+                                     #\neutral_face)))
+                               'list))
+    
+    ;; Overwriting first of two consecutive emojis with single char
+    (shieldwall:shield "overwrite first of two consecutive emojis"
+                       `(#\x ,skald:*unrenderable-char-fill-char*
+                         #\neutral_face #\newline)
+                       (coerce (progn
+                                 (skald:with-skald-test (:override-drawmode :prep)
+                                   (skald:skald-init)
+                                   (skald:skald
+                                     (skald:span (1 1)
+                                       #\grinning_face    ;; 1-2
+                                       #\neutral_face)))  ;; 3-4
+                                 (skald:with-skald-test (:debug-mode :human-readable)
+                                   (skald:skald
+                                     (skald::with-window-bounding-box nil nil nil nil
+                                       (setf skald:*row* 1
+                                             skald:*col* 1)
+                                       (skald::%render-span #\x)))))
+                               'list))
+    
+    ;; Overwriting at the boundary between two emojis (position 2 = zwsp of first)
+    (shieldwall:shield "overwrite boundary between consecutive emojis"
+                       `(,skald:*unrenderable-char-fill-char*  ;; first emoji chopped
+                         #\x                                   ;; our insert
+                         #\neutral_face  ;; second emoji chopped (was at 3)
+                         #\newline)
+                       (coerce (progn
+                                 (skald:with-skald-test (:override-drawmode :prep)
+                                   (skald:skald-init)
+                                   (skald:skald
+                                     (skald:span (1 1)
+                                       #\grinning_face    ;; 1-2 (char, zwsp)
+                                       #\neutral_face)))  ;; 3-4 (char, zwsp)
+                                 (skald:with-skald-test (:debug-mode :human-readable)
+                                   (skald:skald
+                                     (skald::with-window-bounding-box nil nil nil nil
+                                       (setf skald:*row* 1
+                                             skald:*col* 2)
+                                       (skald::%render-span #\x)))))
+                               'list))
+  )
+  
+  (shieldwall:with-shield-group "emojis in windows with alignment"
+    
+    (shieldwall:shield "emoji in left-aligned window"
+                       "+------+
+|😀    |
+|text  |
+|      |
++------+
+"
+                       (skald:with-skald-test (:debug-mode :human-readable)
+                         (skald:skald
+                           (skald:solo-window (1 1 :width 6 :height 3 :align :left)
+                             '(:emoji :grinning)
+                             "text"))))
+    
+    (shieldwall:shield "emoji in right-aligned window"
+                       "+------+
+|  😀  |
+|  text|
+|      |
++------+
+"
+                       (skald:with-skald-test (:debug-mode :human-readable)
+                         (skald:skald
+                           (skald:solo-window (1 1 :width 6 :height 3 :align :right)
+                             '(:emoji :grinning)
+                             "text"))))
+    
+    ;; Emoji that gets clipped by narrow window
+    (shieldwall:shield "emoji clipped by narrow window becomes artifact"
+                       `(#\+ #\- #\+ #\newline
+                         #\| ,skald:*unrenderable-char-fill-char* #\| #\newline
+                         #\+ #\- #\+ #\newline)
+                       (coerce (skald:with-skald-test (:debug-mode :human-readable)
+                                 (skald:skald
+                                   (skald:solo-window (1 1 :width 1 :height 1)
+                                     #\grinning_face)))  ;; needs 2 cols, only 1 available
+                               'list))
+  )
+)
+
+
+
+
+
+    
   (shieldwall:with-shield-group "FIXED-STEP-LINE"
 
     (shieldwall:shield "fixed-step-line"
@@ -1378,6 +1634,8 @@
 					                                    :end-column 10))
     )
 				
+
+
 
 
     

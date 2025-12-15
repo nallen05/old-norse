@@ -320,9 +320,42 @@ test 4 ccc
         (assert (eql (code-char #x1F600) #\grinning_face))
         (assert (eql (code-char #x1F610) #\neutral_face))
 
+
+
+        #+nil
+        (bifrost:with-bifrost
+          (skald:skald-init)
+          (skald:skald
+            (skald:span (1 1) #\grinning_face)))
+
+        #+nil
+        (bifrost:with-bifrost
+          (skald:skald-init)
+          (skald:skald
+            (skald:span (1 1)
+              "Hello " '(:emoji :sparkles) " World" '(:emoji :sparkles))))
+
+        #+nil
+        (bifrost:with-bifrost
+          (skald:skald-init)
+          (skald:skald
+            (skald:solo-window (1 1 :width 8 :height 2 :fill-char #\.)
+              '(:emoji :grinning)
+              "text")))
+        
+        (progn
+          (skald:with-skald-test (:override-drawmode :prep)
+            (skald:skald-init)
+            (skald:skald
+              (skald:span (1 1) #\a #\grinning_face #\d)))
+          (skald:with-skald-test (:debug-mode :human-readable)
+            (skald:skald
+              (skald::with-window-bounding-box nil nil nil nil
+                (setf skald:*row* 1 skald:*col* 2)
+                (skald::%render-span #\x)))))
       
         (shieldwall:shield "boring double width char insert"
-                           '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+                           '(#\a #\grinning_face #\d #\newline)
                            (coerce (progn
                                      (skald:with-skald-test (:override-drawmode :prep)
                                        (skald:skald-init)
@@ -368,7 +401,7 @@ test 4 ccc
                                      'list))
 
           (shieldwall:shield "double width split test 3"
-                             '(#\a #\x #\grinning_face #\zero_width_space #\newline)
+                             '(#\a #\x #\grinning_face #\newline)
                              (coerce (progn
                                        (skald:with-skald-test (:override-drawmode :prep)
                                          (skald:skald-init)
@@ -428,7 +461,7 @@ test 4 ccc
                                      'list))
 
           (shieldwall:shield "a  B+{z  d}  > no op"
-                             '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+                             '(#\a #\grinning_face #\d #\newline)
                              (coerce (progn
                                        (skald:with-skald-test (:override-drawmode :prep)
                                          (skald:skald-init)
@@ -446,7 +479,7 @@ test 4 ccc
                                      'list))
 
           (shieldwall:shield "a  B++z {d}  -> no op"
-                             '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+                             '(#\a #\grinning_face #\d #\newline)
                              (coerce (progn
                                        (skald:with-skald-test (:override-drawmode :prep)
                                          (skald:skald-init)
@@ -521,11 +554,11 @@ test 4 ccc
 
       (shieldwall:with-shield-group "writing double width chars in conflict with bounding box boundaries"
         (shieldwall:shield "simple box double width char insert test"
-                           `((#\a #\grinning_face #\zero_width_space #\d #\newline)
-                             (#\a #\grinning_face #\zero_width_space #\d #\newline)
+                           `((#\a #\grinning_face #\d #\newline)
+                             (#\a #\grinning_face #\d #\newline)
                              (#\a #\b #\c #\d #\newline)
                              (#\a #\b #\c #\d #\newline)
-                             (#\a #\grinning_face #\zero_width_space #\d #\newline)
+                             (#\a #\grinning_face #\d #\newline)
                              (#\a ,*unrenderable-char-fill-char* #\c #\d #\newline))
                            (mapcar (lambda (%)
                                      (destructuring-bind (column width)
@@ -553,7 +586,7 @@ test 4 ccc
       (shieldwall:with-shield-group "writing double width chars in conflict with both bounding box boundaries & double width char in buffer"
 
         (shieldwall:shield "A+{z  c  d}  =>   ? X+z d"
-                           `(,*unrenderable-char-fill-char* #\grinning_face #\zero_width_space #\d #\newline)
+                           `(,*unrenderable-char-fill-char* #\grinning_face #\d #\newline)
                            (coerce (progn
                                      (skald:with-skald-test (:override-drawmode :prep)
                                        (skald:skald-init)
@@ -571,7 +604,7 @@ test 4 ccc
                                    'list))
         
         (shieldwall:shield "a {B++z  d}   =>   a X+z d"
-         '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+         '(#\a #\grinning_face #\d #\newline)
                            (coerce (progn
                                      (skald:with-skald-test (:override-drawmode :prep)
                                        (skald:skald-init)
@@ -589,7 +622,7 @@ test 4 ccc
                                    'list))
 
         (shieldwall:shield "a B+{z  d}  => no op"
-                           '(#\a #\neutral_face #\zero_width_space #\d #\newline)
+                           '(#\a #\neutral_face #\d #\newline)
                            (coerce (progn
                                      (skald:with-skald-test (:override-drawmode :prep)
                                        (skald:skald-init)
@@ -608,7 +641,7 @@ test 4 ccc
 
 
         (shieldwall:shield "a B++z {d}  > no op"
-         '(#\a #\neutral_face #\zero_width_space #\d #\newline)
+         '(#\a #\neutral_face #\d #\newline)
                            (coerce (progn
                                      (skald:with-skald-test (:override-drawmode :prep)
                                        (skald:skald-init)
@@ -626,7 +659,7 @@ test 4 ccc
                                    'list))
 
         (shieldwall:shield "a {B++z} d  >    a X++z d"
-                           '(#\a #\grinning_face #\zero_width_space #\d #\newline)
+                           '(#\a #\grinning_face #\d #\newline)
                            (coerce (progn
                                      (skald:with-skald-test (:override-drawmode :prep)
                                        (skald:skald-init)

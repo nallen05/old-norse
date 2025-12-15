@@ -534,15 +534,17 @@
 				                                  *output*)))
                         (bifrost:rune-write `(:move-cursor ,row ,column)
                                             *output*)))
-                  )
                   
-		            ;; write the char
-		            (write-char (case c
-                              (#\nul *fill-char*)
-                              (#\replacement_character *unrenderable-char-fill-char*)
-                              (otherwise c))
-                            *output*)
-		            (setf last-write-row row
+		              ;; write the char
+		              (write-char (case c
+                                (#\nul *fill-char*)
+                                (#\replacement_character *unrenderable-char-fill-char*)
+                                (otherwise c))
+                              *output*)
+                  )
+
+                ;; resume, even if #\zero-width-space
+                (setf last-write-row row
 		                  last-write-column column)
 
 		            ;; if in an overlay mode, update the display buffer to reflect
@@ -1086,7 +1088,9 @@ Writes to the change buffer
      (unless (or (char= form #\newline)
 		             (char= form #\return)
 		             (char= form *transparant-char*))
-       (write-char form *output*)))
+       (if (double-width-character-p form)
+           (write-string "XX" *output*)
+           (write-char form *output*))))
     (string (map nil
 		             #'%render-span/alignment-preview
 		             form))
@@ -1295,13 +1299,17 @@ Writes to the change buffer
       (character
        (unless (char= form *transparant-char*)
 	       (%nl)
-	       (write-char form *output*)))
+         (if (double-width-character-p form)
+             (write-string "XX" *output*)
+	           (write-char form *output*))))
       (string
        (%nl)
        (map nil
 	          (lambda (c)
 	            (unless (char= c *transparant-char*)
-		            (write-char c *output*)))
+                (if (double-width-character-p c)
+                    (write-string "XX" *output*)
+		                (write-char c *output*))))
 	          form))
       (list (destructuring-bind (1st . rest)
 		            form
