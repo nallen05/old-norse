@@ -1054,6 +1054,10 @@ Writes to the change buffer
     (list (destructuring-bind (1st . rest)
 	            form
 	          (ecase 1st
+              (:call-with-point (funcall (coerce (first rest)
+						                                     'function)
+					                               *row*
+					                               *col*))
 	            (:nodisplay nil)
 	            (:span (map nil #'%render-span rest))
 	            (:sprite (error "SKALD: SPRITE can't be within a SPAN"))
@@ -1089,6 +1093,7 @@ Writes to the change buffer
     (list (destructuring-bind (1st . rest)
 	            form
 	          (ecase 1st
+              ((:call-with-point :nodisplay) nil)
 	            (:span (map nil #'%render-span/alignment-preview rest))
 	            (:sprite (error "SKALD: SPRITE can't be within a SPAN"))
     	        ((:fg :bg)
@@ -1256,6 +1261,9 @@ Writes to the change buffer
       (list (destructuring-bind (1st . rest)
 		            xx
 	            (ecase 1st
+                (:call-with-point (funcall (first rest)
+					                                 *col*
+					                                 *row*))
 		            (:nodisplay nil)
 		            (:span
 		                (%begin-sprite-line)
@@ -1298,7 +1306,7 @@ Writes to the change buffer
       (list (destructuring-bind (1st . rest)
 		            form
 	            (ecase 1st
-		            (:nodisplay nil)
+		            ((:call-with-point :nodisplay) nil)
 		            (:span
 		                (%nl)
 		              (map nil #'%render-span/alignment-preview rest))

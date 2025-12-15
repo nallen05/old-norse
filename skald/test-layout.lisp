@@ -925,7 +925,7 @@
 |          |
 +----------+
 "
-                             (14 . 15))
+                             (5 . 6))
 		                       (let (point)
                              (list (skald:with-skald-test (:debug-mode :human-readable)
                                      (skald:skald
@@ -934,8 +934,8 @@
 					                                                   :height 10)
 			                                   "foo"
 			                                   `(:span "ba"
-                                            (:call-with-point (lambda (row col)
-                                                                (setf point (cons *row* *col*))
+                                            (:call-with-point ,(lambda (row col)
+                                                                 (setf point (cons row col))
                                                                 :no-display))
 			                                      "r")
                                          "baz")))
