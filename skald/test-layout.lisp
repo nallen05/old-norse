@@ -11,35 +11,28 @@
 
 ;;;; clickaround test for CBOX integration
 #+nil
-(bifrost:with-bypass-terminal-read-buffer
-  (setf skald:*terminal-size-override* '(24 80))
-  (bifrost:flush-rune-read-buffer)
-  (bifrost:with-bifrost-mouse-tracking ()
-    (bifrost:with-cbox t
-      (skald:skald-init :wait-hook 'skald:skald-sync-buffer)      
-      (skald:skald ()
-        (skald:sprite (1 1)
-          "click around"
-          "q to quit")
-        (skald:sprite (5 10)
-          "BIG TEST BUTTON")
-	      (bifrost:register-cbox! :button))
-      (loop
-        (bifrost:rune-case (bifrost:rune-read-no-hang)
-          (nil (sleep 0.1))
+(bifrost:with-bifrost
+  (bifrost:with-mouse-tracking (1000)
+    (skald:skald-init)
+    (bifrost:with-cbox-layer :new
+      (bifrost:register-cbox! :button 5 10 6 25)
+      (loop do
+        (case bifrost:*rune*
           ((#\q #\Q) (return :done))
           (otherwise
-           (skald:skald (:unoptimized)
+           (skald:skald
+             (skald:sprite (1 1)
+               "click around"
+               "q to quit")
+             (skald:sprite (5 10)
+               "BIG TEST BUTTON")
              (skald:solo-window (8 2 :width 40
                                      :height 20
                                      :border nil)
                (format nil "RUNE: ~S" bifrost:*rune*)
-               (format nil "CBOX: ~S" bifrost:*cbox*)
-               (format nil "CBOX-PRESSED: ~S" bifrost:*active-cbox-pressed*)
-               (format nil "CBOX-STACK: ~S" bifrost:*cbox-stack*)
-               ))))))))
-
-
+               (format nil "RUNE-CONTAINER: ~S" bifrost:*rune-container*)
+               (format nil "PRESSED-CBOX: ~S" bifrost:*pressed-cbox*)))
+           (bifrost:rune-read)))))))
 
 
 
@@ -50,7 +43,7 @@
         ;;;; clickaround tests
         ;; do the colors look good?
         #+nil
-        (skald:with-skald-test (:override-terminal-size '(24 80))
+        (bifrost:with-bifrost
           (skald:skald-init)
           (skald:skald ()
             (skald:span (3 3)
@@ -100,7 +93,7 @@
 
     ;; confirm the alignment creates a straight vertical lign
     #+nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
+    (bifrost:with-bifrost
       (skald:skald-init)
       (skald:skald ()
         (skald:span (2 8) "|")
@@ -111,7 +104,7 @@
         (skald:span (7 8) "|")))
 
     #+nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
+    (bifrost:with-bifrost
       (skald:skald-init)
       (skald:skald ()
         (skald:span (2 8) "|")
@@ -143,9 +136,9 @@
 		                       (skald:span (6 9 :align :center-right) "ODD_|UM")
 		                       (skald:span (7 9 :align :right) "ODD_NU|")
 		                       (skald:span (8 9) "|"))))
-#+nil
-    (shieldwall:shield "INVESTIGATE THIS TEST"
-                       '(4 3 13)
+    #+nil
+    (shieldwall:shield "SPAN leaves behind \"extent\" variables"
+                       '(2 4 3 13)
                        (progn
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
@@ -154,8 +147,9 @@
                              (skald:span (2 4)
                                "123456"
                                "789")))
-                         (list skald:*extant-min-col*
-                               skald:*row*
+                         (list skald:*extant-min-row*
+                               skald:*extant-min-col*
+                               skald:*extant-max-row*
                                skald:*extant-max-col*)))
     )
 
@@ -163,7 +157,7 @@
       
       ;;;; clickaround tests
       #+nil
-      (skald:with-skald-test (:override-terminal-size '(24 80))
+      (bifrost:with-bifrost
         (skald:skald-clear)
         (skald:skald ()
           (skald:sprite (3 3)
@@ -218,21 +212,22 @@
 				                        ,(format nil "~%~%buz~%~%zzzzz"))
 			                       "not green"))))
 #+nil
-    (shieldwall:shield "INVESTIGATE THIS TEST"
-                       '(4 3 13)
+    (shieldwall:shield "SPRITE leaves behind \"extent\" variables (test 1/2)"
+                       '(1 4 2 13)
                        (progn
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
                                                  :output nil)
                            (skald:skald
-                             (skald:sprite (2 4)
+                             (skald:sprite (1 4)
                                "123456789")))
-                         (list skald:*extant-min-col*
-                               skald:*row*
+                         (list skald:*extant-min-row*
+                               skald:*extant-min-col*
+                               skald:*extant-max-row*
                                skald:*extant-max-col*)))
 #+nil
-    (shieldwall:shield "INVESTIGATE THIS TEST"
-                       '(4 5 11)
+    (shieldwall:shield "SPRITE leaves behind \"extent\" variables (test 2/2)"
+                       '(2 5 5 13)
                        (progn
                          (skald:with-skald-test (:override-terminal-size '(24 80)
                                                  :debug-mode :machine-readable
@@ -242,8 +237,9 @@
                                "0"
                                "1234567"
                                "89")))
-                         (list skald:*extant-min-col*
-                               skald:*row*
+                         (list skald:*extant-min-row*
+                               skald:*extant-min-col*
+                               skald:*extant-max-row*
                                skald:*extant-max-col*)))
     )
   
@@ -254,7 +250,7 @@
 
       ;;;; clickaround tests
       #+nil
-      (skald:with-skald-test (:override-terminal-size '(24 80))
+      (bifrost:with-bifrost
         (skald:skald-init)
         (dotimes (i 20)
           (skald:skald ()
@@ -404,7 +400,7 @@
  	  
           ;;;; clickaround tests
 	        #+nil
-          (skald:with-skald-test (:override-terminal-size '(24 80))
+          (bifrost:with-bifrost
             (skald:skald-init)
 	          (dotimes (i 20)
 	            (skald:skald ()
@@ -499,7 +495,7 @@
 
           ;;;; clickaround tests
 	        #+nil
-          (skald:with-skald-test (:override-terminal-size '(24 80))
+          (bifrost:with-bifrost
             (skald:skald-init)
 	          (dotimes (i 20)
               (skald:skald ()
@@ -587,7 +583,7 @@
 
       ;;;; clickaround tests
       #+nil
-      (skald:with-skald-test (:override-terminal-size '(24 80))
+      (bifrost:with-bifrost
         (skald:skald-init)
         (skald:skald ()
 	        (skald:solo-window (3 3
@@ -617,13 +613,11 @@
 			                         (format nil "~%one~%two~%three~%")))))
         )
 
-#+nil
-      (shieldwall:shield "INVESTIGATE THIS TEST"
-                         '(4 7 9)
+      #+nil
+      (shieldwall:shield "SOLO-WINDOW leaves behind \"extent\" variables (no border)"
+                         '(2 4 7 9)
                          (progn
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
+                           (skald:with-skald-test ()
                              (skald:skald
 		                           (skald:solo-window (2 4
 				                                             :width 5
@@ -636,16 +630,15 @@
                                  "123456789123456789123456789"
                                  "123456789123456789123456789"
                                  "123456789123456789123456789")))
-                           (list skald:*extant-min-col*
-                                 skald:*row*
+                           (list skald:*extant-min-row*
+                                 skald:*extant-min-col*
+                                 skald:*extant-max-row*
                                  skald:*extant-max-col*)))
-#+nil
-      (shieldwall:shield "INVESTIGATE THIS TEST"
-                         '(4 9 11)
+      #+nil
+      (shieldwall:shield "SOLO-WINDOW leaves behind \"extent\" variables (with border)"
+                         '(2 4 9 11)
                          (progn
-                           (skald:with-skald-test (:override-terminal-size '(24 80)
-                                                   :debug-mode :machine-readable
-                                                   :output nil)
+                           (skald:with-skald-test ()
                              (skald:skald
 		                           (skald:solo-window (2 4
 				                                             :width 5
@@ -658,8 +651,9 @@
                                  "123456789123456789123456789"
                                  "123456789123456789123456789"
                                  "123456789123456789123456789")))
-                           (list skald:*extant-min-col*
-                                 skald:*row*
+                           (list skald:*extant-min-row*
+                                 skald:*extant-min-col*
+                                 skald:*extant-max-row*
                                  skald:*extant-max-col*)))
     )
 
@@ -668,7 +662,7 @@
 
     ;;;; clickaround tests
     #+nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
+    (bifrost:with-bifrost
       (labels ((%grid ()
 	               (let ((row (make-string 20 :initial-element #\~)))
 		               (loop repeat 17
@@ -697,18 +691,18 @@
         (skald:skald ()
 	        (draw-background))
         (sleep 1)
-        (skald:skald (:overlay)
+        (skald:skald-overlay
 	        (draw-table :border t
 		                  :border-chars nil))
         (sleep 1)
-        (skald:skald (:overlay)
+        (skald:skald-overlay
 	        (draw-table :border t
 		                  :border-chars "-|+)"))
         (sleep 1)
-        (skald:skald ()
+        (skald:skald
 	        (draw-background))
         (sleep 1)
-        (skald:skald (:overlay)
+        (skald:skald-overlay
 	        (draw-table :border nil))))
 
 
@@ -1277,7 +1271,7 @@
 
     ;;;; clickaround tests
       #+nil
-      (skald:with-skald-test (:override-terminal-size '(24 80))
+      (bifrost:with-bifrost
         (labels ((%background-grid ()
 	                 (let ((row (make-string 27 :initial-element #\.)))
 		                 (loop repeat 8
@@ -1295,17 +1289,17 @@
 		                 "xxxxooooxxxxooooxxxxoooo"
 		                 "ooooxxxxooooxxxxooooxxxx")))
           (skald:skald-init)
-          (skald:skald ()
+          (skald:skald
 	          (draw-background))
           (sleep 1)
           (dolist (c '(#\x #\o))
-	          (skald:skald ()
+	          (skald:skald
 	            (draw-background)
 	            (draw-foreground c))
 	          (sleep 1))))
       
       #+nil
-      (skald:with-skald-test (:override-terminal-size '(24 80))
+      (bifrost:with-bifrost
         (flet ((draw-background ()
 	               (let* ((row (make-string 22 :initial-element #\.))
 		                    (rectangle (loop repeat 16
@@ -1327,10 +1321,10 @@
 	                 (format nil "~%entertain~%three~%educated~%elephants~%"))))
           (skald:skald-init)
           (dolist (c '(#\nul #\e #\~))
-	          (skald:skald ()
+	          (skald:skald
 	            (draw-background))
 	          (sleep 1)
-	          (skald:skald (:overlay)
+	          (skald:skald-overlay
 	            (draw-table c))
 	          (sleep 2))))
 	    
@@ -1386,11 +1380,12 @@
 				
 
 
+    
     (shieldwall:with-shield-group ":MASK"
 
     ;;;; clickaround tests
     #+ nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
+    (bifrost:with-bifrost
       (flet ((draw (xx &optional mask)
 	             (skald:span (3 10 :mask mask
 			                           :align :center-left)
@@ -1398,29 +1393,31 @@
         (skald:skald-init)
         (skald:skald () (draw "FOOBARBAZ"))
         (sleep 1)
-        (skald:skald (:overlay) (draw "FOOBARBAZ" t))
+        (skald:skald-overlay (draw "FOOBARBAZ" t))
         (sleep 1)
-        (skald:skald (:overlay) (draw "foo"))
+        (skald:skald-overlay (draw "foo"))
         (sleep 1)
-        (skald:skald (:overlay) (draw "foo" t))
+        (skald:skald-overlay (draw "foo" t))
         (sleep 1)))
 
     #+ nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
+    (bifrost:with-bifrost
       (flet ((draw (xx &optional mask)
 	             (skald:span (3 10 :mask mask
 			                           :align :center-left)
 	               xx)))
         (skald:skald-init)
-        (skald:skald () (draw "FOOBARBAZ"))
+        (skald:skald (draw "FOOBARBAZ"))
         (sleep 1)
-        (skald:skald (:prep) (draw "FOOBARBAZ" t))
+        (let ((skald:*override-skald-drawmode* :prep))
+          (declare (special skald:*override-skald-drawmode*))
+          (skald:skald (draw "FOOBARBAZ" t)))
         (sleep 1)
-        (skald:skald (:overlay) (draw "foo"))
+        (skald:skald-overlay (draw "foo"))
         (sleep 1)))
     
     #+ nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
+    (bifrost:with-bifrost
       (let ((xx '(:span
 		              "FOO"
 		              (:fg :blue "BLUE")
@@ -1430,7 +1427,7 @@
 		                  "RED"))
 		              "BAR")))
         (skald:skald-init)
-        (skald:skald ()
+        (skald:skald
 	        (skald:span (3 15 :align :center-left
 			                      :fg :white
 			                      :bg :black)

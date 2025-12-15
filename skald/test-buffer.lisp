@@ -19,36 +19,44 @@
     ;;;; clickaround tests
     ;; run this to verify that it wrote to the screen & background color looks ok
     #+nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
-      (skald:skald-clear)
-      (skald:skald-draw (:unoptimized)
-	      (skald:span (1 1) "foo")
-	      (skald:span (3 6) "bar")
-	      (skald:span (6 12) "baz"))
-      (sleep 1)
-      (skald:skald-draw (:unoptimized)
-	      (skald:span (2 1) "FOO")
-	      (skald:span (4 6) "BAR")
-	      (skald:span (7 12) "BAZ"))
-      )
+    (let ((skald:*override-terminal-size* '(24 80))
+          (skald:*override-skald-drawmode* :unoptimized))
+      (declare (special skald:*override-terminal-size*
+                        skald:*override-skald-drawmode*))
+      (bifrost:with-bifrost
+        (skald:skald-clear)
+        (skald:skald
+	        (skald:span (1 1) "foo")
+	        (skald:span (3 6) "bar")
+	        (skald:span (6 12) "baz"))
+        (sleep 1)
+        (skald:skald
+	        (skald:span (2 1) "FOO")
+	        (skald:span (4 6) "BAR")
+	        (skald:span (7 12) "BAZ"))
+        ))
     
     #+nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
-      (skald:skald-clear)
-	    (skald:skald-draw (:unoptimized)
-	      (skald:span (1 1)
-	        `(:bg :green
-	           "GREEN_SPAN")))
-	    (sleep 1)
-	    (skald:skald-draw (:unoptimized)
-	      (skald:span (2 12)
-	        `(:bg :blue
-	           "BLUE_SPAN")))
-	    (sleep 1)
-	    (skald:skald-draw (:unoptimized)
-	      (skald:span (6 10)
-	        `(:bg :red
-	           "RED_SPAN"))))
+    (let ((skald:*override-terminal-size* '(24 80))
+          (skald:*override-skald-drawmode* :unoptimized))
+      (declare (special skald:*override-terminal-size*
+                        skald:*override-skald-drawmode*))
+      (bifrost:with-bifrost
+        (skald:skald-clear)
+	      (skald:skald
+	        (skald:span (1 1)
+	          `(:bg :green
+	                "GREEN_SPAN")))
+	      (sleep 1)
+	      (skald:skald
+	        (skald:span (2 8)
+	          `(:bg :blue
+	                "BLUE_SPAN")))
+	      (sleep 1)
+	      (skald:skald
+	        (skald:span (6 12)
+	          `(:bg :red
+	                "RED_SPAN")))))
 
     (shieldwall:with-shield-group ":UNOPTIMIZED"
       (shieldwall:shield ":UNOPTIMIZED in :MACHINE-READABLE mode"
@@ -165,7 +173,7 @@
 		                            (skald:span (3 3) "test2 bbb"))))))
       )
     #+nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
+    (bifrost:with-bifrost
       (skald:skald-clear)
       (skald:skald
 	      (skald:span (1 1) "foo")
@@ -179,7 +187,7 @@
       )
 
     #+nil
-    (skald:with-skald-test (:override-terminal-size '(24 80))
+    (bifrost:with-bifrost
       (skald:skald-clear)
 	    (skald:skald
 	      (skald:span (1 1)
