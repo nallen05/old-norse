@@ -598,13 +598,14 @@
     (setf (buffer-wiped-p *%display-buffer*)
           t)))
 
-(defun skald-init ()
+(defun skald-init (&key fg bg)
   (with-skald-output *output*
     (skald-check-terminal-size)
-    (bifrost:rune-write :reset
-                        *output*)
+    (bifrost:rune-write :reset *output*)
     ;; set the color before clearing, otherwise the background may
     ;; be a random color
+    (when fg (setf *foreground-color* fg))
+    (when bg (setf *background-color* bg))
     (with-default-style
       (bifrost:rune-write `(:background ,*%background-color-code*)
                           *output*)
