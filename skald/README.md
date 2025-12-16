@@ -1,299 +1,234 @@
 
+# Skald
 
+Skald is a high-level terminal UI & ASCII animation framework. It is part of the Old Norse terminal toolkit.
 
+### Features
 
-## DOCS INBOX
-- SKALD-INIT - color & size
-- SKALD-CHECK-SIZE, SKALD-SYNC-SIZE... resizing
-- :MASK
-- emojis; unrenderable-char-fill-char
+It extends Bifrost to add:
 
-## INBOX
-- %MOVE-CURSOR used to call FORCE-OUTPUT. I remove it. Watch for artifacts in TTYD
+**Sprite System:** Treat blocks of ASCII text as objects. Move them, color them, & layer them. Treat certain characters as transparant.
 
+**Diff-based Rendering:** Skald uses a double-buffering system. It compares the next frame to the current frame and only writes the characters that have changed. This allows fast screen updates & animation without flicker.
 
+**Grid Layout Engine:** Flexibly organize the screen into grids, columns, & windows. Bounding boxes support cropping, fill, border, & left/center/right alignment.
+  
+**Emoji Support:** Treats emojis as double-width unicode characters. Handles the logic of rendering double-width characters within monospaced grid & bounding boxes without breaking alignment or leaving artifacts.
+
+---------
+
+## Quick Start
+
+**Run these examples in the terminal, not inside SLIME/EMACS.**
+
+### 1. The Basics: Spans & Sprites
+
+A **Span** is a single line of text. A **Sprite** is a multi-line block of text.
+
+```lisp
+(bifrost:with-bifrost   ; Enter raw terminal mode
+  (skald:skald-init)    ; Initialize buffers & clear screen
+  (skald:skald          ; Open a draw transaction
+  
+    ;; Draw a single line
+    (skald:span (2 2) "Welcome to Old Norse")
+
+    ;; Draw a multi-line sprite
+    (skald:sprite (3 2)
+      "  __"
+      "<(o )___"
+      " ( ._> /"
+      "  `---'"
+      "---------"
+      )))
 ```
-(bifrost:with-bypass-terminal-read-buffer
+
+
+### 2. Styling and Alignment
+
+Skald supports ANSI colors and text alignment (centering sprites relative to a specific point).
+
+```lisp
+(bifrost:with-bifrost
+  (skald:skald-init :fg :black :bg :white) ; set new screen foreground/background color
+  (skald:skald
+  
+    ;; Draw a single line
+    (skald:span ((- skald:*screen-center-row* 4)  ; row
+                 skald:*screen-center-col*        ; column
+                 :fg :magenta                     ; foreground color
+                 :align :center)                  ; alignment
+      "Welcome to Old Norse")
+
+    ;; Draw a multi-line sprite
+    (skald:sprite ((- skald:*screen-center-row* 2) ; row
+                   skald:*screen-center-col*       ; column
+                  :align :center)                  ; alignment
+      "  __"
+      "<(o )___"
+      " ( ._> /"
+      "  `---'")
+    (dotimes (i 10)
+      (skald:span ((+ i 2 skald:*screen-center-row*) ; row
+                   skald:*screen-center-col*         ; column
+                   :bg :blue                         ; background color
+                   :fg :white                        ; foreground color
+                   :align :center)                   ; alignment
+        (make-string (- 40 (* i 2)) :initial-element #\.)))))
+```
+
+### 3. Layouts: Grids, Columns, and Windows
+
+Skald provides a layout engine to stack elements automatically.
+
+  * **Grid:** The container for a layout.
+  * **Column:** Stacks items vertically.
+  * **Window:** A box inside a column (borders optional)
+
+```lisp
+(bifrost:with-bifrost
   (skald:skald-init)
-  (skald:skald-draw ()
-    (skald:span (1 1)
-     "Hello " '(:with-foreground :cyan "World") "!"))
-  (sleep 0.5)
-  (skald:skald-draw (:overlay)
-    (skald:span (3 3) 
-      "42")))
+  (skald:skald
+    (skald:grid (2 2 :border t :border-fg :yellow)
+      (skald:column (:width 20)
+        (skald:window (:height 3)
+           "Stats"
+           '(:span "HP: " (:bg :red (:fg :white "11")) "/100") ; use keyword mini-language
+           "Mana: 50/50")
+        (skald:window (:height 3 :fg :green)
+           "Buffs"
+           "+Str"
+           "+Int"))
+      (skald:column (:width 40)
+        (skald:window (:height 7 :align :center)
+           ""
+           '(:fg :magenta "MAIN VIEW")         ; use keyword mini-language
+           "  __"
+           "<(o )___"
+           " ( ._> /"
+           "  `---'")))))
+```
 
-(bifrost:with-bypass-terminal-read-buffer
-  (skald:skald-init)
-  (skald:skald-draw ()
-	  (skald:span (1 1)
-	    `(:with-background :green
-	      "GREEN_SPAN")))
-  (sleep 1)
-  (skald:skald-draw ()
-	  (skald:span (1 10)
-	        `(:with-background :blue
-	           "BLUE_SPAN")))
-  (sleep 1)
-	  (skald:skald-draw ()
-	    (skald:span (10 10)
-	      `(:with-background :red
-	        "RED_SPAN"))))
-        
-(labels ((%background-grid ()
-           (let ((row (make-string 27 :initial-element #\.)))
-		             (loop repeat 8
-		                   collect row)))
-	       (draw-background ()
-	         (skald:sprite (1 1)
-		         `(:sprite ,@(%background-grid))))
-	       (draw-foreground (transparant-char)
-	         (skald:sprite (2 2 :transparant-char transparant-char)
-             "xxxxooooxxxxooooxxxxoooo"
-	           "ooooxxxxooooxxxxooooxxxx"
-	           "xxxxooooxxxxooooxxxxoooo"
-	           "ooooxxxxooooxxxxooooxxxx"
-	           "xxxxooooxxxxooooxxxxoooo"
-	           "ooooxxxxooooxxxxooooxxxx")))
-  (bifrost:with-bypass-terminal-read-buffer
-    (skald:skald-init)
-    (skald:skald-draw ()
-      (draw-background))
-    (sleep 1)
-    (dolist (c '(#\x #\o))
-	    (skald:skald-draw ()
-        (draw-background)
-  	    (draw-foreground c)
-	      (sleep 1)))))
-   
+
+### 4. Animation Loop
+
+Because Skald uses diff-based rendering, you can call `(skald:skald ...)` inside a loop. It will only redraw pixels that moved, preventing the screen from flashing.
+
+```lisp
+(bifrost:with-bifrost
+  (skald:skald-init :fg :black :bg :white)
+  ;; Calculate a path of points from (2,2) to the center of the screen over 60 frames
+  (let ((path (skald:fixed-step-line :start-row 2 
+                                     :start-column 2
+                                     :end-row skald:*screen-center-row* 
+                                     :end-column skald:*screen-center-col*
+                                     :steps-inclusive 60)))
+    ;; Game loop timing (approx 60fps)
+    (loop for point in path do
+      (let ((r (car point))
+            (c (cdr point)))
+        (skald:skald
+          (dotimes (i 10)
+            (skald:span ((+ i 2 skald:*screen-center-row*) skald:*screen-center-col*
+                         :bg :blue :fg :white :align :center)
+              (make-string (- 40 (* i 2)) :initial-element #\.)))
+          (skald:sprite (r c :transparant-char #\X)
+             "  __"
+             "<(o )___"
+             "X( ._> /"
+             "XX`---'"))
+        (sleep 0.016))))
+    (skald:skald-overlay
+      (skald:span ((- skald:*screen-center-row* 4) skald:*screen-center-col* 
+                   :fg :magenta :align :center)
+        "Welcome to Old Norse"))
+    (read-char))
 ```
 
 
 
+---------
 
-# DEVELOPMENT BACKLOG
+## Key concepts
 
-## monitor
-- [ ] look for artifacts from move cursor not calling FORCE-OUTPUT
-- [ ] query-terminal-size github issue
-  - [ ] if does not resolve: pull forward heroku deploy
+### The render pipeline
 
+Skald does not draw directly to the terminal immediately.
 
-## TODO
-- [.] emojis as double width characters
-  - [ ] last unit tests (double width over double width + bounding
-  - [ ] split test docs?????
-  - [ ] split souce code????
-  - [ ] clickaround tests
-- [ ] update documentation
-  - [ ] sample app
-- [ ] sixel support (at minimum: TTYD)
-     figure out how to unify sixel + ASCII coordinate arrays
-     might need need custom TTYD index.html + webfont
- [ ] additional sixel support
-     - helper functions for drawing sixel from
-       - file
-       - array
-       - geometric shape
-     - ensure sixel/skald share same color code index, so don't need to
-       define it in the header of every sixel image
-       assume: img2sixel + assume xterm-256 colors
-     - support transparancy
+1.  When you call `span` or `sprite`, Skald writes to an internal Change Buffer
+2.  Skald keeps a copy of what is *currently* on the user's screen in a Display Buffer
+3.  When the `(skald:skald ...)` body finishes, Skald compares the Change Buffer to the Display Buffer. It generates the minimal amount of ANSI escape sequences required to make the screen match the buffer.
 
-## ICEBOX
- * skald :mode :null
- * maybe :CENTER-LEFT  --> :CENTER
-         :CENTER-RIGHT --> :CENTER-RIGHT
- * need a form like SPRITE for text that center-aligns each text line seperately
- * need a paragraph form that does word wrap
- * other styles: bold / italic / blinking / underlined / strikethrough
-   (merge all style into a single metadata buffer, which is lazily created??)
- * need commands to draw a rectangles & other simple shapes
- * capture & expose the center point (y/x) of the screen for convenience??
- * ability to add outlines to sprites/spans???
- * interpolation
-    * cursor should take seperate READ & ADVANCE commands?
-    * curves (ease-in/ease-out/etc)
-    * color transitions
-    * need to be able to create a cursor with dynamic number of steps, based on how long it
-      takes to move from point X1 to X2 (or Y1 Y2) moving in a straight line
- * will eventually want:
-    - ROW macro (which would need ROW-GWINDOW* function) to match COLUMN macro
-    - sprite vertical alignmnet
-    - GWINDOW merging
-    - word wrap
- * make it throw a more intuitive error when WINDOW is used within GRID instead of GWINDOW
-   this is a commmon human error
- * maybe one day: maintain bounding box around change buffer changes
-     in order to reduce iteration over the buffer during wipe & emit
+### Coordinate system
 
+  * **Row (aka Y):** Vertical position. Starts at 1 (top).
+  * **Column (aka X):** Horizontal position. Starts at 1 (left).
+  * **Z-Index (Layering):** Sprites drawn later in the code appear "on top" of sprites drawn earlier. You can set a transparant character within each layer to paint composite images.
 
---------------
+### Emojis and double-width characters
 
+Terminals (and skald window bounding boxes) are monospaced grids, but emojis take up two grid cells. Skald automatically detects these characters to ensure alignment logic (like centering or borders) remains accurate.
 
+-----
 
+## API Reference
 
-# SKALD
+### Initialization & Control
 
-"Text graphics" library for terminal emulators such as Xterm/iTerm/TTYD/Screen/SSH/etc. 
-Extends BIFROST to add the following key features:
+`SKALD-INIT (&key fg bg)`
+Initializes the internal buffers based on current terminal size, clears the screen, and hides the cursor. Must be called before drawing. 
 
- (1) tools to work with blocks ASCII text as if they were graphical sprites
-    - position, alignment, colors, transparancy, & layering
+Provide FG/BG to set terminal foreground/background colors
 
- (2) optimized screen updates for faster animations with minimal flicker
-    - display/change buffer to minize writes to the screen & network IO
+Also sets these variables, describing the terminal screen, for convenience:
 
- (3) bells & whistles
-   - windows for relative alignment, trimming, background color, borders, etc
-   - window grids for easy layout or visualizing tables
-   - out-of-the-box BIFROST:CBOX integration for clickable sprites/windows
-   - interpolation tools to aid in animating transitions or effects
+        *screen-height* / *screen-width*
+        *screen-center-row* / *screen-center-bottom-row*
+        *screen-center-col* / *screen-center-right-col*
 
-COMING SOON
- - support for emojis as double width characters
- - display images & graphics via sixel
+`SKALD-CHECK-TERMINAL-SIZE ()`
+Recheck the current terminal size.
 
+`SKALD-SYNC ()`
+Manually resizes internal buffers if the terminal window size has changed. Does not call SKALD-CHECK-TERMINAL-SIZE. You need to call that yourself, seperately.
 
+`SKALD-CLEAR ()`
+Wipes the screen and the internal buffers. Less flicker than SKALD-INIT.
 
-# REQUIREMENTS
+### Updating the screen
 
-## MONOSPACED FONTS
+`SKALD (&body body)`
+The main macro. Code inside `body` writes to the Change Buffer. When `body` finishes, the differences are pushed to the terminal.
 
-in order for sprites, which are blocks of characters, to render correctly, you need to configure
-the terminal emulator to use monospaced font a monospaced font. 
+`SKALD-OVERLAY (&body body)`
+Similar to `SKALD`, but it does not assume the Change Buffer starts empty. Use this to draw on top of the existing frame without wiping the previous contents first.
 
-For example, here is how you do that with TTYD:
-    
-```
-ttyd -t fontFamily="'Courier','Lucinda Console','Roboto Mono','Courier New','Monospace'" -p 8080 --writable sbcl
-```
+### Layout primitives
 
-# MODERN TERMINAL
+`SPAN ((row col &key fg bg align fill-char transparant-char mask) &body subsegments)`
+Draws a single line of text.
 
-in order to use mouse tracking features, BIFROST requires the terminal emulator support XTERM
-mouse tracking mode 1000 & SGR mode. This should be true for most modern terminal emulators
+`SPRITE (row col (&key fg bg align fill-char transparant-char mask) &body lines)`
+Draws a multi-line block of text.
 
+### Grid layouts
 
-# NOTES: THIS README IS OUT OF DATE
+`GRID ((row col &key fg bg width height align fill-char transparant-char mask border border-chars border-fg border-bg) &body columns)`
+Defines a container for columns.
 
-(bifrost:with-bypass-terminal-read-buffer
-  (skald-init)
-  (skald-draw (:draw)
-    (span (10 10) "Hello world!")))
+  * `border`: T or NIL.
+  * `border-chars`: A string of 3 chars for "Horizontal", "Vertical", and "Intersection" (e.g., `"-|+"`).
 
+`COLUMN ((&key fg bg width height align fill-char transparant-char mask) &body windows)`
+Vertical stack of windows. Automatically placed to the right of the previous column in the grid.
 
+`WINDOW ((&key fg bg height align fill-char transparant-char mask) &body lines)`
+A box within a column. Automatically placed below the previous window in the column.
 
-# QUICKSTART
+`SOLO-WINDOW (row col (&key fg bg width height align fill-char transparant-char mask border border-chars border-fg border-bg) &body lines)`
+A window placed at absolute coordinates, outside of the Grid/Column auto-layout system.
 
-a typical skald form looks like this:
-
-  (skald-draw (:init)
-    (span (10 10) "Hello world!"))
-
-SKALD is the main wrapper macro:
- 1. does setup so that SPAN/SPRITE/WINDOW/etc can write to the change buffer
-    since its mode is :INIT in this example, it resets the screen as part of that setup
- 2. then updates the screen based on the change buffer
-
-the macro SPAN writes to the change buffer. In this example it draws a single line of text
-("Hello world!") at the Y/X coordinate (1/1)
-
-SPAN is one of a number of macros that write text to the screen:
-  * SPAN - writes a single line of ASCII characters
-  * SPRITE - write a multi-line block of ASCII characters
-  * WINDOW - defines a rectangle on the screen then writes spans/sprites inside of it
-             useful for aligment, trimming, & background filling
-             optional border outline
-  * GRID - organize the screen into grids of windows
-           useful for making tables of data or organizing the layout of the screen
-
-here's a variation of the same example with colored text:
-
-(bifrost:with-bypass-terminal-read-buffer
-  (skald:skald-draw ()
-    (skald:span (1 1)
-      "Hello " '(:with-forground :blue "World") "!")))
-
-this example writes over the previous
-
-sometimes it's useful to clear a span/sprite using the :MASK keyword before writing the next
-thing over it:
-
-  (progn
-    (skald:skald (:overlay)
-      (skald:span (1 1 :mask t)
-        "Hello " '(:with-forground :blue "World") "!"))
-      (skald:span (1 1)
-        "42")))
-
-:MASK uses :FILL-CHAR, :FORGROUND, & :BARCKGROUND
-
-
-NOTES
-* within SKALD, calls to SPAN/SPRITE leave *SKALD-X*/*SKALD-Y* bound to their last coordinate
-  value in order to make it easier to align the next SPAN/SPRITE to the previous one, within
-  the same SKALD form
-
-
-
-# SKALD MACRO MODES
-
-   :INIT
-      clears the screen & resets the screen dimensions (this is the only mode that does either
-      of these things) then draws to the screen
-   :REDRAW
-      like :INIT in that it redraws the entire screen, except:
-        1. it doesn't send the terminal a RESET command or check the screen size
-           it just draws on the screen
-        2. in order to minimize IO & unnecessary updates to the screen, it doensn't redraw
-           characters that are the same in the change & display buffers
-   :OVERLAY
-      * doesn't try to draw/redraw the entire screen; it only draws the contents of the the
-        change buffer
-      * similar to :REDRAW, it skips coordinates that appear to the same in the change
-        & display buffers
-   :FORCE-OVERLAY
-      * like :OVERLAY, except that it forcibly draws every character of the change buffer
-        contents, even if the character appears to be the same in the display buffer
-     * this is useful if you are writing unit tests or debugging & want to be certain exactly
-       what will be written to the screen, without it being obfusicated by under the hood
-       IO optimization
-
- NOTES:
-    * SKALD :OVERLAY/:REDRAW & SPAN/SPRITE :MASK only know about updates made to the screen
-      via SKALD. If you write to the screen via other means, it will break. Don't do that.
-      But if you do (which you shouldn't) use :INIT/:FORCE-OVERLAY instead to clean it up
-    * if, at any time, the terminal dimensions are detected to have been changed, then the
-      size of the terminal & display buffers will be updated to match. This may result in the
-      loss of whatever was in them. Because of that, you should do SKALD :INIT if you think
-      that the size of the terminal may have changed
-     
-
-
-
-# TESTING & DEBUFFING
-
-To debug code generating skald text graphics in the SLIME/EMACS REPL, set
-`BIFROST:*RUNE-WRITE-DEBUG-MODE*` to :ESCAPE or :CONTENT. Do this either directly or by setting
-the variable or the SKALD :DEBUG keyword argument
-
-In order to unit tests the code, do the following:
-  1. capture SKALD output as a string by setting :OUTPUT to NIL
-  2. ensure that the the output doesn't have #\esc characters in it by setting :DEBUG to :ASCII-ESCAPE
-  3. use `:FORCE-OVERLAY` mode to ensure the output isn't optimized to minize writes to the screen
-
-Here's how that looks:
-```
-  (skald (:force-overlay :output nil :debug :ascii-escape) 
-    ...)
-```
-
-
-
-
-
-# MINI LANGUAGE WITHIN SPAN/SPRITE/WINDOW/GWINDOW
+# Mini language within SPAN/SPRITE/WINDOW/SOLO-WINDOW
 
 Within sprite and window forms:
 
@@ -301,56 +236,52 @@ Within sprite and window forms:
      Each string is given its own line, with newlines in the string creating additional lines
  * NULL is treated a blank line
  * CHARACTERS are treated as a single character string
-     - This means that each character creates a new line when within a sprite
-       If you don't want each character to be treated as 1 line, put them
-       within a :SPAN
+     - This means that each character creates a new line when within a sprite. If you don't want each character to be treated as 1 line, put them within a :SPAN
      - NOTE: #\newline & #\return are treated as 2 blank lines
  * :NODISPLAY - the special keyword :NODISPLAY is completely ignored
  * LISTS are special forms. The CAR of the list must be one of these keywords:
-      :WITH-FORGROUND (color &rest forms)
-         everything that follows has forground COLOR
-      :WITH-BACKGROUND (color &rest forms)
-         everything that follows has background COLOR
-      :EMOJI (name)
-         inserts an emoji character; treated just like a raw character by SPAN/SPRITE
-      :SPAN (&rest subsegements)
-         everything that follows is treated as part of one line
-         (so #\newline & #\return are forcibly removed)
-      :SPRITE (&rest sprites)
-         multi-line
-      :NODISPLAY (&rest anything)
-         everything that follows is ignored
-      :CALL-WITH-POINT (fn)
-         calls FN with 2 arguments: the current Y/X coordinates
-         then continues processing the value returned by FN
+      :FG (color &body forms) - everything that follows has forground COLOR
+      :BG (color &body forms) - everything that follows has background COLOR
+      :EMOJI (name) - inserts an emoji character; treated just like a raw character by SPAN/SPRITE
+      :SPAN (&body subsegements) - everything that follows is treated as part of one line (so #\newline & #\return are forcibly removed)
+      :SPRITE (&body sprites) - multi-line
+      :NODISPLAY (&body anything) - everything that follows is ignored
+      :CALL-WITH-POINT (fn) - calls FN with 2 arguments: the current row/col coordinates then continues processing the value returned by FN
            - if you don't want FN to show anything, then return :NODISPLAY
-           - WARNING: works within left-aligned WINDOW/GDWINDOW, but not non-left aligned
-             (:CENTER-LEFT / :CENTER-RIGHT / :RIGHT)
+           - **WARNING: currently broken within non-left aligned (:CENTER / :CENTER-RIGHT / :RIGHT)**
 
 Within spans:
 
  * Everthing is the same, except that anything that would produce a newline is ignored
- * It's possible for :SPAN to appear with a sprite, but not for :SPRITE to appear within
-   a span
+ * It's possible for :SPAN to appear with a sprite, but not for :SPRITE to appear within a span
 
-# COLORS
 
-8 default colors supported out of the box:
-  :black
-  :blue
-  :cyan
-  :green
-  :magenta
-  :red
-  :white
-  :yellow
+### Colors
 
-they can be used via :WITH-FORGROUND & :WITH-BACKGROUND
+Colors are passed as keywords to `:fg` and `:bg` arguments.
+Available: `:black`, `:red`, `:green`, `:yellow`, `:blue`, `:magenta`, `:cyan`, `:white`.
 
-add more via: DEF-COLOR-CODE
+You can define new colors with DEF-COLOR. Look them up with LOOKUP-COLOR-CODE.
 
-# MISC NOTES
+### emojis
 
- * DRAW -> write to the buffer
- * EMIT -> write to the terminal
+`DEF-EMOJI (name char-code)` / `LOOKUP-EMOJI (name)`
+Register and use emoji by keyword.
 
+  * Example: `(skald:span (1 1) (skald:lookup-emoji :grinning) " Hello")`
+
+### Utilities
+
+`FIXED-STEP-LINE (&key start-row start-column end-row end-column steps-inclusive)`
+Returns a list of `(row . col)` cons cells representing a straight line path between two points. Useful for creating animation paths.
+
+
+## Advanced mode stuff
+
+`*override-terminal-size*` set this to (HEIGHT . WIDTH), & it will fool SKALD-INIT & SKALD-CHECK-TERMINAL-SIZE to using this as the terminal size. If set, skald will never query the terminal to check the actual size.
+
+
+`*override-skald-drawmode*` You can set this to override the behavior of SKALD & SKALD-OVERLAY:
+  - :unoptimized - Forcibly draws everything in the change. Most useful for writing unit tests, so that tests don't interfer with each other
+  - :prep - Write to change buffer but don't emit. Builds up content to emit later. This is used mostly for testing.
+  - :null - Write to change buffer, don't emit, then wipe the buffer. For testing.
