@@ -5,7 +5,7 @@
 
 Build internal tools, monitoring dashboards, and retro ASCII roguelikes. 
 
-Features: Mouse support, 60fps rendering, deploy anywhere via SSH or [TTYD](https://tsl0922.github.io/ttyd/).
+Features: Mouse support, 60fps rendering, deploy anywhere via SSH or web browser ([TTYD](https://tsl0922.github.io/ttyd/))
 
 Core libraries (terminal UI):
  - [Bifrost](bifrost/) 🌈 - low-level terminal control
