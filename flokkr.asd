@@ -16,10 +16,10 @@
             :serial t)))
 
 (defsystem :flokkr/test
-  :depends-on (:flokkr (:version :shieldwall "0.1.1"))
+  :depends-on (:flokkr (:version :shieldwall "0.1.2"))
   :description "tests for FLOKKR"
   :author "Nick Allen <nallen05@gmail.com>"
   :components
-  ((:module :skald
+  ((:module :flokkr
     :components ((:file test-flokkr))
     :serial t)))

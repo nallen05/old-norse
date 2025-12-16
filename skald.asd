@@ -16,7 +16,7 @@
             :serial t)))
 
 (defsystem :skald/test
-  :depends-on (:skald (:version :shieldwall "0.1.1"))
+  :depends-on (:skald (:version :shieldwall "0.1.2"))
   :description "tests for SKALD"
   :author "Nick Allen <nallen05@gmail.com>"
   :version "0.1"

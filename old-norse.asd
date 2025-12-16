@@ -16,7 +16,7 @@
     :serial t)))
 
 (defsystem :old-norse/test
-  :depends-on (:swordbreaker :skald/test)
-  :description "umbrella package for running all Old Norse related testes"
+  :depends-on ((:version :shieldwall "0.1.2") :skald/test :flokkr/test)
+  :description "umbrella package for running all Old Norse related tests"
   :author "Nick Allen <nallen05@gmail.com>"
   :version "0.1")
