@@ -22,6 +22,8 @@ Skald extends Bifrost to add:
 
 A **Span** is a single line of text. A **Sprite** is a multi-line block of text.
 
+![Simple example](../images/skald-example-simple.png)
+
 ```lisp
 (bifrost:with-bifrost   ; Enter raw terminal mode
   (skald:skald-init)    ; Initialize buffers & clear screen
@@ -44,6 +46,8 @@ A **Span** is a single line of text. A **Sprite** is a multi-line block of text.
 ### 2. Styling and Alignment
 
 Skald supports ANSI colors and text alignment (centering sprites relative to a specific point).
+
+![Example with styling and layout](../images/skald-example-colors.png)
 
 ```lisp
 (bifrost:with-bifrost
@@ -78,6 +82,8 @@ Skald supports ANSI colors and text alignment (centering sprites relative to a s
 
 ### 3. Layouts: Grids, Columns, and Windows
 
+![Example grid layout](../images/skald-example-grid.png)
+
 Skald provides a grid-based layout system
 
   * **Grid:** The container for a layout.
@@ -86,7 +92,7 @@ Skald provides a grid-based layout system
 
 ```lisp
 (bifrost:with-bifrost
-  (skald:skald-init)
+  (skald:skald-init :fg :cyan :bg :black)
   (skald:skald
     (skald:grid (2 2 :border t :border-fg :yellow)
       (skald:column (:width 20)
@@ -94,18 +100,19 @@ Skald provides a grid-based layout system
            "Stats"
            '(:span "HP: " (:bg :red (:fg :white "11")) "/100") ; keyword mini-language
            "Mana: 50/50")
-        (skald:window (:height 3 :fg :green)
+        (skald:window (:height 3)
            "Buffs"
            "+Str"
            "+Int"))
       (skald:column (:width 40)
-        (skald:window (:height 7 :align :center)
+        (skald:window (:height 7 :align :center :bg :white :fg :black)
            ""
            '(:fg :magenta "MAIN VIEW")  ; keyword mini-language
            "  __"
            "<(o )___"
            " ( ._> /"
-           "  `---'")))))
+           "  `---'"))))
+   (read-char))
 ```
 
 
