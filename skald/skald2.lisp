@@ -1,45 +1,6 @@
 
 
 
-
-
-;;;;; INSTRUCTIONS FOR ADDING DOUBLE-WIDTH CHARACTER (EMOJI) SUPPORT
-;;
-;; DOUBLE-WIDTH-CHAR-P
-;;  EMOJI-CHAR-P
-;;
-;; WRITE-TO-CHANGE-BUFFER + %WRITE-CHAR/UNBOUNDED
-;;  => %WRITE-CHAR-LL/UNBOUNDED
-;;       * if write (double-width-char-p), then write #\ZERO_WIDTH_SPACE to right
-;;         (code-char #x200B) -> #\ZERO_WIDTH_SPACE
-;;           except if at right edge of terminal, then write:
-;;            change buffer: #\nul
-;;            display buffer: fill char
-;;       * if write over emoji, then:
-;;           change buffer: write #\nul to right
-;;           display buffer: write fill char to right
-;;       * if write over #\ZERO_WIDTH_SPACE, then:
-;;           change buffer: write #\nul to left
-;;           display buffer: write fill char to right
-;;
-;; %WRITE-CHAR
-;;  when (double-width-char-p c)
-;;    +1 on max x bounds check
-;;    +1 on cursor after
-;;  even when outside boundingbox
-;;
-;; EMIT-CHANGE-BUFFER
-;;   #\ZERO_WIDTH_SPACE is a no-op (except for updating display buffer)
-;;
-;; %RENDER-SPAN/ALIGNMENT-PREVIEW
-;;   if (double-width-char-p c)
-;;      (write-string "XX")
-;;      (write-char c)
-;;
-;; SPRITE/SPAN/etc --> no double-width borders/fillers/etc
-;;
-
-
 (defpackage :skald
   (:use :cl)
   (:export
@@ -991,46 +952,6 @@ Writes to the change buffer
     (t
      (%write-single-width-character-to-change-buffer c ignore-window-bounding-box)))
   c)
-
-
-
-
-;; (defun write-to-change-buffer (c &optional ignore-window-bounding-box)
-;;   (assert *%within-skald-output*)
-;;   (assert (numberp *row*))
-;;   (assert (numberp *col*))
-;;   (unless (and (outside-window-bounding-box-p)
-;;                (not ignore-window-bounding-box))
-;;     (unless (or (outside-terminal-dimensions-p)              
-;;                 (char= c *transparant-char*))   
-;;       (setf ;; bg
-;;             (aref (buffer-background-color-array *%change-buffer*)
-;;              *row*
-;;              *col*)
-;; 	          (if *mask-mode-p*
-;; 	              *%mask-background-color-code*
-;; 	              *%background-color-code*)
-
-;;             ;; fg
-;; 	          (aref (buffer-foreground-color-array *%change-buffer*)
-;;                   *row*
-;;                   *col*)
-;; 	          (if *mask-mode-p*
-;; 	              *%mask-foreground-color-code*
-;; 	              *%foreground-color-code*)
-
-;;             ;; char
-;; 	          (aref (buffer-array *%change-buffer*)
-;;                   *row*
-;;                   *col*)
-;; 	          (if *mask-mode-p*
-;; 	              *fill-char*
-;; 	              c)))
-;;     (update-cbox-bounding-box!))  
-;;   (incf *col*)
-;;   c)
-
-
 
 
 
