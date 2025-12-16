@@ -47,8 +47,6 @@ A **Span** is a single line of text. A **Sprite** is a multi-line block of text.
 
 Skald supports ANSI colors and text alignment (centering sprites relative to a specific point).
 
-![Example with styling and layout](../images/skald-example-colors.png)
-
 ```lisp
 (bifrost:with-bifrost
   (skald:skald-init :fg :black :bg :white) ; set new screen foreground/background color
@@ -80,9 +78,9 @@ Skald supports ANSI colors and text alignment (centering sprites relative to a s
         (make-string (- 40 (* i 2)) :initial-element #\.)))))
 ```
 
-### 3. Layouts: Grids, Columns, and Windows
+![Example with styling and layout](../images/skald-example-colors.png)
 
-![Example grid layout](../images/skald-example-grid.png)
+### 3. Layouts: Grids, Columns, and Windows
 
 Skald provides a grid-based layout system
 
@@ -115,6 +113,7 @@ Skald provides a grid-based layout system
    (read-char))
 ```
 
+![Example grid layout](../images/skald-example-grid.png)
 
 ### 4. Animation Loop
 
