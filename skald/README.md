@@ -7,13 +7,10 @@ Skald is a high-level terminal UI & ASCII animation framework. It is part of the
 
 It extends Bifrost to add:
 
-**Sprite System:** Treat blocks of ASCII text as objects. Move them, color them, & layer them. Treat certain characters as transparant.
-
-**Diff-based Rendering:** Skald uses a double-buffering system. It compares the next frame to the current frame and only writes the characters that have changed. This allows fast screen updates & animation without flicker.
-
-**Grid Layout Engine:** Flexibly organize the screen into grids, columns, & windows. Bounding boxes support cropping, fill, border, & left/center/right alignment.
-  
-**Emoji Support:** Treats emojis as double-width unicode characters. Handles the logic of rendering double-width characters within monospaced grid & bounding boxes without breaking alignment or leaving artifacts.
+- **Sprite system:** Treat blocks of ASCII text as objects. Move them, color them, & layer them. Use a transparant character to create composite images.
+- **Efficient diff-based rendering:** Skald uses a double-buffering system. It compares the next frame to the current frame and only writes the characters that have changed. This allows fast screen updates & animation without flicker.
+- **Grid layout engine:** Flexibly organize the screen into grids, columns, & windows. Bounding boxes support cropping, fill, border, & left/center/right alignment.
+- **Emoji support:** Treats emojis as double-width unicode characters. Handles the logic of rendering double-width characters within monospaced grid & bounding boxes without breaking alignment or leaving artifacts.
 
 ---------
 
@@ -93,7 +90,7 @@ Skald provides a layout engine to stack elements automatically.
       (skald:column (:width 20)
         (skald:window (:height 3)
            "Stats"
-           '(:span "HP: " (:bg :red (:fg :white "11")) "/100") ; use keyword mini-language
+           '(:span "HP: " (:bg :red (:fg :white "11")) "/100") ; keyword mini-language
            "Mana: 50/50")
         (skald:window (:height 3 :fg :green)
            "Buffs"
@@ -102,7 +99,7 @@ Skald provides a layout engine to stack elements automatically.
       (skald:column (:width 40)
         (skald:window (:height 7 :align :center)
            ""
-           '(:fg :magenta "MAIN VIEW")         ; use keyword mini-language
+           '(:fg :magenta "MAIN VIEW")         ; keyword mini-language
            "  __"
            "<(o )___"
            " ( ._> /"
@@ -123,7 +120,7 @@ Because Skald uses diff-based rendering, you can call `(skald:skald ...)` inside
                                      :end-row skald:*screen-center-row* 
                                      :end-column skald:*screen-center-col*
                                      :steps-inclusive 60)))
-    ;; Game loop timing (approx 60fps)
+    ;; 60fps animation
     (loop for point in path do
       (let ((r (car point))
             (c (cdr point)))
@@ -155,14 +152,14 @@ Because Skald uses diff-based rendering, you can call `(skald:skald ...)` inside
 
 Skald does not draw directly to the terminal immediately.
 
-1.  When you call `span` or `sprite`, Skald writes to an internal Change Buffer
+1.  When you call `span` or `sprite`, skald writes to an internal Change Buffer
 2.  Skald keeps a copy of what is *currently* on the user's screen in a Display Buffer
 3.  When the `(skald:skald ...)` body finishes, Skald compares the Change Buffer to the Display Buffer. It generates the minimal amount of ANSI escape sequences required to make the screen match the buffer.
 
 ### Coordinate system
 
-  * **Row (aka Y):** Vertical position. Starts at 1 (top).
-  * **Column (aka X):** Horizontal position. Starts at 1 (left).
+  * **Row:** Vertical position. Starts at 1 (top).
+  * **Column:** Horizontal position. Starts at 1 (left).
   * **Z-Index (Layering):** Sprites drawn later in the code appear "on top" of sprites drawn earlier. You can set a transparant character within each layer to paint composite images.
 
 ### Emojis and double-width characters
@@ -176,57 +173,54 @@ Terminals (and skald window bounding boxes) are monospaced grids, but emojis tak
 ### Initialization & Control
 
 `SKALD-INIT (&key fg bg)`
-Initializes the internal buffers based on current terminal size, clears the screen, and hides the cursor. Must be called before drawing. 
-
-Provide FG/BG to set terminal foreground/background colors
-
-Also sets these variables, describing the terminal screen, for convenience:
+- Initializes the internal buffers based on current terminal size, clears the screen, and hides the cursor. Must be called before drawing. 
+- Provide FG/BG to set terminal foreground/background colors
+- Also sets these variables, describing the terminal screen, for convenience:
 
         *screen-height* / *screen-width*
         *screen-center-row* / *screen-center-bottom-row*
         *screen-center-col* / *screen-center-right-col*
 
 `SKALD-CHECK-TERMINAL-SIZE ()`
-Recheck the current terminal size.
+- Recheck the current terminal size.
 
 `SKALD-SYNC ()`
-Manually resizes internal buffers if the terminal window size has changed. Does not call SKALD-CHECK-TERMINAL-SIZE. You need to call that yourself, seperately.
+- Manually resizes internal buffers if the terminal window size has changed. Does not call SKALD-CHECK-TERMINAL-SIZE. You need to call that yourself, seperately.
 
 `SKALD-CLEAR ()`
-Wipes the screen and the internal buffers. Less flicker than SKALD-INIT.
+- Wipes the screen and the internal buffers. Less flicker than SKALD-INIT.
 
 ### Updating the screen
 
 `SKALD (&body body)`
-The main macro. Code inside `body` writes to the Change Buffer. When `body` finishes, the differences are pushed to the terminal.
+- The main macro. Code inside `body` writes to the Change Buffer. When `body` finishes, the differences are pushed to the terminal.
 
 `SKALD-OVERLAY (&body body)`
-Similar to `SKALD`, but it does not assume the Change Buffer starts empty. Use this to draw on top of the existing frame without wiping the previous contents first.
+- Similar to `SKALD`, but it does not assume the Change Buffer starts empty. Use this to draw on top of the existing frame without wiping the previous contents first.
 
 ### Layout primitives
 
 `SPAN ((row col &key fg bg align fill-char transparant-char mask) &body subsegments)`
-Draws a single line of text.
+- Draws a single line of text.
 
 `SPRITE (row col (&key fg bg align fill-char transparant-char mask) &body lines)`
-Draws a multi-line block of text.
+- Draws a multi-line block of text.
 
 ### Grid layouts
 
 `GRID ((row col &key fg bg width height align fill-char transparant-char mask border border-chars border-fg border-bg) &body columns)`
-Defines a container for columns.
-
+- Defines a container for columns.
   * `border`: T or NIL.
   * `border-chars`: A string of 3 chars for "Horizontal", "Vertical", and "Intersection" (e.g., `"-|+"`).
 
 `COLUMN ((&key fg bg width height align fill-char transparant-char mask) &body windows)`
-Vertical stack of windows. Automatically placed to the right of the previous column in the grid.
+- Vertical stack of windows. Automatically placed to the right of the previous column in the grid.
 
 `WINDOW ((&key fg bg height align fill-char transparant-char mask) &body lines)`
-A box within a column. Automatically placed below the previous window in the column.
+- A box within a column. Automatically placed below the previous window in the column.
 
 `SOLO-WINDOW (row col (&key fg bg width height align fill-char transparant-char mask border border-chars border-fg border-bg) &body lines)`
-A window placed at absolute coordinates, outside of the Grid/Column auto-layout system.
+- A window placed at absolute coordinates, outside of the Grid/Column auto-layout system.
 
 # Mini language within SPAN/SPRITE/WINDOW/SOLO-WINDOW
 
@@ -278,10 +272,22 @@ Returns a list of `(row . col)` cons cells representing a straight line path bet
 
 ## Advanced mode stuff
 
-`*override-terminal-size*` set this to (HEIGHT . WIDTH), & it will fool SKALD-INIT & SKALD-CHECK-TERMINAL-SIZE to using this as the terminal size. If set, skald will never query the terminal to check the actual size.
+`*override-terminal-size*` 
+ - set this to (HEIGHT . WIDTH), & it will fool SKALD-INIT & SKALD-CHECK-TERMINAL-SIZE to using this as the terminal size. 
+ - If set, skald will never query the terminal to check the actual size.
 
+`*override-skald-drawmode*` 
+ - You can set this to override the behavior of SKALD & SKALD-OVERLAY:
+   * :unoptimized - Forcibly draws everything in the change. Most useful for writing unit tests, so that tests don't interfer with each other
+   * :prep - Write to change buffer but don't emit. Builds up content to emit later. This is used mostly for testing.
+   * :null - Write to change buffer, don't emit, then wipe the buffer. For testing.
 
-`*override-skald-drawmode*` You can set this to override the behavior of SKALD & SKALD-OVERLAY:
-  - :unoptimized - Forcibly draws everything in the change. Most useful for writing unit tests, so that tests don't interfer with each other
-  - :prep - Write to change buffer but don't emit. Builds up content to emit later. This is used mostly for testing.
-  - :null - Write to change buffer, don't emit, then wipe the buffer. For testing.
+`WITH-SKALD-TEST (&key debug-mode override-drawmode override-terminal-size) &body body)`
+ - executes BODY, with the following setup:
+   - captures terminal output to a string
+   - attepts to read from the terminal within BODY throw an error
+   - sets the following (can be overridden by keyword args):
+     * sets `*OVERRIDE-SKALD-DRAWMODE*` to `:UNOPTIMIZED`
+     * sets `BIFROST:*BIFROST-DEBUG-MODE*` to `:MACHINE-READABLE`
+     * hard codes terminal size to (24 . 80)
+ - this is for unit testing TUI screens/widgets
