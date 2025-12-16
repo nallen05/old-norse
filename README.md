@@ -22,24 +22,52 @@ Old Norse is implementation-dependent on SBCL.
 
 **Run these examples in the terminal, not SLIME/EMACS**
 
-Fast animation that follows mouse movement
+Example: styling and alignment
+
 ```lisp
-(bifrost:with-bifrost                 ; low-level setup
-  (skald:skald-init)                  ; clear the screen
-  (bifrost:with-mouse-tracking (1003) ; track mouse movement
-    (flokkr:flokkr
+(bifrost:with-bifrost                       ; Enter raw terminal mode
+  (skald:skald-init :fg :black :bg :white)  ; Initialize buffers & clear screen
+  (skald:skald                              ; Open a draw transaction
+    (skald:span ((- skald:*screen-center-row* 4)
+                 skald:*screen-center-col*
+                 :fg :magenta
+                 :align :center)
+      "Welcome to Old Norse")
+    (skald:sprite ((- skald:*screen-center-row* 2) 
+                   skald:*screen-center-col* 
+                   :align :center)
+      "  __"
+      "<(o )___"
+      " ( ._> /"
+      "  `---'")
+    (dotimes (i 10)
+      (skald:span ((+ i 2 skald:*screen-center-row*) skald:*screen-center-col*
+                   :bg :blue :fg :white :align :center)
+        (make-string (- 40 (* i 2)) :initial-element #\.)))))
+```
+
+![Example with styling and layout](images/skald-example-colors.png)
+
+Example: fast animation that follows mouse movement
+
+```lisp
+(bifrost:with-bifrost
+  (skald:skald-init :bg :white :fg :blue)
+  (bifrost:with-mouse-tracking (1003)                   ; start tracking mouse movement
+    (flokkr:flokkr                                      ; enter flokkr loop
       (:input
         (:mouse-click-left (return-from flokkr:flokkr)) ; on left click, exit
-        (:mouse-move                                    ; on mouse move, reposition
+        (:mouse-move                                    ; on mouse move, reposition sprite
          (skald:skald
-           (skald:sprite ((first bifrost:*rune-payload*)  ; row
-                          (second bifrost:*rune-payload*) ; col
-                          :fg :cyan                       ; forgeround color
-                          :align :center)                 ; sprite alignment
-                "╔═══════════════╗"
-                "║ Hello, world! ║"
-                "╚═══════════════╝")))))))
+           (skald:sprite ((first bifrost:*rune-payload*) (second bifrost:*rune-payload*) :align :center)
+                "╔═══════╗"
+                "║  🌍   ║"
+                "║ hello ║"
+                "║ world ║"
+                "╚═══════╝")))))))
 ```
+
+![Example with mouse tracking](images/skald-example-simple-mouse.png)
 
 
 Simultaneous mouse movement tracking + animation timing loops
