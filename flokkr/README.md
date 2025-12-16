@@ -3,20 +3,23 @@
 
 Terminal UI (TUI) applications require concurrency: different screen components need to be able to update at different timings (eg: a CPU monitoring graph updating at 10hz & a status panel updating at 1hz after 1 second initialization period), while simultaneously also providing immediate responsiveness to user input. However, terminal IO itself is single threaded.
 
-# FLOKKR
+# Flokkr
 
 Flokkr is a concurrency library for Common Lisp, purpose-built for building interactive TUI applications using skald/bifrost. It is part of the Old Norse Terminal Toolkit.
 
 Features:
 - Manage multiple dynamic timing loops via a mini-DSL (inspired by the LOOP macro)
-- Responds immediately to user input from the terminal
-- Emphasis on predictable synchronization for coordinating timers
+- Responds immediately to user input from the terminal (without polling)
+- Emphasis on predictable synchronization (for coordinating timers)
 - Define behaviors separately then compose via :SUBFLOKKR
 
 Form factor:
-- Cooperative multitasking (but the plan is to also add an async feature to run slow DB queries & cloud API calls outside of the main loop)
+- Cooperative multitasking
 - Integrated with bifrost for processing events from the terminal
 - Implementation-depedent on SBCL
+
+Coming soon!
+ - Async feature feature to run slow DB queries & cloud API calls outside of the main animation loop (seperate worker thread, running CL-ASYNC to handle concurrent IO)
 
 # Quickstart
 
@@ -68,11 +71,11 @@ Elapsed 10hz 4hz  Step
 ...and so on, until you C-c to quit
  - "elapsed" is how many seconds have gone by since FLOKKR started running
  - "10hz" & "4hz" count cycles at that speed
+ - "Step" is the number of seconds between the start of each successive tick
  
-As you can see, the timers intersect cleanly at ~0.5 seconds, ~1 seconds, ~1.5 seconds, ~2 seconds, etc.
+As you can see, the timers intersect cleanly at 0.5 seconds, 1 seconds, 1.5 seconds, 2 seconds, etc.
 
 You may also notice some small jitter (eg: the timers intersecting at 1.51 seconds instead of 1.5 seconds). Small jitter happens due to things like from OS scheduler latency, garbage collection, & overhead in entering and exiting the wait syscall. It is offset by the scheduler, so it does not compound/accumulate across multiple ticks.
-
 
 
 # Example: timer + simultaneous user input processing
@@ -347,7 +350,7 @@ if :PERCOLATE it truthy, then then timer/:INPUT activations within a subflokker 
 1. Dedicated to making interactive TUIs with Skald/Bifrost
 2. Speed: immediately respond to user input; correctly juggle multiple timers; avoid polling
 3. Precision & predictability: by default, all timers syncronize via a global schedule. So you can depend on them intersecting at recurring frequences.
-4. All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. (Encourages Old Norse "high locality" code structure)
+4. Encourage Old Norse "high locality" code structure: All timing logic visible in one place to make it easier to understand & reason about interactive timing behaviors. 
 5. Enable composability: You can define widget behaviors separately then compose them later, but within rigid constraints (:SUBFLOKKR) to enforce traceability and avoid hidden scheduling problems
 
 # Recommended conventions
@@ -372,6 +375,12 @@ We have found using the following prefix naming conventions to be useful when st
 
 ```lisp
 ;; <d>-duration-seconds    duration of seconds to wait (or that accured between events)
-;; <%>-progress            for tracking transition from 0.0 to 1.0 (state machine or animation)
 ;; <n>-tick-count          number of ticks/frames for something to run (eg for an animation)
+;; <%>-progress            for tracking transition from 0.0 to 1.0 (state machine or animation)
 ```
+
+# Miscellany
+
+In Old Norse, "flokkr" means:
+- a group of five or more
+- a small poem without a regular refrain
