@@ -140,7 +140,7 @@
 
 (defparameter *window-height*       5)
 (defparameter *window-horizontal-align* :left
-  "valid alignments: :left, :right, :center-left, :center-right")
+  "valid alignments: :left, :right, :center, :center-right")
 
 (defparameter *window-width*        10)
 
@@ -1082,7 +1082,7 @@ Writes to the change buffer
 	         (,%width ,width))
        (with-line-start (ecase *window-horizontal-align*
 			                    (:left ,%column)
-			                    (:center-left (+ (- ,%column (ceiling (/ ,%width 2)))
+			                    (:center (+ (- ,%column (ceiling (/ ,%width 2)))
 					                                 (if (oddp ,%width)
 					                                     0
 					                                     0)))
@@ -1107,7 +1107,7 @@ Writes to the change buffer
                  (setf *row* row
                        *col* column)
 		             (map nil #'%render-span subsegments)))
-	            ((:right :center-left :center-right)
+	            ((:right :center :center-right)
 	             (let* ((preview (with-output-to-string (*output*)
 				                         (declare (special *output*))
 				                         (map nil #'%render-sprite/alignment-preview subsegments)))
@@ -1283,7 +1283,7 @@ Writes to the change buffer
                  (setf *row* row
                        *col* column)
 		             (map nil #'%render-sprite sprites)))
-	            ((:right :center-left :center-right)
+	            ((:right :center :center-right)
 	             (let* ((preview (with-output-to-string (*output*)
 				                         (declare (special *output*))
 				                         (map nil #'%render-sprite/alignment-preview sprites)))
@@ -1366,7 +1366,7 @@ Writes to the change buffer
 					                                ,%sprite-width)))
 		       		                  (ecase *window-horizontal-align*
 				                          (:right %)
-				                          (:center-left (floor (/ % 2)))							  
+				                          (:center (floor (/ % 2)))							  
 				                          (:center-right (ceiling (/ % 2)))))))
 
 			                    ;; the sprite is wider than the window
@@ -1378,7 +1378,7 @@ Writes to the change buffer
 					                                *window-width*)))
 				                        (ecase *window-horizontal-align*
 				                          (:right %)
-				                          (:center-left (ceiling (/ % 2)))
+				                          (:center (ceiling (/ % 2)))
 				                          (:center-right (floor (/ % 2))))))))
 	       ,@body))))
 
@@ -1407,7 +1407,7 @@ Writes to the change buffer
                       (setf *row* *%window-bounding-box-min-row*
                             *col* *%line-start-column*)
 			                (,%doit)))
-		               ((:right :center-left :center-right)
+		               ((:right :center :center-right)
 		                (let* ((preview (with-output-to-string (*output*)
 				                              (declare (special *output*))
 				                              (map nil #'%render-sprite/alignment-preview sprites)))

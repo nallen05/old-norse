@@ -98,7 +98,7 @@
       (skald:skald ()
         (skald:span (2 8) "|")
         (skald:span (3 8 :align :left) "|VEN_NUM")
-        (skald:span (4 8 :align :center-left) "EVEN|NUM")
+        (skald:span (4 8 :align :center) "EVEN|NUM")
         (skald:span (5 8 :align :center-right) "EVE|_NUM")
         (skald:span (6 8 :align :right) "EVEN_NU|")
         (skald:span (7 8) "|")))
@@ -109,7 +109,7 @@
       (skald:skald ()
         (skald:span (2 8) "|")
         (skald:span (3 8 :align :left) "|DD_NUM")
-        (skald:span (4 8 :align :center-left) "ODD_|UM")
+        (skald:span (4 8 :align :center) "ODD_|UM")
         (skald:span (5 8 :align :center-right) "ODD_|UM")
         (skald:span (6 8 :align :right) "ODD_NU|")
         (skald:span (7 8) "|")))
@@ -121,7 +121,7 @@
 		                     (skald:skald
 		                       (skald:span (3 9) "|")
 		                       (skald:span (4 9 :align :left) "|VEN_NUM")
-		                       (skald:span (5 9 :align :center-left) "EVEN|NUM")
+		                       (skald:span (5 9 :align :center) "EVEN|NUM")
 		                       (skald:span (6 9 :align :center-right) "EVE|_NUM")
 		                       (skald:span (7 9 :align :right) "EVEN_NU|")
 		                       (skald:span (8 9) "|"))))
@@ -132,7 +132,7 @@
 		                     (skald:skald
 		                       (skald:span (3 9) "|")
 		                       (skald:span (4 9 :align :left) "|DD_NUM")
-		                       (skald:span (5 9 :align :center-left) "ODD_|UM")
+		                       (skald:span (5 9 :align :center) "ODD_|UM")
 		                       (skald:span (6 9 :align :center-right) "ODD_|UM")
 		                       (skald:span (7 9 :align :right) "ODD_NU|")
 		                       (skald:span (8 9) "|"))))
@@ -502,7 +502,7 @@
 	              (skald:solo-window (3 3 :width (- 28 i)
 				                                :height 7
 				                                :border t
-				                                :align :center-left)
+				                                :align :center)
 		              "THERE ARE 7 ROWS"
 		              "red green in row 2???"
 		              "row 3"
@@ -533,7 +533,7 @@
 			                       (skald:solo-window (4 4 :width 30
 					                                           :height 7
 					                                           :border t
-					                                           :align :center-left)
+					                                           :align :center)
 			                         "THERE ARE 7 ROWS"
 			                         "red green in row 2???"
 			                         "row 3"
@@ -562,7 +562,7 @@
 			                       (skald:solo-window (4 4 :width 12
 					                                           :height 7
 					                                           :border t
-					                                           :align :center-left)
+					                                           :align :center)
 			                         "THERE ARE 7 ROWS"
 			                         "red green in row 2???"
 			                         "row 3"
@@ -990,7 +990,7 @@
 			                           (skald:column ()
 			                             (skald:window (:align :left)          "      |")
 			                             (skald:window (:align :left)          "ODD_NU|")   
-			                             (skald:window (:align :center-left)      "ODD|NUM")
+			                             (skald:window (:align :center)      "ODD|NUM")
 			                             (skald:window (:align :center-right)     "ODD|NUM")
 			                             (skald:window (:align :right)               "|DD_NUM") 
 			                             (skald:window (:align :right)               "|      "))))))
@@ -1018,7 +1018,7 @@
 			                           (skald:column ()
 			                             (skald:window (:align :left)          "   |   ")
 			                             (skald:window (:align :left)          "ODD|NUM")   
-			                             (skald:window (:align :center-left)      "ODD|NUM")
+			                             (skald:window (:align :center)      "ODD|NUM")
 			                             (skald:window (:align :center-right)     "ODD|NUM")
 			                             (skald:window (:align :right)               "ODD|NUM") 
 			                             (skald:window (:align :right)               "   |   "))))))
@@ -1046,7 +1046,7 @@
 			                           (skald:column ()
 			                             (skald:window (:align :left)          "  |    ")
 			                             (skald:window (:align :left)          "OD|_NUM")   
-			                             (skald:window (:align :center-left)      "ODD|NUM")
+			                             (skald:window (:align :center)      "ODD|NUM")
 			                             (skald:window (:align :center-right)     "ODD|NUM")
 			                             (skald:window (:align :right)               "ODD_|UM") 
 			                             (skald:window (:align :right)               "    |  "))))))
@@ -1077,7 +1077,7 @@
 			                           (skald:column ()
 			                             (skald:window (:align :left)          "      |")
 			                             (skald:window (:align :left)          "ODD_NU|")
-			                             (skald:window (:align :center-left)      "ODD|NUM")
+			                             (skald:window (:align :center)      "ODD|NUM")
 			                             (skald:window (:align :left)          "      \\")
 			                             (skald:window (:align :center-right)     "ODD|NUM")
 			                             (skald:window (:align :right)               "|DD_NUM") 
@@ -1108,7 +1108,7 @@
 			                           (skald:column ()
 			                             (skald:window (:align :left)            " |     ")
 			                             (skald:window (:align :left)            "O|D_NUM")
-			                             (skald:window (:align :center-left)   "ODD|NUM")
+			                             (skald:window (:align :center)   "ODD|NUM")
 			                             (skald:window (:align :left)            " \\     ")
 			                             (skald:window (:align :center-right)  "ODD|NUM")
 			                             (skald:window (:align :right)       "ODD_N|M") 
@@ -1139,7 +1139,7 @@
 			                         (skald:column ()
 			                           (skald:window (:align :left)         "       |")
 			                           (skald:window (:align :left)         "EVEN_NU|")
-			                           (skald:window (:align :center-left)     "EVE|_NUM")
+			                           (skald:window (:align :center)     "EVE|_NUM")
 			                           (skald:window (:align :left)         "       \\")
 			                           (skald:window (:align :center-right)      "EVEN|NUM")
 			                           (skald:window (:align :right)               "|VEN_NUM")
@@ -1168,7 +1168,7 @@
 			                           (skald:column ()
 			                             (skald:window (:align :left)         "   |    ")
 			                             (skald:window (:align :left)         "EVE|_NUM")
-			                             (skald:window (:align :center-left)  "EVE|_NUM")
+			                             (skald:window (:align :center)  "EVE|_NUM")
 			                             (skald:window (:align :center-right) "EVE|_NUM")
 			                             (skald:window (:align :right)        "EVE|_NUM")
 			                             (skald:window (:align :right)        "   |    "))))))
@@ -1198,7 +1198,7 @@
 			                           (skald:column ()
 			                             (skald:window (:align :left)              " |      ")
 			                             (skald:window (:align :left)              "E|EN_NUM")
-			                             (skald:window (:align :center-left)     "EVE|_NUM")
+			                             (skald:window (:align :center)     "EVE|_NUM")
 			                             (skald:window (:align :left)              " \\     ")
 			                             (skald:window (:align :center-right)   "EVEN|NUM")
 			                             (skald:window (:align :right)        "EVEN_N|M")
@@ -1229,7 +1229,7 @@
 			                          (skald:column ()
 			                            (skald:window (:align :left)         "       |")
 			                            (skald:window (:align :left)         "EVEN_NU|")
-			                            (skald:window (:align :center-left)     "EVE|_NUM")
+			                            (skald:window (:align :center)     "EVE|_NUM")
 			                            (skald:window (:align :left)         "       \\")
 			                            (skald:window (:align :right)        "\\       ")
 			                            (skald:window (:align :center-right)      "EVEN|NUM")
@@ -1259,7 +1259,7 @@
 			                           (skald:column ()
 			                             (skald:window (:align :left)         "  |     ")
 			                             (skald:window (:align :left)         "EV|N_NUM")
-			                             (skald:window (:align :center-left)     "EVEN|NUM")
+			                             (skald:window (:align :center)     "EVEN|NUM")
 			                             (skald:window (:align :center-right)      "EVE|_NUM")
 			                             (skald:window (:align :right)               "EVEN_|UM")
 			                             (skald:window (:align :right)               "     |  "))))))
@@ -1317,7 +1317,7 @@
 			                                 :border t
 			                                 :border-fg :black
 			                                 :border-bg :white
-			                                 :align :center-left)
+			                                 :align :center)
 	                 (format nil "~%entertain~%three~%educated~%elephants~%"))))
           (skald:skald-init)
           (dolist (c '(#\nul #\e #\~))
@@ -1344,7 +1344,7 @@
 				                                             :border t
 				                                             :border-fg :red
 				                                             :border-bg :blue
-				                                             :align :center-left)
+				                                             :align :center)
 			                           (format nil "~%entertain~%three~%educated~%elephants~%"))))))
       
       (shieldwall:shield "WINDOW :TRANSPARANT-CHAR 2"
@@ -1362,7 +1362,7 @@
 				                                             :border t
 				                                             :border-fg :red
 				                                             :border-bg :blue
-				                                             :align :center-left)
+				                                             :align :center)
 			                           (format nil "~%entertain~%three~%educated~%elephants~%"))))))
       )
 
@@ -1646,7 +1646,7 @@
     (bifrost:with-bifrost
       (flet ((draw (xx &optional mask)
 	             (skald:span (3 10 :mask mask
-			                           :align :center-left)
+			                           :align :center)
 	               xx)))
         (skald:skald-init)
         (skald:skald () (draw "FOOBARBAZ"))
@@ -1662,7 +1662,7 @@
     (bifrost:with-bifrost
       (flet ((draw (xx &optional mask)
 	             (skald:span (3 10 :mask mask
-			                           :align :center-left)
+			                           :align :center)
 	               xx)))
         (skald:skald-init)
         (skald:skald (draw "FOOBARBAZ"))
@@ -1686,7 +1686,7 @@
 		              "BAR")))
         (skald:skald-init)
         (skald:skald
-	        (skald:span (3 15 :align :center-left
+	        (skald:span (3 15 :align :center
 			                      :fg :white
 			                      :bg :black)
 	          xx))
@@ -1694,7 +1694,7 @@
         (skald:skald
 	        (skald:span (3 15 :mask t
 		                        :fill-char #\x
-			                      :align :center-left
+			                      :align :center
 			                      :fg :cyan
 			                      :bg :black)
 	          xx))
