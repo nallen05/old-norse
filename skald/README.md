@@ -22,8 +22,6 @@ Skald extends Bifrost to add:
 
 A **Span** is a single line of text. A **Sprite** is a multi-line block of text.
 
-![Simple example](../images/skald-example-simple.png)
-
 ```lisp
 (bifrost:with-bifrost   ; Enter raw terminal mode
   (skald:skald-init)    ; Initialize buffers & clear screen
@@ -41,7 +39,7 @@ A **Span** is a single line of text. A **Sprite** is a multi-line block of text.
       "---------"
       )))
 ```
-
+![Simple example](../images/skald-example-simple.png)
 
 ### 2. Styling and Alignment
 
