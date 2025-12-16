@@ -1,64 +1,25 @@
 
 
 
+#  Old Norse - fast, mouse-driven terminal apps and games
 
-#  The Old Norse terminal toolkit
+Build internal tools, monitoring dashboards, and retro ASCII games. 
+Mouse support, 60fps rendering, deploy anywhere via SSH or [TTYD](https://tsl0922.github.io/ttyd/).
 
-Old Norse is collection of Common Lisp libraries for building fast, mouse-driven Terminal UI (TUI) applications that work remotely via SSH (or browser-based via [TTYD](https://tsl0922.github.io/ttyd/)).
+Core libraries (terminal UI):
+ - [Bifrost](bifrost/) 🌈 - low-level terminal control
+ - [Skald](skald/) - sprites & rendering
+ - [Flokkr](flokkr/) - timing & user input
+ - [Meadhorn](meadhorn/) - debugging
 
-Old Norse is primarily used for prototyping games. But it's also useful for building internal tools (eg: system monitoring, log viewers, build status, etc) or interactive data visualizations (charts, tables, real-time data feeds, etc). 
+Coming soon!
+ - [sixel graphics](https://en.wikipedia.org/wiki/Sixel)
 
-## Requirements
-- Unix-like terminal emulator that implements standard TTY interface (xterm, gnome-terminal, iTerm2, Mac OS X Terminal, TTYD, etc).
-  - The terminal must support SGR mode (required for larger grid size).
-  - To use mouse tracking features, the terminal must support XTERM mouse tracking protocol. (This isn't part of the official ANSI standard but is widely adopted as defacto standard & supported by most modern terminal emulators.)
-- Monospaced font
-- Old Norse is implementation-dependent on SBCL
+Old Norse is implementation-dependent on SBCL.
 
-## Libraries 
-
-### Skald
-[Skald](skald/) is a high-level terminal UI and animation framework
-- Treat blocks of ASCII/unicode text as sprites (transparant char enables composite layering)
-- Terminal grid based positioning/layout/alignment, foreground/background colors, cropping/fill, emojis, etc
-- Optimized for fast screen redrawing with minimal flicker
-
-### Flokkr
-[Flokkr](flokkr/) is a concurrency library purpose-built for building interactive TUI applications with skald/bifrost.
-- Manage complex timing & behaviors loops via mini-DSL (inspired by the LOOP macro)
-- Respond instantly to terminal input from user (without relying on polling)
-- Define widget/object timing behaviors seperately, then compose via :SUBFLOCKKR
-
-### Bifrost 🌈
-[Bifrost](bifrost/) is a low-level utility for reading from & controlling the terminal. Used by skald & flokkr
-- Two-way mapping between ASCII escape sequences & s-expressions
-- Mouse click/hover event tracking logic
-- Raw I/O to bypass terminal read buffer (but also debugging modes to troubleshoot TUI applications within SLIME/EMACS)
-
-### Meadhorn
-[Meadhorn](meadhorn/) is a simple debugging utility. 
-- Print statements are a simple, powerful debugging tool. But when developing terminal applications, they mess up the display. MEADHORN:MH is just like FORMAT except that it broadcasts output to a Unix socket. Read it with [netcat](https://en.wikipedia.org/wiki/Netcat) for simple print-statement based debuging without disrupting the terminal UI.
-
-### Old Norse
-You can load all of these libraries via the umbrella package `(require :old-norse)`
-
-
-## Quick Start
+## Quick start
 
 **Run these examples in the terminal, not SLIME/EMACS**
-
-Clear the screen & render a simple sprite
-
-```lisp
-(bifrost:with-bifrost             ; low-level setup
-  (skald:skald-init)              ; clear the screen
-  (skald:skald ()                 ; bundle set of updates the screen
-    (skald:sprite (3 3 :fg :cyan) ; draw an ASCII sprite
-      "╔═══════════════╗"
-      "║ Hello, world! ║"
-      "╚═══════════════╝")))
-```
-
 
 Fast animation that follows mouse movement
 ```lisp
@@ -76,11 +37,11 @@ Fast animation that follows mouse movement
                           :align :center)                 ; sprite alignment
                 "╔═══════════════╗"
                 "║ Hello, world! ║"
-                "╚═══════════════╝"))))))))
+                "╚═══════════════╝")))))))
 ```
 
 
-Mouse movement tracking + seperate simultaneous animation timing loop (stopwatch)
+Simultaneous mouse movement tracking + animation timing loops
 
 ```lisp
 (bifrost:with-bifrost                          ; low-level setup
@@ -99,34 +60,36 @@ Mouse movement tracking + seperate simultaneous animation timing loop (stopwatch
                    col (second *rune-payload*))))
           (:also (skald:skald-draw ()          ; if either of the above happened, re-render
                    (skald:span (row col :foreground cyan)
-                     (format nil "~a seconds" seconds))))))))]
+                     (format nil "~a seconds" seconds)))))))))
 ```
 
-# ## Design pillars
 
-Together, the Old Norse libraries form a grid-based terminal graphics engine, that runs on Unix-like terminal emulators, with focus on UI speed/responsiveness & rapid development.
+
+## Design pillars
 
 ## (1) Low-level grid-based terminal graphics engine
 
-Old Norse doesn't provide you with a widget for making a status bar. It provides you with tools to draw spans/sprites to the screen & animate them as you like, so that you can make your own customized status bar. The goal of the library is to make it easy to prototype a wide array of experimental game mechanics and interfaces, so long as they can be represented on a chunky terminal grid, within the constraints of a Unix-like terminal emulator.
+Old Norse doesn't provide you with a widget for making a status bar. It provides you with tools to draw spans/sprites to the screen & animate them according to precise timing logic, so that you can make your own custom status bar. The goal of the library is to make it easy to prototype a wide array of experimental game mechanics and interfaces, so long as they can be represented on a chunky terminal grid, within the constraints of a Unix-like terminal emulator.
  
-In the future, we will add support for [sixel](https://en.wikipedia.org/wiki/Sixel) graphics. This will allow us to display and (conservatively) animate graphic images, including images of text in various sizes, layouts, and fonts. However, the terminal grid will still remain the only coordinate system. Sixel sprites will snap to the same grid.
+Our roadmap plan is to add support for [sixel graphics](https://en.wikipedia.org/wiki/Sixel). This will allow us to animate graphic images. However, the terminal grid will still remain the only coordinate system. Sixel sprites will snap to the same terminal grid.
 
 ## (2) UX speed & precision timing
 
 Timing is critical to games. Speed & responsiveness are important to any kind of user application. Design goals:
- 1. Update screen within 16ms of user input (if run over remote connection, assumes within same geographic region)
- 2. 60fps animation (assumes normal screen size)
+ 1. 60fps animation (assumes normal screen size) 
+ 2. Update screen in under 16ms after user input (local, before factoring in network latency)
  3. High-precision control of timings & interactive behavior
 
 Based on our observation, TUI applications can achieve this by managing the following bottlenecks:
 1. Efficient diff-based screen updates - provided by SKALD
 2. Immediate response to user input - provided by FLOKKR
 3. Get slow DB queries & cloud API calls out of main loop - There is a roadmap plan to add a new flokkr form for async io. Until then, this must be managed by the user.
-4. Strategic scheduling of GC pauses -  Must be managed by the user. (Note: bifrost/skald do produce GC pressure. There is a roadmap plan to reduce it over time.)
-5. When deploying remotely, keep in-region - must be managed by the user.
+4. Strategic scheduling of GC pauses -  Must be managed by the user. (Note: bifrost/skald do produce GC pressure when running. There is a roadmap plan to reduce it over time.)
+5. When deploying remotely, deploy in-region - must be managed by the user.
   
 ## (3) Develop in an hour. Deploy anywhere.
+
+The goal is to think of an idea, implement it quickly, then get it in front of real users for feedback.
 
 Focus on rapid development
 - 1:1 mapping between back-end SBCL program & client session
@@ -134,12 +97,11 @@ Focus on rapid development
 
 Easy remote deployment
 - SSH
-- Browser-based via TTYD.
+- Browser-based via [TTYD](https://tsl0922.github.io/ttyd/).
 
-In the future, we plan to also:
-- Document instructions for easy, one-click multi-region deployment via [fly.io](http://fly.io)
-- Document Practical tips for minimizing cost of scaled Old Norse deployments
-- Add enhanced support for mobile
+In the future, we plan to provide:
+- Documented deployment playbooks & strategies (fly.io, hetzer, aws)
+- Enhanced support for mobile web deployment (cbox swiping, rendering)
 
 ## (4) Old Norse "high locality" coding style
 
@@ -151,6 +113,42 @@ If not structured correctly, even the simplest Terminal UI application can grow 
 
 In practice, we have found this design pattern to *DRASTICALLY* simplify & shorten TUI application codebases.
 
+## The Old Norse terminal toolkit libraries 
+
+### Bifrost 🌈
+[Bifrost](bifrost/) is a low-level utility for reading from & controlling the terminal. Used by skald & flokkr
+- Two-way mapping between ASCII escape sequences & s-expressions
+- Mouse event tracking logic (click/hover)
+- Raw I/O to bypass terminal read buffer (but also debugging modes to troubleshoot TUI applications within SLIME/EMACS)
+
+### Skald
+[Skald](skald/) is a high-level terminal UI and animation framework
+- Treat blocks of ASCII/unicode text as sprites (transparant char enables composite layering)
+- Efficient diff-based screen updates for fast redrawing with minimal flicker
+- Grid-based positioning/layout/alignment, foreground/background colors, cropping/fill, emojis, etc
+
+### Flokkr
+[Flokkr](flokkr/) is a concurrency library purpose-built for building interactive TUI applications with skald/bifrost.
+- Manage complex timing & behaviors loops via mini-DSL (inspired by the LOOP macro)
+- Respond instantly to terminal input from user (without relying on polling)
+- Define widget/object timing behaviors seperately, then compose via :SUBFLOCKKR
+
+### Meadhorn
+[Meadhorn](meadhorn/) is a simple debugging utility. 
+- Print statements are a simple, powerful debugging tool. But when developing terminal applications, they mess up the display. MEADHORN:MH is just like FORMAT except that it broadcasts output to a Unix socket. Read it with [netcat](https://en.wikipedia.org/wiki/Netcat) for simple print-statement based debuging without disrupting the terminal UI.
+
+### Old Norse
+You can load all of these libraries via the umbrella package `(require :old-norse)`
+
+## Requirements
+1. Requires a Unix-like terminal emulator that implements standard TTY interface. It must support SGR mode (required for larger grid size). Examples: xterm, gnome-terminal, iTerm2, Mac OS X Terminal, TTYD, etc
+2. Old Norse is implementation-dependent on [SBCL](https://www.sbcl.org/)
+3. Old Norse requires quicklisp installable [TRIVIAL-RAW-IO](https://github.com/kingcons/trivial-raw-io) library
+4. If you want to use mouse tracking features, the terminal must support XTERM mouse tracking protocol. (Most modern terminal emulators do.)
+5. Your terminal window needs to be using monospaced font, or sprites won't line up correctly.
+  - For example, here is how to do that with TTYD:
+
+        ttyd -t fontFamily="'Courier','Lucinda Console','Roboto Mono','Courier New','Monospace'" -p 8080 --writable sbcl
 
 ## Recommended conventions
 
