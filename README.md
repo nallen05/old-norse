@@ -1,18 +1,18 @@
 
 
 
-#  Old Norse - fast, mouse-driven terminal apps & games
+#  Old Norse - fast, mouse-driven terminal apps
 
-Build internal tools, monitoring dashboards, and retro ASCII roguelikes in Common Lisp
+Build internal tools, monitoring dashboards, and retro ASCII games in Common Lisp
 
-Features: Mouse support, 60fps rendering, deploy anywhere via SSH (or web browser via [TTYD](https://tsl0922.github.io/ttyd/)
+Features: Mouse support, 60fps rendering, deploy anywhere via SSH or [TTYD](https://tsl0922.github.io/ttyd/)
 
 Core libraries (terminal UI):
  - [Bifrost](bifrost/) 🌈 - low-level terminal control
  - [Skald](skald/) - sprites & rendering
  - [Flokkr](flokkr/) - timing & user input
  - [Meadhorn](meadhorn/) - debugging
-
+`
 Coming soon!
  - [Sixel graphics](https://en.wikipedia.org/wiki/Sixel) - dot matrix printer graphic image format
 
@@ -70,9 +70,9 @@ Simultaneous mouse movement tracking + animation timing loops
 
 ## (1) Low-level grid-based terminal graphics engine
 
-Old Norse doesn't provide you with a widget for making a status bar. It provides you with tools to draw spans/sprites to the screen & animate them according to precise timing logic, so that you can make your own custom status bar. The goal of the library is to make it easy to prototype a wide array of experimental game mechanics and interfaces, so long as they can be represented on a chunky terminal grid, within the constraints of a Unix-like terminal emulator.
+Old Norse doesn't provide you with a widget for making a status bar. It provides you with tools to draw sprites to the screen & animate them according to precise timing logic, so that you can make your own custom status bar. The goal of the library is to make it easy to prototype a wide array of experimental game mechanics and interfaces, so long as they can be represented on a chunky terminal grid, within the constraints of a Unix-like terminal emulator.
  
-Our roadmap plan is to add support for [sixel graphics](https://en.wikipedia.org/wiki/Sixel). This will allow us to animate graphic images. However, the terminal grid will still remain the only coordinate system. Sixel sprites will snap to the same terminal grid.
+Our roadmap plan is to add support for [sixel graphics](https://en.wikipedia.org/wiki/Sixel). This will allow us to animate graphic images. However, the terminal grid will still remain the only coordinate system. Sixel sprites will snap to the same terminal grid as ASCII characters.
 
 ## (2) UX speed & precision timing
 
@@ -148,7 +148,7 @@ You can load all of these libraries via the umbrella package `(require :old-nors
 2. Old Norse is implementation-dependent on [SBCL](https://www.sbcl.org/)
 3. Old Norse requires quicklisp installable [TRIVIAL-RAW-IO](https://github.com/kingcons/trivial-raw-io) library
 4. If you want to use mouse tracking features, the terminal must support XTERM mouse tracking protocol. (Most modern terminal emulators do.)
-5. Your terminal window needs to be using monospaced font, or sprites won't line up correctly.
+5. In order for ASCII sprites to line up correctly, your terminal window needs to be using monospaced font.
   - For example, here is how to do that with TTYD:
 
         ttyd -t fontFamily="'Courier','Lucinda Console','Roboto Mono','Courier New','Monospace'" -p 8080 --writable sbcl
