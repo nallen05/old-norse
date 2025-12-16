@@ -3,9 +3,9 @@
 
 #  Old Norse - fast, mouse-driven terminal apps & games
 
-Build internal tools, monitoring dashboards, and retro ASCII roguelikes. 
+Build internal tools, monitoring dashboards, and retro ASCII roguelikes in Common Lisp
 
-Features: Mouse support, 60fps rendering, deploy anywhere via SSH or web browser ([TTYD](https://tsl0922.github.io/ttyd/))
+Features: Mouse support, 60fps rendering, deploy anywhere via SSH (or web browser via [TTYD](https://tsl0922.github.io/ttyd/)
 
 Core libraries (terminal UI):
  - [Bifrost](bifrost/) 🌈 - low-level terminal control
