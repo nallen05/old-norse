@@ -121,7 +121,7 @@
 (defparameter *window-border*       t)
 (defparameter *window-border-chars* "-|+"
   "if provided, should be 3 char string: 0=horizontal 1=vertical 2=intersect
-  set to NIL for transparant border; set to NIL for transparant border")
+  set to NIL for transparant border")
 
 (defparameter *window-height*       5)
 (defparameter *window-horizontal-align* :left
