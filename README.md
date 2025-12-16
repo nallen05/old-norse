@@ -1,7 +1,7 @@
 
 
 
-#  Old Norse - fast, mouse-driven terminal apps
+#  Old Norse - fast, mouse-driven terminal apps in Common Lisp
 
 Build internal tools, monitoring dashboards, and retro ASCII games in Common Lisp
 
@@ -12,7 +12,7 @@ Core libraries (terminal UI):
  - [Skald](skald/) - sprites & rendering
  - [Flokkr](flokkr/) - timing & user input
  - [Meadhorn](meadhorn/) - debugging
-`
+
 Coming soon!
  - [Sixel graphics](https://en.wikipedia.org/wiki/Sixel) - dot matrix printer graphic image format
 
@@ -31,7 +31,7 @@ Fast animation that follows mouse movement
       (:input
         (:mouse-click-left (return-from flokkr:flokkr)) ; on left click, exit
         (:mouse-move                                    ; on mouse move, reposition
-         (skald:skald ()
+         (skald:skald
            (skald:sprite ((first bifrost:*rune-payload*)  ; row
                           (second bifrost:*rune-payload*) ; col
                           :fg :cyan                       ; forgeround color
@@ -59,7 +59,7 @@ Simultaneous mouse movement tracking + animation timing loops
             (:mouse-move                                    ; on mouse move, reposition
              (setf row (first *rune-payload*)
                    col (second *rune-payload*))))
-          (:also (skald:skald-draw ()          ; if either of the above happened, re-render
+          (:also (skald:skald         ; if either of the above happened, re-render
                    (skald:span (row col :foreground cyan)
                      (format nil "~a seconds" seconds)))))))))
 ```
