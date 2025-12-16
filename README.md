@@ -67,7 +67,7 @@ Example: fast animation that follows mouse movement
                 "╚═══════╝")))))))
 ```
 
-![Example with mouse tracking](images/skald-example-simple-mouse.png)
+![Example with mouse tracking](images/skald-example-simple-mouse.gif)
 
 
 Simultaneous mouse movement tracking + animation timing loops
