@@ -1,9 +1,10 @@
 
 
 
-#  Old Norse - fast, mouse-driven terminal apps and games
+#  Old Norse - fast, mouse-driven terminal apps & retro ASCII games
 
-Build internal tools, monitoring dashboards, and retro ASCII games. 
+Build internal tools, monitoring dashboards, and roguelikes. 
+
 Mouse support, 60fps rendering, deploy anywhere via SSH or [TTYD](https://tsl0922.github.io/ttyd/).
 
 Core libraries (terminal UI):
@@ -13,7 +14,7 @@ Core libraries (terminal UI):
  - [Meadhorn](meadhorn/) - debugging
 
 Coming soon!
- - [sixel graphics](https://en.wikipedia.org/wiki/Sixel)
+ - [Sixel support](https://en.wikipedia.org/wiki/Sixel) - dot matrix printer graphics format
 
 Old Norse is implementation-dependent on SBCL.
 
@@ -75,7 +76,9 @@ Our roadmap plan is to add support for [sixel graphics](https://en.wikipedia.org
 
 ## (2) UX speed & precision timing
 
-Timing is critical to games. Speed & responsiveness are important to any kind of user application. Design goals:
+Timing is critical to games. Even klunky prototypes. Speed & responsiveness are important to any kind of user application. 
+
+The Old Norse design goals are:
  1. 60fps animation (assumes normal screen size) 
  2. Update screen in under 16ms after user input (local, before factoring in network latency)
  3. High-precision control of timings & interactive behavior
@@ -83,13 +86,13 @@ Timing is critical to games. Speed & responsiveness are important to any kind of
 Based on our observation, TUI applications can achieve this by managing the following bottlenecks:
 1. Efficient diff-based screen updates - provided by SKALD
 2. Immediate response to user input - provided by FLOKKR
-3. Get slow DB queries & cloud API calls out of main loop - There is a roadmap plan to add a new flokkr form for async io. Until then, this must be managed by the user.
+3. Get slow DB queries & cloud API calls out of main loop - Currently must be managed by the user. But there is a roadmap plan to add a new flokkr form to support async io.
 4. Strategic scheduling of GC pauses -  Must be managed by the user. (Note: bifrost/skald do produce GC pressure when running. There is a roadmap plan to reduce it over time.)
 5. When deploying remotely, deploy in-region - must be managed by the user.
   
 ## (3) Develop in an hour. Deploy anywhere.
 
-The goal is to think of an idea, implement it quickly, then get it in front of real users for feedback.
+The goal is to think of an idea, implement it quickly, then get it in front of other people for feedback right away.
 
 Focus on rapid development
 - 1:1 mapping between back-end SBCL program & client session
@@ -100,7 +103,7 @@ Easy remote deployment
 - Browser-based via [TTYD](https://tsl0922.github.io/ttyd/).
 
 In the future, we plan to provide:
-- Documented deployment playbooks & strategies (fly.io, hetzer, aws)
+- Documented playbooks & strategies for cloud deployment (fly.io, hetzer, aws)
 - Enhanced support for mobile web deployment (cbox swiping, rendering)
 
 ## (4) Old Norse "high locality" coding style
