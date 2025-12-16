@@ -293,7 +293,8 @@
         ;; (4) compute how long to wait
         :compute-wait (lambda (&aux ,next-wait)
                         ,@(nreverse compute-wait-body)
-                        (max ,next-wait 0))))))
+                        (when ,next-wait
+                          (max ,next-wait 0)))))))
 
 (defun %flokkr-run (flok &aux flok-start-itu last-tick-start-itu)
   (loop do
