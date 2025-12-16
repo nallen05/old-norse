@@ -3,57 +3,63 @@
 
 (defpackage :skald
   (:use :cl)
-  (:export
-
-           ;; initialization & other commands that don't interact with the change buffer
+  (:export ;; initialization
            :skald-init
+           :*override-terminal-size* ;; advanced - user configurable          
+
+           ;; other commands that don't interact with the change buffer
            :skald-check-terminal-size
            :skald-sync
            :skald-clear
-           :*terminal-size*
-           :*override-terminal-size* ;; user configurable          
+
+           ;; getting the size of the terminal screen
+           :*screen-height*
+           :*screen-width*
+           :*screen-center-row*
+           :*screen-center-bottom-row*
+           :*screen-center-col*
+           :*screen-center-right-col*
            
            ;; updating the screen via change buffer
            :skald
            :skald-overlay
-           :*override-skald-drawmode*  ;; :draw,:overlay,:unoptimized,:prep,:null
            :*row*
            :*col*
-
+           :*override-skald-drawmode*  ;; advanced config - :draw :overlay :unoptimized :prep:null
+           
 	         ;; writing to the change buffer
            :span
            :sprite
-
-           ;; windows
+;;         :*extant-min-row*     ;; not yet implemented
+;;         :*extant-min-col*     ;; not yet implemented
+;;         :*extant-max-row*     ;; not yet implemented
+;;         :*extant-max-col*     ;; not yet implemented
+;;         :*extant-height*      ;; not yet implemented
+;;         :*extant-width*       ;; not yet implemented
+           
+           ;; simple bounding boxes
            :solo-window
-           :*window-border*
-           :*window-border-chars*
-   	       :*window-height*
-	         :*window-horizontal-align*
-           :*window-width*
            
 	         ;; organizing the terminal screen into windows/grids
 	         :grid
  	         :column
 	         :window
-;;	       :row                    ;; not yet implemented
-
-;; making it easier to draw the screen, top down left right
-;;         :*extant-min-row*       ;; not yet implemented
-;;         :*extant-max-row*       ;; not yet implemented
-;;         :*extant-min-col*       ;; not yet implemented
-;;         :*extant-max-col*       ;; not yet implemented
-;;         :*extant-height*        ;; not yet implemented
-;;         :*extant-width*         ;; not yet implemented
+;;	       :row                  ;; not yet implemented
            
            ;; defining & referencing colors
 	         :def-color
            :lookup-color-code
-           :*background-color*
-           :*fill-char*
+           
+           ;; exposed parameters
            :*foreground-color*
-           :*mask-mode-p*
+           :*background-color*
    	       :*transparant-char*
+           :*window-border*
+           :*window-border-chars*
+   	       :*window-height*
+	         :*window-horizontal-align*
+           :*window-width*
+           :*fill-char*
 
 	         ;; interpolation helpers
            :fixed-step-line
@@ -78,14 +84,23 @@
 
 ;; terminal size
 
-(defvar *terminal-size* '(24 80))   ;; (MAX-ROW MAX-COLUMN)
-(defvar *override-terminal-size* nil)
+(defvar *terminal-size* '(24 80))     ;; (MAX-ROW MAX-COLUMN)
+(defvar *override-terminal-size* nil) ;; (MAX-ROW MAX-COLUMN)
+
+(defvar *screen-height* 24)
+(defvar *screen-width* 80)
+(defvar *screen-center-row* 12)
+(defvar *screen-center-bottom-row* 12)
+(defvar *screen-center-col* 40)
+(defvar *screen-center-right-col* 40)
 
 ;; buffers
+
 (defvar *%change-buffer* nil)
 (defvar *%display-buffer* nil)
 
 ;; writing to the change buffer
+
 (defparameter *override-skald-drawmode* nil) ;; :draw, :overlay, :unoptimized, :prep, :null
 (defparameter *output*                  t)  ;; T -> *TERMINAL-IO*
 (defvar       *row*                     0)
@@ -583,6 +598,14 @@
                  (eql 2 (length new-size))
                  (every #'integerp new-size)))
 
+    ;; set convenience variables
+    (setf *screen-height* (first new-size)
+          *screen-width* (second new-size)
+          *screen-center-col* (floor (/ *screen-width* 2))
+          *screen-center-right-col* (ceiling (/ *screen-width* 2))
+          *screen-center-row* (floor (/ *screen-height* 2))
+          *screen-center-bottom-row* (ceiling (/ *screen-height* 2)))
+    
     ;; if it has changed, return the new size
     ;; otherwise return NIL
     (unless (equalp new-size
