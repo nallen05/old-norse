@@ -5,9 +5,9 @@ Skald is a high-level terminal UI & ASCII animation framework. It is part of the
 
 ### Features
 
-It extends Bifrost to add:
+Skald extends Bifrost to add:
 
-- **Sprite system:** Treat blocks of ASCII text as objects. Move them, color them, & layer them. Use a transparant character to create composite images.
+- **Sprite system:** Treat blocks of ASCII text as objects. Move them, color them, & layer them. Use a transparant character to create composite layered images.
 - **Efficient diff-based rendering:** Skald uses a double-buffering system. It compares the next frame to the current frame and only writes the characters that have changed. This allows fast screen updates & animation without flicker.
 - **Grid layout engine:** Flexibly organize the screen into grids, columns, & windows. Bounding boxes support cropping, fill, border, & left/center/right alignment.
 - **Emoji support:** Treats emojis as double-width unicode characters. Handles the logic of rendering double-width characters within monospaced grid & bounding boxes without breaking alignment or leaving artifacts.
@@ -50,14 +50,14 @@ Skald supports ANSI colors and text alignment (centering sprites relative to a s
   (skald:skald-init :fg :black :bg :white) ; set new screen foreground/background color
   (skald:skald
   
-    ;; Draw a single line
+    ;; draw welcoming title
     (skald:span ((- skald:*screen-center-row* 4)  ; row
                  skald:*screen-center-col*        ; column
                  :fg :magenta                     ; foreground color
                  :align :center)                  ; alignment
       "Welcome to Old Norse")
 
-    ;; Draw a multi-line sprite
+    ;; draw welcoming duck
     (skald:sprite ((- skald:*screen-center-row* 2) ; row
                    skald:*screen-center-col*       ; column
                   :align :center)                  ; alignment
@@ -65,6 +65,8 @@ Skald supports ANSI colors and text alignment (centering sprites relative to a s
       "<(o )___"
       " ( ._> /"
       "  `---'")
+      
+    ;; draw water below the duck
     (dotimes (i 10)
       (skald:span ((+ i 2 skald:*screen-center-row*) ; row
                    skald:*screen-center-col*         ; column
@@ -76,7 +78,7 @@ Skald supports ANSI colors and text alignment (centering sprites relative to a s
 
 ### 3. Layouts: Grids, Columns, and Windows
 
-Skald provides a layout engine to stack elements automatically.
+Skald provides a grid-based layout system
 
   * **Grid:** The container for a layout.
   * **Column:** Stacks items vertically.
@@ -99,7 +101,7 @@ Skald provides a layout engine to stack elements automatically.
       (skald:column (:width 40)
         (skald:window (:height 7 :align :center)
            ""
-           '(:fg :magenta "MAIN VIEW")         ; keyword mini-language
+           '(:fg :magenta "MAIN VIEW")  ; keyword mini-language
            "  __"
            "<(o )___"
            " ( ._> /"
@@ -109,7 +111,7 @@ Skald provides a layout engine to stack elements automatically.
 
 ### 4. Animation Loop
 
-Because Skald uses diff-based rendering, you can call `(skald:skald ...)` inside a loop. It will only redraw pixels that moved, preventing the screen from flashing.
+Because Skald uses diff-based rendering, you can repeatedly call `(skald:skald ...)` inside a tight loop. It will only redraw pixels that moved, preventing the screen from flashing.
 
 ```lisp
 (bifrost:with-bifrost
