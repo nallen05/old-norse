@@ -128,8 +128,7 @@ Because Skald uses diff-based rendering, you can repeatedly call `(skald:skald .
                                      :steps-inclusive 60)))
     ;; 60fps animation
     (loop for point in path do
-      (let ((r (car point))
-            (c (cdr point)))
+      (destructuring-bind (r . c) point
         (skald:skald
           (dotimes (i 10)
             (skald:span ((+ i 2 skald:*screen-center-row*) skald:*screen-center-col*
@@ -147,7 +146,6 @@ Because Skald uses diff-based rendering, you can repeatedly call `(skald:skald .
         "Welcome to Old Norse"))
     (read-char))
 ```
-
 
 
 ---------
