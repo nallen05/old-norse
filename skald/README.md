@@ -18,7 +18,7 @@ Skald extends Bifrost to add:
 
 **Run these examples in the terminal, not inside SLIME/EMACS.**
 
-### 1. The Basics: Spans & Sprites
+### 1. The basics: Spans & Sprites
 
 A **Span** is a single line of text. A **Sprite** is a multi-line block of text.
 
@@ -36,12 +36,11 @@ A **Span** is a single line of text. A **Sprite** is a multi-line block of text.
       "<(o )___"
       " ( ._> /"
       "  `---'"
-      "---------"
-      )))
+      "---------")))
 ```
 ![Simple example](../images/skald-example-simple.png)
 
-### 2. Styling and Alignment
+### 2. Styling and alignment
 
 Skald supports ANSI colors and text alignment (centering sprites relative to a specific point).
 
@@ -94,7 +93,7 @@ Skald provides a grid-based layout system
       (skald:column (:width 20)
         (skald:window (:height 3)
            "Stats"
-           '(:span "HP: " (:bg :red (:fg :white "11")) "/100") ; keyword mini-language
+           '(:span "HP: " (:bg :red (:fg :white "11")) "/100") ; use of keyword mini-language
            "Mana: 50/50")
         (skald:window (:height 3)
            "Buffs"
@@ -103,7 +102,7 @@ Skald provides a grid-based layout system
       (skald:column (:width 40)
         (skald:window (:height 7 :align :center :bg :white :fg :black)
            ""
-           '(:fg :magenta "MAIN VIEW")  ; keyword mini-language
+           '(:fg :magenta "MAIN VIEW")  ; use of keyword mini-language
            "  __"
            "<(o )___"
            " ( ._> /"
@@ -113,7 +112,8 @@ Skald provides a grid-based layout system
 
 ![Example grid layout](../images/skald-example-grid.png)
 
-### 4. Animation Loop
+
+### 4. Fast animation
 
 Because Skald uses diff-based rendering, you can repeatedly call `(skald:skald ...)` inside a tight loop. It will only redraw pixels that moved, preventing the screen from flashing.
 
@@ -240,15 +240,15 @@ Within sprite and window forms:
      - NOTE: #\newline & #\return are treated as 2 blank lines
  * :NODISPLAY - the special keyword :NODISPLAY is completely ignored
  * LISTS are special forms. The CAR of the list must be one of these keywords:
-      :FG (color &body forms) - everything that follows has forground COLOR
-      :BG (color &body forms) - everything that follows has background COLOR
-      :EMOJI (name) - inserts an emoji character; treated just like a raw character by SPAN/SPRITE
-      :SPAN (&body subsegements) - everything that follows is treated as part of one line (so #\newline & #\return are forcibly removed)
-      :SPRITE (&body sprites) - multi-line
-      :NODISPLAY (&body anything) - everything that follows is ignored
-      :CALL-WITH-POINT (fn) - calls FN with 2 arguments: the current row/col coordinates then continues processing the value returned by FN
-           - if you don't want FN to show anything, then return :NODISPLAY
-           - **WARNING: currently broken within non-left aligned (:CENTER / :CENTER-RIGHT / :RIGHT)**
+   - :FG (color &body forms) - everything that follows has forground COLOR
+   - :BG (color &body forms) - everything that follows has background COLOR
+   - :EMOJI (name) - inserts an emoji character; treated just like a raw character by SPAN/SPRITE
+   - :SPAN (&body subsegements) - everything that follows is treated as part of one line (so #\newline & #\return are forcibly removed)
+   - :SPRITE (&body sprites) - multi-line
+   - :NODISPLAY (&body anything) - everything that follows is ignored
+   - :CALL-WITH-POINT (fn) - calls FN with 2 arguments: the current row/col coordinates then continues processing the value returned by FN
+       - if you don't want FN to show anything, then return :NODISPLAY
+       - **WARNING: currently broken within non-left aligned (:CENTER / :CENTER-RIGHT / :RIGHT)**
 
 Within spans:
 
