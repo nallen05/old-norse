@@ -171,9 +171,9 @@ In the future, we plan to provide:
 
 If not structured correctly, even the simplest Terminal UI application can grow into a complicated mess of spaghetti code. The Old Norse way to deal with this is by prioritizing locality. In other words, the TUI application code structure should put related logic close together.
 
-1. JUST ONE FUNCTION TO RENDER THE ENTIRE SCREEN - SKALD-DRAW makes efficient diff-based screen updates, only updating sections of the that have recently changed. This allows you to define a single function to draw the entire screen, and then call it however frequently you want, relying on SKALD's low-level optimization to eliminate unecessay redrawing.
+1. JUST ONE FUNCTION TO RENDER THE ENTIRE SCREEN - Skald makes efficient diff-based screen updates, only updating sections of the that have recently changed. This allows you to define a single function to draw the entire screen, and then call it however frequently you want, relying on SKALD's low-level optimization to eliminate unecessay redrawing.
 
-2. JUST ONE CONTROL STRUCTURE - FLOKKR makes it possible to put all timing logic & input reaction logic in one place, making it easier to reason about timing & interactive behaviors. Modular composability is still possible, but within rigid constraints (chaining via :SUBFLOKKR) to help prevent hidden scheduling issues.
+2. JUST ONE CONTROL STRUCTURE - Flokkr makes it possible to put all timing logic & input reaction logic in one place, making it easier to reason about timing & interactive behaviors. Modular composability is still possible, but within rigid constraints (chaining via :SUBFLOKKR) to help prevent hidden scheduling issues.
 
 In practice, we have found this design pattern to *DRASTICALLY* simplify & shorten TUI application codebases.
 
