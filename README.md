@@ -25,18 +25,21 @@ Old Norse is implementation-dependent on SBCL.
 (bifrost:with-bifrost                       ; Enter raw terminal mode
   (skald:skald-init :fg :black :bg :white)  ; Initialize buffers & clear screen
   (skald:skald                              ; Open a draw transaction
-    (skald:span ((- skald:*screen-center-row* 4)
-                 skald:*screen-center-col*
-                 :fg :magenta
-                 :align :center)
+    ;; draw a friendly note
+    (skald:span ((- skald:*screen-center-row* 4)   ; row
+                 skald:*screen-center-col*         ; col
+                 :fg :magenta                      ; foreground color
+                 :align :center)                   ; span alignment
       "Welcome to Old Norse")
-    (skald:sprite ((- skald:*screen-center-row* 2) 
-                   skald:*screen-center-col* 
-                   :align :center)
+    ;; draw a friendly duck
+    (skald:sprite ((- skald:*screen-center-row* 2) ; row
+                   skald:*screen-center-col*       ; col
+                   :align :center)                 ; sprite alignment
       "  __"
       "<(o )___"
       " ( ._> /"
       "  `---'")
+    ;; draw a small pond under the duck
     (dotimes (i 10)
       (skald:span ((+ i 2 skald:*screen-center-row*) skald:*screen-center-col*
                    :bg :blue :fg :white :align :center)
@@ -48,15 +51,17 @@ Old Norse is implementation-dependent on SBCL.
 ### Simple example: fast animation that follows mouse movement
 
 ```lisp
-(bifrost:with-bifrost
-  (skald:skald-init :bg :white :fg :blue)
-  (bifrost:with-mouse-tracking (1003)                   ; start tracking mouse movement
-    (flokkr:flokkr                                      ; enter flokkr loop
+(bifrost:with-bifrost                               ; Enter raw terminal mode
+  (skald:skald-init :bg :white :fg :blue)           ; Initialize buffers & clear screen
+  (bifrost:with-mouse-tracking (1003)               ; start tracking mouse movement
+    (flokkr:flokkr                                  ; enter flokkr loop
       (:input
         (:mouse-click-left (return-from flokkr:flokkr)) ; on left click, exit
         (:mouse-move                                    ; on mouse move, reposition sprite
-         (skald:skald
-           (skald:sprite ((first bifrost:*rune-payload*) (second bifrost:*rune-payload*) :align :center)
+         (skald:skald                                   ; draw it
+           (skald:sprite ((first bifrost:*rune-payload*) 
+                          (second bifrost:*rune-payload*) 
+                          :align :center)
                 "╔═══════╗"
                 "║  🌍   ║"
                 "║ hello ║"
