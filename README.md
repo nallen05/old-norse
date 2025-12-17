@@ -15,6 +15,7 @@ Core libraries (terminal UI):
 
 Old Norse is implementation-dependent on SBCL.
 
+
 ## Quick start
 
 **Run these examples in the terminal, not SLIME/EMACS**
@@ -25,21 +26,15 @@ Old Norse is implementation-dependent on SBCL.
 (bifrost:with-bifrost                       ; Enter raw terminal mode
   (skald:skald-init :fg :black :bg :white)  ; Initialize buffers & clear screen
   (skald:skald                              ; Open a draw transaction
-    ;; draw a friendly note
-    (skald:span ((- skald:*screen-center-row* 4)   ; row
-                 skald:*screen-center-col*         ; col
-                 :fg :magenta                      ; foreground color
-                 :align :center)                   ; span alignment
+    (skald:span ((- skald:*screen-center-row* 4) skald:*screen-center-col*
+                 :fg :magenta :align :center)
       "Welcome to Old Norse")
-    ;; draw a friendly duck
-    (skald:sprite ((- skald:*screen-center-row* 2) ; row
-                   skald:*screen-center-col*       ; col
-                   :align :center)                 ; sprite alignment
+    (skald:sprite ((- skald:*screen-center-row* 2) skald:*screen-center-col*
+                   :align :center)
       "  __"
       "<(o )___"
       " ( ._> /"
       "  `---'")
-    ;; draw a small pond under the duck
     (dotimes (i 10)
       (skald:span ((+ i 2 skald:*screen-center-row*) skald:*screen-center-col*
                    :bg :blue :fg :white :align :center)
@@ -231,9 +226,12 @@ We have found the following prefix naming conventions to be useful when structur
 
 v0.1.0 - Core API subject to change
 
+This is our (development roadmap)[ROADMAP.md]
+
 ## Lispy alternatives
 
 - [cl-tuition](https://github.com/atgreen/cl-tuition) - "Common Lisp library for building rich, responsive terminal user interfaces (TUIs). It blends the simplicity of TEA with the power of CLOS so you can model state clearly, react to events via generic methods, and render your UI as pure strings."
+- [uncursed](https://github.com/Plisp/uncursed) - "A cross-platform library for writing terminal interfaces with minimal dependencies (terminfo on unix, recent conhost with VT support on windows). A higher-level buffered drawing abstraction and low-level utilities are provided. Supported implementations will include sbcl, ccl and ecl."
 - [text-draw](https://shinmera.github.io/text-draw/) - Common Lisp functions to draw graphics using pure Unicode text. Just drawing only.
 
 ## License
