@@ -13,9 +13,6 @@ Core libraries (terminal UI):
  - [Flokkr](flokkr/) - timing & user input
  - [Meadhorn](meadhorn/) - debugging
 
-Coming soon!
- - [Sixel graphics](https://en.wikipedia.org/wiki/Sixel) - dot matrix printer graphic image format
-
 Old Norse is implementation-dependent on SBCL.
 
 ## Quick start
@@ -124,10 +121,6 @@ Old Norse is implementation-dependent on SBCL.
 
 ![Fireworks show](images/on-example-fireworks.gif)
 
-### fancy example
-
-
-
 
 ## Design pillars
 
@@ -135,7 +128,7 @@ Old Norse is implementation-dependent on SBCL.
 
 Old Norse doesn't provide you with a widget for making a status bar. It provides you with tools to draw sprites to the screen & animate them according to precise timing logic, so that you can make your own custom status bar. The goal of the library is to make it easy to prototype a wide array of experimental game mechanics and interfaces, so long as they can be represented on a chunky terminal grid, within the constraints of a Unix-like terminal emulator.
  
-Our roadmap plan is to add support for [sixel graphics](https://en.wikipedia.org/wiki/Sixel). This will allow us to animate graphic images. However, the terminal grid will still remain the only coordinate system. Sixel sprites will snap to the same terminal grid as ASCII characters.
+Our roadmap plan is to add support for [sixel graphics](https://en.wikipedia.org/wiki/Sixel) (terminal-friendly dot matrix printer graphic image format). This will allow us to animate graphic images. However, the terminal grid will still remain the only coordinate system. Sixel sprites will snap to the same terminal grid as ASCII characters.
 
 ## (2) UX speed & precision timing
 
@@ -167,7 +160,7 @@ Easy remote deployment
 
 In the future, we plan to provide:
 - Documented playbooks & strategies for cloud deployment (fly.io, hetzer, aws)
-- Enhanced support for mobile web deployment (cbox swiping, rendering)
+- Enhanced support for mobile web deployment (capture user swiping & pinch/zoom input actions, test font rendering on mobile)
 
 ## (4) Old Norse "high locality" coding style
 
@@ -231,12 +224,12 @@ We have found the following prefix naming conventions to be useful when structur
 
 ## Status
 
-v0.0 - Core API subject to change
+v0.1.0 - Core API subject to change
 
 ## Lispy alternatives
 
-- [cl-tuition](https://github.com/atgreen/cl-tuition) - Common Lisp library for building rich, responsive terminal user interfaces (TUIs). It blends the simplicity of TEA with the power of CLOS so you can model state clearly, react to events via generic methods, and render your UI as pure strings.
-- [text-draw](https://shinmera.github.io/text-draw/) - Common Lisp functions to draw graphics using pure Unicode text.
+- [cl-tuition](https://github.com/atgreen/cl-tuition) - "Common Lisp library for building rich, responsive terminal user interfaces (TUIs). It blends the simplicity of TEA with the power of CLOS so you can model state clearly, react to events via generic methods, and render your UI as pure strings."
+- [text-draw](https://shinmera.github.io/text-draw/) - Common Lisp functions to draw graphics using pure Unicode text. Just drawing only.
 
 ## License
 
