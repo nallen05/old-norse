@@ -22,7 +22,7 @@ Old Norse is implementation-dependent on SBCL.
 
 **Run these examples in the terminal, not SLIME/EMACS**
 
-Example: styling and alignment
+### Simple example: styling and alignment
 
 ```lisp
 (bifrost:with-bifrost                       ; Enter raw terminal mode
@@ -48,7 +48,7 @@ Example: styling and alignment
 
 ![Example with styling and layout](images/skald-example-colors.png)
 
-Example: fast animation that follows mouse movement
+### Simple example: fast animation that follows mouse movement
 
 ```lisp
 (bifrost:with-bifrost
@@ -70,27 +70,62 @@ Example: fast animation that follows mouse movement
 ![Example with mouse tracking](images/skald-example-simple-mouse.gif)
 
 
-Simultaneous mouse movement tracking + animation timing loops
+### Fancy example: simultaneous animation + mouse movement tracking
+
 
 ```lisp
-(bifrost:with-bifrost                          ; low-level setup
-  (skald:skald-init)                           ; clear the screen
-  (bifrost:with-mouse-tracking (1003)          ; track mouse hover events
-    (bifrost:with-cbox-layer :new
-      (let ((seconds 0)
-            (row 1)
-            (col 1))
-        (flokkr:flokkr
-          (:after 1 :do (incf counter) :repeat) ; every second, advance the timer
-          (:input
-            (:mouse-click-left (return-from flokkr:flokkr)) ; on left click, exit
-            (:mouse-move                                    ; on mouse move, reposition
-             (setf row (first *rune-payload*)
-                   col (second *rune-payload*))))
-          (:also (skald:skald         ; if either of the above happened, re-render
-                   (skald:span (row col :foreground cyan)
-                     (format nil "~a seconds" seconds)))))))))
+(bifrost:with-bifrost
+  (skald:skald-init :bg :black :fg :white)
+  (bifrost:with-mouse-tracking (1000)
+    (let ((particles nil)
+          (colors '(:red :yellow :cyan :magenta :green :white)))
+      (flokkr:flokkr
+        (:after 0.033 
+         :do (setf particles
+                  (remove-if (lambda (life) (<= life 0))
+                             (mapcar (lambda (p)
+                                       (destructuring-bind (r c vr vc life color) p
+                                       (list (+ r vr)
+                                             (+ c vc)
+                                             (+ vr 0.15)  ; gravity
+                                             (* vc 0.98)  ; drag
+                                             (1- life)
+                                             color)))
+                                      particles)
+                             :key #'fifth))
+         :repeat)
+        (:input
+          ((#\q #\Q #\esc) (return-from flokkr:flokkr))
+          (:mouse-click-left
+           (let ((click-r (first bifrost:*rune-payload*))
+                 (click-c (second bifrost:*rune-payload*))
+                 (color (nth (random (length colors)) colors)))
+             (dotimes (i 12)
+               (let ((angle (* i (/ 3.14159 6))))
+                 (push (list (float click-r)
+                             (float click-c)
+                             (* -1.5 (cos angle))  ; upward bias
+                             (* 3.0 (sin angle))
+                             (+ 15 (random 10))    ; life
+                             color)
+                       particles))))))
+        (:also (skald:skald
+                 (dolist (p particles)
+                   (destructuring-bind (r c vr vc life color) p
+                     (declare (ignore vr vc))
+                     (when (and (> r 0) (<= r skald:*screen-height*)
+                                (> c 0) (<= c skald:*screen-width*))
+                       (skald:span ((round r) (round c) :fg color)
+                                    (if (> life 10)
+                                        "*"
+                                        ".")))))
+                 (skald:span (1 2 :fg :yellow) "Click anywhere to launch fireworks! Q to exit.")))))))
 ```
+
+![Fireworks show](images/on-example-fireworks.gif)
+
+### fancy example
+
 
 
 
