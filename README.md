@@ -226,7 +226,7 @@ We have found the following prefix naming conventions to be useful when structur
 
 v0.1.0 - Core API subject to change
 
-This is our (development roadmap)[ROADMAP.md]
+This is our [development roadmap](ROADMAP.md)
 
 ## Lispy alternatives
 
