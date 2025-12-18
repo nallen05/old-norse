@@ -3,7 +3,7 @@
 
 #  Old Norse Terminal Toolkit
 
-Build retro ASCII games in Common Lisp. Interactive data dashboards & business apps, too. If you are in to that kind of thing.
+Build retro ASCII games in Common Lisp. Data dashboards & business apps, too. If you are into that type of thing.
 
 Old Norse is a low-latency, grid-based terminal graphics engine with an integrated event loop.
 
