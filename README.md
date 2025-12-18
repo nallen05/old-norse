@@ -1,16 +1,18 @@
 
 
 
-#  Old Norse - fast, mouse-driven terminal apps in Common Lisp
+#  Old Norse Terminal Toolkit
 
-Build internal tools, monitoring dashboards, and retro ASCII games in Common Lisp
+Build retro ASCII games in Common Lisp. Interactive data dashboards & business apps, too. If you are in to that kind of thing.
+
+Old Norse is a low-latency, grid-based terminal graphics engine with an integrated event loop.
 
 Features: Mouse support, 60fps rendering, deploy anywhere via SSH or [TTYD](https://tsl0922.github.io/ttyd/)
 
-Core libraries (terminal UI):
+Core libraries
+ - [Flokkr](flokkr/) - timing & input
+ - [Skald](skald/) - layout & rendering
  - [Bifrost](bifrost/) 🌈 - low-level terminal control
- - [Skald](skald/) - sprites & rendering
- - [Flokkr](flokkr/) - timing & user input
  - [Meadhorn](meadhorn/) - debugging
 
 Old Norse is implementation-dependent on SBCL.
@@ -67,7 +69,7 @@ Old Norse is implementation-dependent on SBCL.
 ![Example with mouse tracking](images/skald-example-simple-mouse.gif)
 
 
-### Fancy example: simultaneous animation + mouse movement tracking
+### Fancy example: simultaneous timing loop & user interaction
 
 
 ```lisp
@@ -136,14 +138,14 @@ Timing is critical to games. Even klunky prototypes. Speed & responsiveness are 
 
 The Old Norse design goals are:
  1. 60fps animation (assumes normal screen size) 
- 2. Update screen in under 16ms after user input (local, before factoring in network latency)
+ 2. Update screen in under 16ms after user input (local, before factoring in network latency from remote deployment)
  3. High-precision control of timings & interactive behavior
 
 Based on our observation, TUI applications can achieve this by managing the following bottlenecks:
 1. Efficient diff-based screen updates - provided by SKALD
 2. Immediate response to user input - provided by FLOKKR
-3. Get slow DB queries & cloud API calls out of main loop - Currently must be managed by the user. But there is a roadmap plan to add a new flokkr form to support async io.
-4. Strategic scheduling of GC pauses -  Must be managed by the user. (Note: bifrost/skald do produce GC pressure when running. There is a roadmap plan to reduce it over time.)
+3. Get slow DB queries & cloud API calls out of main loop - Currently must be managed by the user. (But plan to add a new flokkr form to support async io.)
+4. Strategic scheduling of GC pauses -  Must be managed by the user.
 5. When deploying remotely, deploy in-region - must be managed by the user.
   
 ## (3) Develop in an hour. Deploy anywhere.
@@ -158,10 +160,6 @@ Easy remote deployment
 - SSH
 - Browser-based via [TTYD](https://tsl0922.github.io/ttyd/).
 
-In the future, we plan to provide:
-- Documented playbooks & strategies for cloud deployment (fly.io, hetzer, aws)
-- Enhanced support for mobile web deployment (capture user swiping & pinch/zoom input actions, test font rendering on mobile)
-
 ## (4) Old Norse "high locality" coding style
 
 If not structured correctly, even the simplest Terminal UI application can grow into a complicated mess of spaghetti code. The Old Norse way to deal with this is by prioritizing locality. In other words, the TUI application code structure should put related logic close together.
@@ -174,23 +172,23 @@ In practice, we have found this design pattern to *DRASTICALLY* simplify & short
 
 ## The Old Norse terminal toolkit libraries 
 
+### Flokkr
+[Flokkr](flokkr/) is a concurrency library purpose-built for building interactive terminal applications with skald/bifrost.
+- Manage complex timing & behaviors loops via mini-DSL (inspired by the LOOP macro)
+- Respond instantly to terminal input from user (without relying on polling)
+- Define widget/object timing behaviors seperately, then compose via :SUBFLOCKKR
+
+### Skald
+[Skald](skald/) is a high-level terminal display and animation framework
+- Treat blocks of ASCII/unicode text as sprites (transparant char enables composite layering)
+- Efficient diff-based screen updates for fast redrawing with minimal flicker
+- Grid-based positioning/layout/alignment, foreground/background colors, cropping/fill, emojis, etc
+
 ### Bifrost 🌈
 [Bifrost](bifrost/) is a low-level utility for reading from & controlling the terminal. Used by skald & flokkr
 - Two-way mapping between ASCII escape sequences & s-expressions
 - Mouse event tracking logic (click/hover)
 - Raw I/O to bypass terminal read buffer (but also debugging modes to troubleshoot TUI applications within SLIME/EMACS)
-
-### Skald
-[Skald](skald/) is a high-level terminal UI and animation framework
-- Treat blocks of ASCII/unicode text as sprites (transparant char enables composite layering)
-- Efficient diff-based screen updates for fast redrawing with minimal flicker
-- Grid-based positioning/layout/alignment, foreground/background colors, cropping/fill, emojis, etc
-
-### Flokkr
-[Flokkr](flokkr/) is a concurrency library purpose-built for building interactive TUI applications with skald/bifrost.
-- Manage complex timing & behaviors loops via mini-DSL (inspired by the LOOP macro)
-- Respond instantly to terminal input from user (without relying on polling)
-- Define widget/object timing behaviors seperately, then compose via :SUBFLOCKKR
 
 ### Meadhorn
 [Meadhorn](meadhorn/) is a simple debugging utility. 
@@ -228,11 +226,11 @@ v0.1.0 - Core API subject to change
 
 This is our [development roadmap](ROADMAP.md)
 
-## Lispy alternatives
+## Lispy alternatives (terminal UI)
 
 - [cl-tuition](https://github.com/atgreen/cl-tuition) - "Common Lisp library for building rich, responsive terminal user interfaces (TUIs). It blends the simplicity of TEA with the power of CLOS so you can model state clearly, react to events via generic methods, and render your UI as pure strings."
 - [uncursed](https://github.com/Plisp/uncursed) - "A cross-platform library for writing terminal interfaces with minimal dependencies (terminfo on unix, recent conhost with VT support on windows). A higher-level buffered drawing abstraction and low-level utilities are provided. Supported implementations will include sbcl, ccl and ecl."
-- [text-draw](https://shinmera.github.io/text-draw/) - Common Lisp functions to draw graphics using pure Unicode text. Just drawing only.
+- [text-draw](https://shinmera.github.io/text-draw/) - Common Lisp functions to draw graphics using pure Unicode text. Drawing only.
 
 ## License
 
